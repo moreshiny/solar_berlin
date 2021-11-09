@@ -1,12 +1,9 @@
 import os
 import random
+import shutil
 
 
-def select_map_images(train_size, test_size, input_path, output_path):
-
-    # create output directory if it does not exist
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+def select_map_images(train_size, test_size, input_path):
 
     # get all files in input directory
     files = os.listdir(input_path)
@@ -25,14 +22,30 @@ def select_map_images(train_size, test_size, input_path, output_path):
     files_train = files_zipped[:train_size]
     files_test = files_zipped[train_size:train_size+test_size]
 
-    # create file train_map_selection.csv
-    file_name_train = os.path.join(output_path, "train_map_selection.csv")
-    with open(file_name_train, 'w') as f:
-        for map_file_name, mask_file_name in files_train:
-            f.write(map_file_name + "," + mask_file_name + "\n")
+    return [files_train, files_test]
 
-    # create file test_map_selection.csv
-    file_name_test = os.path.join(output_path, "test_map_selection.csv")
-    with open(file_name_test, 'w') as f:
-        for map_file_name, mask_file_name in files_test:
-            f.write(map_file_name + "," + mask_file_name + "\n")
+
+def copy_image_files(image_files, input_path, output_path, delete_existing=False):
+
+    if delete_existing and os.path.exists(output_path):
+        shutil.rmtree(output_path)
+
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    else:
+        raise Exception("At least one of the output directory already exists."
+                        "\nSet delete_existing=True to remove it.")
+
+    files = {}
+    files["train"] = image_files[0]
+    files["test"] = image_files[1]
+
+    for subfolder in ["train", "test"]:
+        output_path_subfolder = os.path.join(output_path, subfolder)
+        if not os.path.exists(output_path_subfolder):
+            os.makedirs(output_path_subfolder)
+        for file_tuple in files[subfolder]:
+            for file_path in file_tuple:
+                full_path_in = os.path.join(input_path, file_path)
+                full_path_out = os.path.join(output_path_subfolder, file_path)
+                shutil.copy(full_path_in, full_path_out)
