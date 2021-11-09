@@ -89,6 +89,8 @@ class TestSelectMapImages(unittest.TestCase):
                 for image_file in file_tuple:
                     self.assertTrue(image_file.endswith(".tif"))
 
+# TODO ensure OutputPathExistsError is raised at appropriate times
+
 # TODO ensure files align correctly (map and mask)
 
 # TODO ensure files are randomized

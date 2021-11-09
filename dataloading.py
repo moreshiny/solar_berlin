@@ -3,6 +3,10 @@ import random
 import shutil
 
 
+class OutputPathExistsError(Exception):
+    """Raised when the output path exists"""
+    pass
+
 def select_random_map_images(train_size: int, test_size: int,
                              input_path: str) -> list:
     """ Selects a random subset of map images from the input path and returns
@@ -61,7 +65,7 @@ def copy_image_files(image_files: list, input_path: str,
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     else:
-        raise ("At least one of the output directory already exists."
+        raise OutputPathExistsError("At least one of the output directory already exists."
                "\nSet delete_existing=True to remove it.")
 
     # get file names into a dict for easier processing
