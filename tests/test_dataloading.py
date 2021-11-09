@@ -10,10 +10,10 @@ random.seed(42)
 
 
 class TestSelectMapImages(unittest.TestCase):
-    """Tests for select_random_map_images"""
+    """Tests for select_random_map_images."""
 
     def __init__(self, *args, **kwargs):
-        """Initialise some shared test parameters"""
+        """Initialise some shared test parameters."""
         super().__init__(*args, **kwargs)
         self.data_path = "data"
         self.input_path = os.path.join(self.data_path, "map")
@@ -99,18 +99,19 @@ class TestSelectMapImages(unittest.TestCase):
 
 
 class TestCopyImageFiles(unittest.TestCase):
-    """ Tests for copy_image_files"""
+    """Tests for copy_image_files."""
 
     def __init__(self, *args, **kwargs):
-        """Initialise some shared test parameters"""
+        """Initialise some shared test parameters."""
         super().__init__(*args, **kwargs)
         self.data_path = "data"
         self.input_path = os.path.join(self.data_path, "map")
         self.output_path = os.path.join(self.data_path, "test_selected")
 
     def test_copy_file_copies_file(self):
-        """ Test that the expected number of files is created in the expected
-        location"""
+        """Test that the expected number of files is created in the expected
+        location.
+        """
         train_size = 10
         test_size = 5
         image_files = select_random_map_images(
