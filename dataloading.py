@@ -4,12 +4,12 @@ import shutil
 
 
 class OutputPathExistsError(Exception):
-    """Raised when the output path exists"""
+    """Raised when the output path exists."""
     pass
 
 def select_random_map_images(train_size: int, test_size: int,
                              input_path: str) -> list:
-    """ Selects a random subset of map images from the input path and returns
+    """Selects a random subset of map images from the input path and returns
     them as a List of two Lists (one each for train and test) of tuples pairs
     of map and mask images.
 
@@ -46,7 +46,7 @@ def select_random_map_images(train_size: int, test_size: int,
 
 def copy_image_files(image_files: list, input_path: str,
                      output_path: str, delete_existing_output_path_no_warning=False):
-    """ Copy image files from the input path to the output path.
+    """Copy image files from the input path to the output path.
 
     Args:
         image_files (list): Filenames as returned by select_random_map_images
