@@ -1,4 +1,4 @@
-from dataloading import select_random_map_images, copy_image_files
+from data_extraction import select_random_map_images, copy_image_files
 import unittest
 import os
 import shutil
