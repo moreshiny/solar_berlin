@@ -7,13 +7,8 @@ import tensorflow_io as tfio
 
 class DataLoader:
     """Class for creating tensorflow dataset."""
-    def __init__(
-        self,
-        path: str,
-        batch_size: int = 32,
-        input_shape: list = [224, 224],
-        target_shape: list = [224, 224],
-    ) -> None:
+
+    def __init__(self, path: str, batch_size: int = 32) -> None:
         """Class instance initialization.
 
         Args:
@@ -28,8 +23,6 @@ class DataLoader:
         # initialize attributes
         self.path = path
         self.batch_size = batch_size
-        self.input_shape = input_shape
-        self.target_shape = target_shape
         self.dataset_input = None
         self.dataset_target = None
         self.dataset = None
@@ -101,11 +94,13 @@ class DataLoader:
         img_rgba = tfio.experimental.image.decode_tiff(img_file)
 
         # convert to float32
-        converted_img = tensorflow.image.convert_image_dtype(img_rgba, tensorflow.float32)
+        converted_img = tensorflow.image.convert_image_dtype(
+            img_rgba, tensorflow.float32
+        )
 
         # keep the right color channels
         if is_input:
-            img = converted_img[:, :, :3] / 255.
+            img = converted_img[:, :, :3] / 255.0
         else:
             img = converted_img[:, :, 3]
 
