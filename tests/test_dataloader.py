@@ -1,3 +1,4 @@
+import math
 from dataloader import DataLoader
 import unittest
 
@@ -10,7 +11,13 @@ class TestDataLoader(unittest.TestCase):
         self.dataloader = DataLoader(self.path)
 
     def test_dataloader_returns_tfdataset_of_correct_shape(self):
-        dataset = self.dataloader.to_dataset(n_imgs=10)
+        self.dataloader.load()
 
-        self.assertListEqual(list(dataset.element_spec[0].shape), [224, 224, 3])
-        self.assertListEqual(list(dataset.element_spec[1].shape), [224, 224, 1])
+        # find the number of elements in the tensorflow dataset
+        length = math.ceil(self.dataloader.dataset_input.cardinality(
+        ).numpy() / self.dataloader.batch_size)
+
+        # length = 2
+        for x, y in self.dataloader.dataset.take(length):
+            self.assertEqual(x.shape, (32, 224, 224, 3))
+            self.assertEqual(y.shape, (32, 224, 224))
