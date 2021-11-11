@@ -15,10 +15,6 @@ class DataLoader:
             path (str): Path to data folder with "map" and "mask" pairs.
             batch_size (int, optional): Batch size for model training.
                 Defaults to 32.
-            input_shape (list, optional): Shape of first two dimensions of
-                input images. Defaults to [224, 224].
-            target_shape (list, optional): Shape of first two dimensions of
-                target images. Defaults to [224, 224].
         """
         # initialize attributes
         self.path = path
@@ -118,9 +114,10 @@ class DataLoader:
 
         Args:
             buffer_size (int, optional): Number of elements from this dataset
-                from which the new dataset will sample. Defaults to None.
+                from which the new dataset will sample. If set to None, the
+                number of elements will be the full dataset. Defaults to None.
         """
-        # set buffersize to number of samples
+        # if unset, set buffersize to number of samples
         if not buffer_size:
             buffer_size = self.dataset_input.cardinality().numpy()
 
