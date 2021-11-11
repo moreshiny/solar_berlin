@@ -2,7 +2,6 @@ import PIL
 import glob
 import os
 import tensorflow
-import tensorflow_io as tfio
 
 
 class DataLoader:
@@ -86,9 +85,7 @@ class DataLoader:
                 0-255 to 0.0-1.0.
         """
         # read file and decode
-        img_file = tensorflow.io.read_file(path)
-        img_rgba = tfio.experimental.image.decode_tiff(img_file)
-
+        img_rgba = PIL.Image.open(path).convert("RGBA")
         # convert to float32
         converted_img = tensorflow.image.convert_image_dtype(
             img_rgba, tensorflow.float32
@@ -122,14 +119,19 @@ class DataLoader:
             buffer_size = self.dataset_input.cardinality().numpy()
 
         # load images for inputs and targets
-        inputs = self.dataset_input.map(
-            lambda p: self._load_image(path=p, is_input=True),
-            num_parallel_calls=tensorflow.data.experimental.AUTOTUNE,
-        )
-        targets = self.dataset_target.map(
-            lambda p: self._load_image(path=p, is_input=False),
-            num_parallel_calls=tensorflow.data.experimental.AUTOTUNE,
-        )
+        input_images = []
+        for item in self.dataset_input:
+            input_images.append(self._load_image(
+                item.numpy().decode("utf-8"), is_input=True))
+        inputs = tensorflow.data.Dataset.from_tensor_slices(
+            input_images)
+
+        target_images = []
+        for item in self.dataset_input:
+            target_images.append(self._load_image(
+                item.numpy().decode("utf-8"), is_input=False))
+        targets = tensorflow.data.Dataset.from_tensor_slices(
+            target_images)
 
         # store in attribute
         self.dataset = tensorflow.data.Dataset.zip((inputs, targets))
