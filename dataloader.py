@@ -1,6 +1,6 @@
-import PIL
-import glob
 import os
+import glob
+import PIL
 import tensorflow
 import tensorflow_io as tfio
 
@@ -8,17 +8,21 @@ import tensorflow_io as tfio
 class DataLoader:
     """Class for creating tensorflow dataset."""
 
-    def __init__(self, path: str, batch_size: int = 32) -> None:
+    def __init__(self, path: str, batch_size: int = 32,
+                 n_images: int = None) -> None:
         """Class instance initialization.
 
         Args:
             path (str): Path to data folder with "map" and "mask" pairs.
             batch_size (int, optional): Batch size for model training.
                 Defaults to 32.
+            n_images(int, optional): Number of datapoint to return. Returns all
+                available if set to None. Defaults to None.
         """
         # initialize attributes
         self.path = path
         self.batch_size = batch_size
+        self.n_images = n_images * 2  # *2 because of map and mask
         self.dataset_input = None
         self.dataset_target = None
         self.dataset = None
@@ -34,8 +38,10 @@ class DataLoader:
         img_paths, target_paths = self._get_img_paths()
 
         # create datasets
-        self.dataset_input = tensorflow.data.Dataset.from_tensor_slices(img_paths)
-        self.dataset_target = tensorflow.data.Dataset.from_tensor_slices(target_paths)
+        self.dataset_input =\
+            tensorflow.data.Dataset.from_tensor_slices(img_paths)
+        self.dataset_target =\
+            tensorflow.data.Dataset.from_tensor_slices(target_paths)
 
     def _get_img_paths(self) -> tuple:
         """Retrieves all image paths for input and targets present in
@@ -50,16 +56,38 @@ class DataLoader:
         # get all paths
         all_paths = glob.glob(os.path.join(self.path, "*.tif"))
 
+        assert self.n_images <= len(all_paths),\
+            f"n_images ({self.n_images}) is greater than available good images"
+
+        # keep only a part of the image paths if given n_images
+        # keep 10% more in case some need to be discarded
+        all_paths.sort()
+        if self.n_images is None:
+            self.n_images = len(all_paths)
+        else:
+            all_paths = all_paths[:max(
+                int(self.n_images*1.1), len(all_paths))]
+
         # data has not been curated and wrongly sized images are discarded
         good_paths = self._discard_wrong_img_paths(all_paths)
 
-        # split input and target
-        input_paths = [filename for filename in good_paths if "map" in filename]
-        target_paths = [filename for filename in good_paths if "mask" in filename]
+        # no keep only n_images paths
+        if self.n_images is None:
+            self.n_images = len(good_paths)
 
-        # sort
-        input_paths.sort()
-        target_paths.sort()
+        assert self.n_images <= len(good_paths),\
+            f"n_images ({self.n_images}) is greater than available good images"
+        good_paths = good_paths[:self.n_images]
+
+        # split input and target
+        input_paths =\
+            [filename for filename in good_paths if "map" in filename]
+        target_paths =\
+            [filename for filename in good_paths if "mask" in filename]
+
+        assert len(input_paths) == len(target_paths),\
+            f"""Number of input images ({len(input_paths)}) does not match
+            number of target images ({len(target_paths)})"""
 
         return input_paths, target_paths
 
