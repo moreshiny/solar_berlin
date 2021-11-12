@@ -7,7 +7,7 @@ class TestDataLoader(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.path = "data/curated_1"
+        self.path = "data/curated_1/test_curated_1_final/"
         self.dataloader = DataLoader(self.path)
 
     def test_dataloader_returns_tfdataset_of_correct_shape(self):
