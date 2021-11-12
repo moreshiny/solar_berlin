@@ -31,6 +31,11 @@ class TestDataLoader(unittest.TestCase):
         with self.assertRaises(AssertionError):
             DataLoader(self.path, n_samples=1_000_000_000)
 
+    def test_dataloader_does_not_fail_withou_n_samples_set(self):
+        dataloader = DataLoader(self.path)
+        dataloader.load()
+        self.assertEqual(dataloader.n_samples, 256)
+
     def test_dataloader_returns_matching_pairs_map_mask(self):
         dataloader = DataLoader(self.path, n_samples=100)
 

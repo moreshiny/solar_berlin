@@ -57,24 +57,25 @@ class DataLoader:
 
         # keep only part of image paths if n_samples was specified
         if self.n_samples is None:
-            self.n_samples = len(useable_paths)
+            self.n_samples = len(useable_paths) // 2
 
         # we need to get twice as many paths as requested samples (map and mask)
         n_paths = self.n_samples * 2
 
-        assert n_paths <= len(
-            useable_paths
-        ), f"n_samples ({self.n_samples}) is greater than number of available/useable images."
+        assert n_paths <= len(useable_paths),\
+            f"""n_samples ({self.n_samples}) is greater than number of
+                available/useable images {len(useable_paths) // 2}."""
+
+        # keep only the first n_paths paths
         useable_paths = useable_paths[: n_paths]
 
         # split input and target
         input_paths = [filename for filename in useable_paths if "map" in filename]
         target_paths = [filename for filename in useable_paths if "mask" in filename]
 
-        assert len(input_paths) == len(
-            target_paths
-        ), f"Number of input images ({len(input_paths)}) does not match\
-                 number of target images ({len(target_paths)})."
+        assert len(input_paths) == len(target_paths),\
+            f"""Number of input images ({len(input_paths)}) does not match
+                number of target images ({len(target_paths)})."""
 
         return input_paths, target_paths
 
