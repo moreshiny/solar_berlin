@@ -14,7 +14,7 @@ class TestDataLoader(unittest.TestCase):
         self.dataloader.load()
 
         # find the number of elements in the tensorflow dataset
-        length = math.ceil(self.dataloader.dataset_input.cardinality(
+        length = math.ceil(self.dataloader._dataset_input.cardinality(
         ).numpy() / self.dataloader.batch_size)
 
         # length = 2
