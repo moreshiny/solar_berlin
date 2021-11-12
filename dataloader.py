@@ -141,7 +141,7 @@ class DataLoader:
         """
         # if unset, set buffersize to number of samples
         if not buffer_size:
-            buffer_size = self._dataset_input.cardinality().numpy()
+            buffer_size = self.n_samples
 
         # load images for inputs and targets
         input_images = []
