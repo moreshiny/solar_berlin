@@ -1,16 +1,18 @@
 """Define the UNET model. BAsed in part on the image segmentation notebook
 https://www.tensorflow.org/tutorials/images/segmentation
 """
-
-import tensorflow as tf
+import os
+import glob
+from datetime import datetime
 import matplotlib.pyplot as plt
-
-# from IPython.display import clear_output use in the display call back.
+import tensorflow as tf
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from dataloader import DataLoader
 
+# from IPython.display import clear_output use in the display call back.
 
-class Model(DataLoader):
+
+class Model:
     """
     The purpose of the class is to define the Unet model,
     and contain the necessary functions (compile, and fit) to run it.
@@ -45,42 +47,81 @@ class Model(DataLoader):
         self.input_shape = input_shape  # default for RGB images size 224
         self.layers = layer_names  # layers to be used in the up stack
         ###
-        dl_train = DataLoader(path_train)
-        dl_val = DataLoader(path_test)
+        self._batch_size = 32
+        dl_train = DataLoader(path_train, batch_size=self._batch_size)
+        dl_val = DataLoader(path_test, batch_size=self._batch_size)
         dl_train.load()
         dl_val.load()
         self.train_batches = dl_train.dataset
         self.test_batches = dl_val.dataset
-
         # save size of train and validation data for internal use
-        self._n_train = dl_train.n_samples
-        self._n_val = dl_val.n_samples
-        self._batch_size = dl_train.batch_size
+        self._n_train = dl_train.dataset_input.cardinality().numpy()
+        self._n_val = dl_val.dataset_target.cardinality().numpy()
+        # self._batch_size = dl_train.batch_size
+        # paths for logging
+        self._path_log = "logs/"
+        self._path_main_log_file = self._path_log + "main_log.log"
+        self._path_aux = self._path_log + "log.aux"
+        self._current_time = ""
+        # Auxiliary variables
+        self.model = None
+        self._model_history = None
+        self._accuracy = []
+        self._val_accuracy = []
+        self._loss = []
+        self._val_loss = []
+        self._dictionary_performance = {}
 
-    def model_history(self):
+    def model_history(self, comment="Model running"):
         """
         Train the model. Return the history of the model.
 
         Returns:
             The fitted model.
         """
-        model = self._compile_model()  # start the model
-
+        self.model = self._compile_model()  # start the model
         # set training steps to use all training data in each epoch
         # TODO: is above description correct?
         steps_per_epoch = self._n_train // self._batch_size
         # set val steps to number of samples, i.e validate images individually
         # TODO: is above description correct?
         validation_steps = self._n_val
-        model_history = model.fit(
+        # Write the main log
+        self._current_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        self.logging(comment)
+        # Preparing the pickling.
+        checkpoint_filepath = self._path_log + self._current_time + "/checkpoint"
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=checkpoint_filepath,
+            save_weights_only=True,
+            monitor="val_accuracy",
+            mode="max",
+            save_best_only=True,
+        )
+        #
+        self._model_history = self.model.fit(
             self.train_batches,
             epochs=self.epochs,
             steps_per_epoch=steps_per_epoch,
             validation_steps=validation_steps,
             validation_data=self.test_batches,
-            # callbacks=[DisplayCallback()],
+            callbacks=[model_checkpoint_callback],
         )
-        return model_history
+        self._loss = self._model_history.history["loss"]
+        self._val_loss = self._model_history.history["val_loss"]
+        self._accuracy = self._model_history.history["accuracy"]
+        self._val_accuracy = self._model_history.history["val_accuracy"]
+        # logging performances
+        self._local_log(comment)
+        self.saving_model_performance()
+
+        # Deleting the model if the val accuracy is worse than existing model.
+        max_perf = max(self._dictionary_performance.values())
+        if max_perf > max(self._val_accuracy):
+            for filename in glob.glob(checkpoint_filepath + "*"):
+                os.remove(filename)
+
+        return self._model_history
 
     def _compile_model(self):
         """
@@ -229,6 +270,7 @@ class Model(DataLoader):
         for i in range(len(display_list)):
             plt.subplot(1, len(display_list), i + 1)
             plt.title(title[i])
+            type(display_list[i])
             plt.imshow(tf.keras.utils.array_to_img(display_list[i]))
             plt.axis("off")
         plt.show()
@@ -255,7 +297,98 @@ class Model(DataLoader):
 
         """
 
-        model = self.model_history()
+        if dataset == None:
+            dataset = self.test_batches
+
         for image, mask in dataset.take(num):
-            pred_mask = model.predict(image)
-            self._display([image[0], mask[0], self._create_mask(pred_mask)])
+            pred_mask = self.model.predict(image)
+            self._display([image, mask, self._create_mask(pred_mask)])
+
+    def logging(self, comment: str):
+        """
+        Log the model in the main log.
+        """
+
+        if not os.path.exists(self._path_log):
+            os.mkdir(self._path_log)
+
+        main_log = open(self._path_main_log_file, "a")
+        main_log.write(self._current_time)
+        main_log.write("\n")
+        main_log.write(comment)
+        main_log.write("\n")
+        main_log.write("------")
+        main_log.write("\n")
+        main_log.close()
+
+    def _local_log(self, comment: str):
+        """Create the local log."""
+        if not os.path.exists(self._path_log + self._current_time):
+            os.mkdir(self._path_log)
+        path_local_log = self._path_log + self._current_time + "/local_log.log"
+        local_log = open(path_local_log, "a")
+        local_log.write(self._current_time)
+        local_log.write("\n")
+        local_log.write(comment)
+        local_log.write("\n")
+        local_log.write(f"Train size: {self._n_train}")
+        local_log.write("\n")
+        local_log.write(f"Validation size: {self._n_val}")
+        local_log.write("\n")
+        local_log.write(f"Epochs:{self.epochs}")
+        local_log.write("\n")
+        local_log.write(f"Batches:{self._batch_size}")
+        local_log.write("\n")
+        local_log.write(f"Accuracy:{self._accuracy}")
+        local_log.write("\n")
+        local_log.write(f"Val Accuracy:{self._val_accuracy}")
+        local_log.write("\n")
+        local_log.write(f"Losses:{self._loss}")
+        local_log.write("\n")
+        local_log.write(f"Val losses:{self._val_loss}")
+        local_log.write("\n")
+        local_log.close()
+
+        plt.plot(
+            self._model_history.epoch, self._accuracy, "r", label="Training accuracy"
+        )
+        plt.plot(
+            self._model_history.epoch,
+            self._val_accuracy,
+            "bo",
+            label="Validation accuracy",
+        )
+        plt.title("Training and Validation accuracy")
+        plt.xlabel("Epoch")
+        plt.ylabel("accuracy")
+        plt.ylim([0, 1])
+        plt.legend()
+        path_graph = self._path_log + self._current_time + "/accuracy.pdf"
+        plt.savefig(path_graph)
+        plt.close()
+        plt.plot(self._model_history.epoch, self._loss, "r", label="Training loss")
+        plt.plot(
+            self._model_history.epoch, self._val_loss, "bo", label="Validation loss"
+        )
+        plt.title("Training and Validation Loss")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss Value")
+        plt.ylim([0, 1])
+        plt.legend()
+        path_graph = self._path_log + self._current_time + "/losses.pdf"
+        plt.savefig(path_graph)
+        plt.close()
+
+    def saving_model_performance(self):
+        """save the performance (accuracy) of the model. Print these
+        performance in an auxiliary files.
+        """
+        aux_file = open(self._path_aux, "a")
+        aux_file.write(f"{self._current_time} : {max(self._val_accuracy)}")
+        aux_file.write("\n")
+        aux_file.close()
+
+        with open(self._path_aux) as aux_file:
+            for line in aux_file:
+                (key, val) = line.split(":")
+                self._dictionary_performance[key] = float(val)
