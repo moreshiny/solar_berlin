@@ -35,8 +35,10 @@ class DataLoader:
         img_paths, target_paths = self._get_img_paths()
 
         # create datasets
-        self._dataset_input = tensorflow.data.Dataset.from_tensor_slices(img_paths)
-        self._dataset_target = tensorflow.data.Dataset.from_tensor_slices(target_paths)
+        self._dataset_input = tensorflow.data.Dataset.from_tensor_slices(
+            img_paths)
+        self._dataset_target = tensorflow.data.Dataset.from_tensor_slices(
+            target_paths)
 
     def _get_img_paths(self) -> tuple:
         """Retrieves all image paths for input and targets present in
@@ -57,12 +59,17 @@ class DataLoader:
 
         # keep only part of image paths if n_samples was specified
         if self.n_samples is None:
-            self.n_samples = len(useable_paths)
+            self.n_samples = len(useable_paths) // 2
 
-        assert self.n_samples <= len(
-            useable_paths
-        ), f"n_samples ({self.n_samples}) is greater than number of available/useable images."
-        useable_paths = useable_paths[: self.n_samples]
+        # we need to get twice as many paths as requested samples (map and mask)
+        n_paths = self.n_samples * 2
+
+        assert n_paths <= len(useable_paths),\
+            f"""n_samples ({self.n_samples}) is greater than number of
+                available/useable images {len(useable_paths) // 2}."""
+
+        # keep only the first n_paths paths
+        useable_paths = useable_paths[: n_paths]
 
         # split input and target
         input_paths = [
@@ -70,10 +77,9 @@ class DataLoader:
         target_paths = [
             filename for filename in useable_paths if "mask" in filename]
 
-        assert len(input_paths) == len(
-            target_paths
-        ), f"Number of input images ({len(input_paths)}) does not match\
-                 number of target images ({len(target_paths)})."
+        assert len(input_paths) == len(target_paths),\
+            f"""Number of input images ({len(input_paths)}) does not match
+                number of target images ({len(target_paths)})."""
 
         return input_paths, target_paths
 
