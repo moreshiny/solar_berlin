@@ -5,8 +5,9 @@ import os
 import glob
 from datetime import datetime
 import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
-from tensorflow.keras.losses import SparseCategoricalCrossentropy
+from tensorflow.python.keras.losses import BinaryCrossentropy
 from dataloader import DataLoader
 
 # from IPython.display import clear_output use in the display call back.
@@ -23,7 +24,7 @@ class Model:
         path_train,
         path_test,
         layer_names,
-        output_classes=2,
+        output_classes=1,
         input_shape=(224, 224, 3),
         epochs=10,
     ) -> None:
@@ -85,7 +86,7 @@ class Model:
         steps_per_epoch = self._n_train // self._batch_size
         # set val steps to number of samples, i.e validate images individually
         # TODO: is above description correct?
-        validation_steps = self._n_val
+        validation_steps = self._n_val / self._batch_size
         # Write the main log
         self._current_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
         self.logging(comment)
@@ -135,7 +136,7 @@ class Model:
 
         model.compile(
             optimizer="adam",
-            loss=SparseCategoricalCrossentropy(from_logits=True),
+            loss=BinaryCrossentropy(from_logits=True),
             metrics=["accuracy"],
         )
         return model
@@ -285,9 +286,8 @@ class Model:
             a mask.
 
         """
-        pred_mask = tf.argmax(pred_mask, axis=-1)
-        pred_mask = pred_mask[..., tf.newaxis]
-        return pred_mask[0]
+        pred_mask = (pred_mask > 0.5).astype(int) * 255
+        return pred_mask
 
     def show_predictions(self, dataset=None, num=1):
         """Display side by side an earial photography, its true mask, and the predicted mask.
@@ -300,9 +300,11 @@ class Model:
         if dataset == None:
             dataset = self.test_batches
 
-        for image, mask in dataset.take(num):
-            pred_mask = self.model.predict(image)
-            self._display([image, mask, self._create_mask(pred_mask)])
+        for image_batch, mask_batch in dataset.take(num):
+            pred_mask_batch = self.model.predict(image_batch)
+            for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
+                print(image.shape, mask.shape, pred_mask.shape)
+                self._display([image, mask, self._create_mask(pred_mask)])
 
     def logging(self, comment: str):
         """
