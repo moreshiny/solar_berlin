@@ -1,1 +1,2 @@
-tensorflow
+pillow
+tensorflow>=2.6
