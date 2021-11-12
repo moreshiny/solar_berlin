@@ -1,75 +1,211 @@
+"""Define the UNET model. BAsed in part on the image segmentation notebook
+https://www.tensorflow.org/tutorials/images/segmentation
+"""
+
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
-# internal methods needs an underscore as a marker.
+# from IPython.display import clear_output use in the display call back.
+from tensorflow.keras.losses import SparseCategoricalCrossentropy
+from dataloader import DataLoader
 
-class Model():
+
+class Model(DataLoader):
+    """
+    The purpose of the class is to define the Unet model,
+    and contain the necessary functions (compile, and fit) to run it.
+    """
 
     def __init__(
         self,
-        dataset_train,
-        dataset_val,
+        path_train,
+        path_test,
         layer_names,
         output_classes=2,
-        input_shape=[224,224,3],
-        include_top=True,
+        input_shape=(224, 224, 3),
         epochs=10,
-        # val_subplits=5, #Check here what this does.
-        batch_size=128,
-        buffer_size=1000,
     ) -> None:
-        self.dataset_train = dataset_train
-        self.dataset_val = dataset_val
-        self.output_classes = output_classes
-        self.layers = layer_names
-        self.input_shape = input_shape
-        self.include_top = include_top
+        """Instantiate the class.
+        Args:
+            dataset_train (tf.dataset): batched training data
+            dataset_train (tf.dataset): batched validation data
+            layer_names (list of strings): list of strings defining the MobilenetV2 NN.
+            output_classes (int): interget defining the number of classes for the
+            classification. Default to 2.
+            input_shape (3-tuple): a 3 tuple defining the shape of the input image.
+            Default set to (224, 224, 3)
+        """
+        # Initialisation missing.
+        # save the unet model parameters
+        self.output_classes = output_classes  # 2 classes for binary classification
         self.epochs = epochs
-        self.train_length = len(dataset_train)
-        self.batch_size = batch_size
-        self.validation_steps = len(dataset_val)
-
-        self.buffer_size = buffer_size
-        self.train_batches = None
-        self.test_batches = None
-        self.base_model = None
-        self.base_model_outputs = None
+        # save the layer information for the unet model
+        # TODO: can we infer include_top from input_shape? Yes. I have modified this.
+        # default True, use the default input layer
+        self.input_shape = input_shape  # default for RGB images size 224
+        self.layers = layer_names  # layers to be used in the up stack
         ###
+        dl_train = DataLoader(path_train)
+        dl_val = DataLoader(path_test)
+        dl_train.load()
+        dl_val.load()
+        self.train_batches = dl_train.dataset
+        self.test_batches = dl_val.dataset
 
-    def batches(self):
+        # save size of train and validation data for internal use
+        self._n_train = dl_train.n_samples
+        self._n_val = dl_val.n_samples
+        self._batch_size = dl_train.batch_size
+
+    def model_history(self):
         """
+        Train the model. Return the history of the model.
+
+        Returns:
+            The fitted model.
         """
-        if self.batch_size > self.train_length\
-             or self.batch_size > len(self.validation_steps):
-            self.batch_size = 1
-            print("Warning: batch size set to 1!")
-        train_batches = (
-            self.dataset_train
-            .shuffle(self.buffer_size)
-            .batch(self.batch_size)
-            .repeat()
-            .prefetch(buffer_size=tf.data.AUTOTUNE)
+        model = self._compile_model()  # start the model
+
+        # set training steps to use all training data in each epoch
+        # TODO: is above description correct?
+        steps_per_epoch = self._n_train // self._batch_size
+        # set val steps to number of samples, i.e validate images individually
+        # TODO: is above description correct?
+        validation_steps = self._n_val
+        model_history = model.fit(
+            self.train_batches,
+            epochs=self.epochs,
+            steps_per_epoch=steps_per_epoch,
+            validation_steps=validation_steps,
+            validation_data=self.test_batches,
+            # callbacks=[DisplayCallback()],
+        )
+        return model_history
+
+    def _compile_model(self):
+        """
+        Takes the Unet models, and compile the model. Return the model.
+
+        Returns:
+            the compiled model, with the ADAM gradient descent, the sparse categorical entropy
+            and the accuracy metric.
+        """
+        model = self._setup_unet_model(output_channels=self.output_classes)
+
+        model.compile(
+            optimizer="adam",
+            loss=SparseCategoricalCrossentropy(from_logits=True),
+            metrics=["accuracy"],
+        )
+        return model
+
+    def _setup_unet_model(self, output_channels: int):
+        """
+        Unet model from the segmentation notebook by tensorflow. Define the model.
+
+        Args:
+        output_channels (int): number of categories in the classification.
+
+        Returns:
+            The model unet.
+
+        """
+
+        # initiate the base model
+        base_model = self._get_base_model()
+
+        # select the requested down stack layers
+        selected_output_layers = [
+            base_model.get_layer(name).output for name in self.layers
+        ]
+
+        # define the input layer
+        inputs = tf.keras.layers.Input(tf.TensorShape(self.input_shape))
+
+        # Downsampling through the model
+        # needs to have base model defined.
+        down_stack = tf.keras.Model(
+            inputs=base_model.input, outputs=selected_output_layers
+        )
+        # freeze the downstack layers
+        down_stack.trainable = False
+
+        # TODO: what does this do and what is 'x'?
+        skips = down_stack(inputs)
+        layer = skips[-1]
+        skips = reversed(skips[:-1])
+
+        # Upsampling and establishing the skip connections
+        # TODO: what does this do and why do we need it?
+        up_stack = [
+            self._upsample(512, 3),  # 4x4 -> 8x8
+            self._upsample(256, 3),  # 8x8 -> 16x16
+            self._upsample(128, 3),  # 16x16 -> 32x32
+            self._upsample(64, 3),  # 32x32 -> 64x64
+        ]
+
+        # TODO: how does this work?
+        for up, skip in zip(up_stack, skips):
+            layer = up(layer)
+            concat = tf.keras.layers.Concatenate()
+            layer = concat([layer, skip])
+
+        # This is the last layer of the model
+        last = tf.keras.layers.Conv2DTranspose(
+            filters=output_channels,
+            kernel_size=3,
+            strides=2,
+            padding="same",
+        )  # 64x64 -> 128x128
+
+        layer = last(layer)
+
+        return tf.keras.Model(inputs=inputs, outputs=layer)
+
+    def _get_base_model(self):
+        """
+        Define the base of the model, MobileNetV2. Note that a discussion on the shape
+        is necessary: if the shape of the pictures is the default shape (224, 224, 3),
+        the include top options needs to be set to True, and the input shape is not passed
+        as an argument of the base model. The default input shape is used.
+
+        Returns:
+            the base model MobileNetV2
+        """
+        if self.input_shape == (224, 224, 3):
+            base_model = tf.keras.applications.MobileNetV2(
+                include_top=True,
             )
-
-        test_batches = (
-            self.dataset_val
-            .shuffle(self.buffer_size)
-            .batch(self.batch_size)
-            .repeat()
-            .prefetch(buffer_size=tf.data.AUTOTUNE)
+        else:
+            base_model = tf.keras.applications.MobileNetV2(
+                input_shape=self.input_shape,
+                include_top=False,
             )
-        return train_batches, test_batches
-        ###
+        return base_model
 
-    def upsample(self, filters, size, apply_dropout=False):
+    def _upsample(self, filters, size, apply_dropout=False):
+        """Define the upsampling stack. Introduced as an alternative to the pix2pix
+           implementation of the tensoflow notebook.
+           Credit: https://www.tensorflow.org/tutorials/generative/pix2pix
+           Conv2DTranspose => Dropout => Relu
+        Args:
+            filters: number of filters
+            size: filter size
+            apply_dropout: If True, adds the dropout layer
+        Returns:
+               Upsample Sequential Model
         """
-        """
-        initializer = tf.random_normal_initializer(0., 0.02)
+        initializer = tf.random_normal_initializer(0.0, 0.02)
         result = tf.keras.Sequential()
         result.add(
-            tf.keras.layers.Conv2DTranspose(filters, size, strides=2,
-                                            padding='same',
-                                            kernel_initializer=initializer,
-                                            use_bias=False)
+            tf.keras.layers.Conv2DTranspose(
+                filters,
+                size,
+                strides=2,
+                padding="same",
+                kernel_initializer=initializer,
+                use_bias=False,
+            )
         )
 
         result.add(tf.keras.layers.BatchNormalization())
@@ -81,102 +217,45 @@ class Model():
 
         return result
 
-    def initialize_model(self):
+    def _display(self, display_list):
+        """Display side by side the pictures contained in the list.
+
+        Args:
+            a list of three images, aerial pictures, true mask, and predicted mask in that order.
+
         """
+        plt.figure(figsize=(15, 15))
+        title = ["Input Image", "True Mask", "Predicted Mask"]
+        for i in range(len(display_list)):
+            plt.subplot(1, len(display_list), i + 1)
+            plt.title(title[i])
+            plt.imshow(tf.keras.utils.array_to_img(display_list[i]))
+            plt.axis("off")
+        plt.show()
+
+    def _create_mask(self, pred_mask):
+        """Create a mask from the predicted array.
+
+        Args:
+            a predicted image, through the predict method.
+
+        Returns:
+            a mask.
+
         """
-        if self.include_top:
-            base_model = tf.keras.applications.MobileNetV2(
-                include_top=True,
-            )
-        else:
-            base_model = tf.keras.applications.MobileNetV2(
-                input_shape=self.input_shape,
-                include_top=False,
-            )
-        self.base_model = base_model
-        ###
+        pred_mask = tf.argmax(pred_mask, axis=-1)
+        pred_mask = pred_mask[..., tf.newaxis]
+        return pred_mask[0]
 
-    def layering(self):
+    def show_predictions(self, dataset=None, num=1):
+        """Display side by side an earial photography, its true mask, and the predicted mask.
+
+        Args:
+            A dataset in the form provided by the dataloader.
+
         """
-        """
-        self.base_model_outputs = [self.base_model.get_layer(
-            name).output for name in self.layers]
-        ###
 
-    def down_stack(self):
-        # Create the feature extraction model
-
-        down_stack = tf.keras.Model(inputs=self.base_model.input,
-                                    outputs=self.base_model_outputs)
-        down_stack.trainable = False
-
-        return down_stack
-
-    def up_stack(self):
-        up_stack = [
-            self.upsample(512, 3),  # 4x4 -> 8x8
-            self.upsample(256, 3),  # 8x8 -> 16x16
-            self.upsample(128, 3),  # 16x16 -> 32x32
-            self.upsample(64, 3),   # 32x32 -> 64x64
-        ]
-        return up_stack
-
-    def unet_model(self, output_channels: int):
-
-        self.initialize_model()  # initiate the model
-        self.layering()  # instantiate the layers
-        inputs = tf.keras.layers.Input(
-            tf.TensorShape(self.input_shape))
-
-    # Downsampling through the model
-        down_stack = self.down_stack()  # needs to have base model defined.
-        skips = down_stack(inputs)
-        x = skips[-1]
-        skips = reversed(skips[:-1])
-
-   # Upsampling and establishing the skip connections
-        up_stack = self.up_stack()
-        for up, skip in zip(up_stack, skips):
-            x = up(x)
-            concat = tf.keras.layers.Concatenate()
-            x = concat([x, skip])
-
-   # This is the last layer of the model
-        last = tf.keras.layers.Conv2DTranspose(
-            filters=output_channels,
-            kernel_size=3,
-            strides=2,
-            padding='same',
-        )  # 64x64 -> 128x128
-
-        x = last(x)
-
-        return tf.keras.Model(inputs=inputs, outputs=x)
-
-    def model_compiling(self):
-        """
-        """
-        model = self.unet_model(output_channels=self.output_classes)
-        model.compile(optimizer='adam',
-                      loss=tf.keras.losses.SparseCategoricalCrossentropy(
-                          from_logits=True),
-                      metrics=['accuracy'])
-        return model
-
-    def model_history(self):
-        """
-        
-        """
-        train_batches, test_batches = self.batches() 
-        print(train_batches, test_batches)  # instantiate the batches.
-        model = self.model_compiling()  # start the model
-
-        steps_per_epoch = self.train_length // self.batch_size
-        model_history = model.fit(train_batches,
-                                  epochs=self.epochs,
-                                  steps_per_epoch=steps_per_epoch,
-                                  validation_steps=self.validation_steps,
-                                  validation_data=test_batches,
-                                  # callbacks=[DisplayCallback()]
-                                  )
-        return model_history
+        model = self.model_history()
+        for image, mask in dataset.take(num):
+            pred_mask = model.predict(image)
+            self._display([image[0], mask[0], self._create_mask(pred_mask)])
