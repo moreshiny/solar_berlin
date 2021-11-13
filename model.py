@@ -60,8 +60,8 @@ class Model:
         self.test_batches = dl_val.dataset
 
         # save size of train and validation data for internal use
-        self._n_train = dl_train.dataset_input.cardinality().numpy()
-        self._n_val = dl_val.dataset_target.cardinality().numpy()
+        self._n_train = dl_train._dataset_input.cardinality().numpy()
+        self._n_val = dl_val._dataset_target.cardinality().numpy()
 
         # paths for logging
         self._path_log = "logs/"
