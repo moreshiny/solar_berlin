@@ -77,6 +77,10 @@ class Model:
         """
         Train the model. Return the history of the model.
 
+        Args:
+            comment (str): take a string, containing the necessary comment on the model.
+            Default set to "Model running".
+
         Returns:
             The fitted model.
         """
@@ -99,7 +103,7 @@ class Model:
             mode="max",
             save_best_only=True,
         )
-        #
+        # Fitting the model
         self._model_history = self.model.fit(
             self.train_batches,
             epochs=self.epochs,
@@ -121,6 +125,8 @@ class Model:
         if max_perf > max(self._val_accuracy):
             for filename in glob.glob(checkpoint_filepath + "*"):
                 os.remove(filename)
+        else:
+            self.logging_saved_model()
 
         return self._model_history
 
@@ -133,7 +139,6 @@ class Model:
             and the accuracy metric.
         """
         model = self._setup_unet_model(output_channels=self.output_classes)
-
         model.compile(
             optimizer="adam",
             loss=BinaryCrossentropy(from_logits=True),
@@ -152,7 +157,6 @@ class Model:
             The model unet.
 
         """
-
         # initiate the base model
         base_model = self._get_base_model()
 
@@ -296,7 +300,6 @@ class Model:
             A dataset in the form provided by the dataloader.
 
         """
-
         if dataset == None:
             dataset = self.test_batches
 
@@ -309,24 +312,36 @@ class Model:
     def logging(self, comment: str):
         """
         Log the model in the main log.
+
+        Args:
+            comment (str): take a string, containing the necessary comment on the model.
         """
 
         if not os.path.exists(self._path_log):
             os.mkdir(self._path_log)
 
         main_log = open(self._path_main_log_file, "a")
+        main_log.write("\n")
+        main_log.write("------")
+        main_log.write("\n")
         main_log.write(self._current_time)
         main_log.write("\n")
         main_log.write(comment)
         main_log.write("\n")
-        main_log.write("------")
         main_log.write("\n")
         main_log.close()
 
     def _local_log(self, comment: str):
-        """Create the local log."""
+        """
+        Create the local log.
+
+        Args:
+            comment (str): take a string, containing the necessary comment on the model.
+        """
+
         if not os.path.exists(self._path_log + self._current_time):
             os.mkdir(self._path_log)
+
         path_local_log = self._path_log + self._current_time + "/local_log.log"
         local_log = open(path_local_log, "a")
         local_log.write(self._current_time)
@@ -340,6 +355,8 @@ class Model:
         local_log.write(f"Epochs:{self.epochs}")
         local_log.write("\n")
         local_log.write(f"Batches:{self._batch_size}")
+        local_log.write("\n")
+        local_log.write(f"Struture of the network: {self.layers}")
         local_log.write("\n")
         local_log.write(f"Accuracy:{self._accuracy}")
         local_log.write("\n")
@@ -394,3 +411,11 @@ class Model:
             for line in aux_file:
                 (key, val) = line.split(":")
                 self._dictionary_performance[key] = float(val)
+
+    def logging_saved_model(self):
+        """Log in the main file tha the model has been saved."""
+        main_log = open(self._path_main_log_file, "a")
+        main_log.write("Model saved!")
+        main_log.write("\n")
+        main_log.write(f"Validation accuracy: {max(self._val_accuracy)}")
+        main_log.close()
