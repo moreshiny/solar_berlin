@@ -35,10 +35,8 @@ class DataLoader:
         img_paths, target_paths = self._get_img_paths()
 
         # create datasets
-        self._dataset_input = tensorflow.data.Dataset.from_tensor_slices(
-            img_paths)
-        self._dataset_target = tensorflow.data.Dataset.from_tensor_slices(
-            target_paths)
+        self._dataset_input = tensorflow.data.Dataset.from_tensor_slices(img_paths)
+        self._dataset_target = tensorflow.data.Dataset.from_tensor_slices(target_paths)
 
     def _get_img_paths(self) -> tuple:
         """Retrieves all image paths for input and targets present in
@@ -72,10 +70,8 @@ class DataLoader:
         useable_paths = useable_paths[: n_paths]
 
         # split input and target
-        input_paths = [
-            filename for filename in useable_paths if "map" in filename]
-        target_paths = [
-            filename for filename in useable_paths if "mask" in filename]
+        input_paths = [filename for filename in useable_paths if "map" in filename]
+        target_paths = [filename for filename in useable_paths if "mask" in filename]
 
         assert len(input_paths) == len(target_paths),\
             f"""Number of input images ({len(input_paths)}) does not match
