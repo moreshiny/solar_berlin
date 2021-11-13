@@ -119,6 +119,7 @@ class Model:
         # logging performances
         self._local_log(comment)
         self.saving_model_performance()
+        self.show_predictions()
 
         # Deleting the model if the val accuracy is worse than existing model.
         max_perf = max(self._dictionary_performance.values())
@@ -278,7 +279,12 @@ class Model:
             type(display_list[i])
             plt.imshow(tf.keras.utils.array_to_img(display_list[i]))
             plt.axis("off")
-        plt.show()
+        path_snapshot = self._path_log + self._current_time + "/snapshots"
+        if not os.path.exists(path_snapshot):
+            os.mkdir(path_snapshot)
+        path_fig = path_snapshot + f"/output{np.random.rand()}.jpeg"
+        plt.savefig(path_fig)
+        plt.close()
 
     def _create_mask(self, pred_mask):
         """Create a mask from the predicted array.
