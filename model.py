@@ -4,67 +4,72 @@ https://www.tensorflow.org/tutorials/images/segmentation
 import os
 import glob
 from datetime import datetime
+from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.losses import BinaryCrossentropy
 from dataloader import DataLoader
 
-# from IPython.display import clear_output use in the display call back.
-
 
 class Model:
     """
     The purpose of the class is to define the Unet model,
-    and contain the necessary functions (compile, and fit) to run it.
+    and contain the necessary functions (compile, and fit) to run it and save
+    the results.
     """
 
     def __init__(
         self,
-        path_train,
-        path_test,
-        layer_names,
-        output_classes=1,
-        input_shape=(224, 224, 3),
-        epochs=10,
+        path_train: tf.data.Dataset,
+        path_test: tf.data.Dataset,
+        layer_names: List[str],
+        output_classes: int = 1,
+        input_shape: Tuple[int] = (224, 224, 3),
+        epochs: int = 10,
+        batch_size: int = 32,
     ) -> None:
         """Instantiate the class.
         Args:
             dataset_train (tf.dataset): batched training data
             dataset_train (tf.dataset): batched validation data
             layer_names (list of strings): list of strings defining the MobilenetV2 NN.
-            output_classes (int): interget defining the number of classes for the
-            classification. Default to 2.
+            output_classes (int): the number of classes for the classification.
+                                Defaults to 1.
             input_shape (3-tuple): a 3 tuple defining the shape of the input image.
-            Default set to (224, 224, 3)
+                                Defaults to (224, 224, 3)
+            epochs (int): the number of epochs to train the model. Defaults to 10.
+            batch_size (int): the size of the batches in training. Defaults to 32.
         """
-        # Initialisation missing.
+
         # save the unet model parameters
-        self.output_classes = output_classes  # 2 classes for binary classification
+        self.output_classes = output_classes  # 1 class for binary classification
         self.epochs = epochs
+
         # save the layer information for the unet model
-        # TODO: can we infer include_top from input_shape? Yes. I have modified this.
-        # default True, use the default input layer
         self.input_shape = input_shape  # default for RGB images size 224
         self.layers = layer_names  # layers to be used in the up stack
-        ###
-        self._batch_size = 32
+        self._batch_size = batch_size
+
+        # save the training and validation dataloaders
         dl_train = DataLoader(path_train, batch_size=self._batch_size)
         dl_val = DataLoader(path_test, batch_size=self._batch_size)
         dl_train.load()
         dl_val.load()
         self.train_batches = dl_train.dataset
         self.test_batches = dl_val.dataset
+
         # save size of train and validation data for internal use
         self._n_train = dl_train.dataset_input.cardinality().numpy()
         self._n_val = dl_val.dataset_target.cardinality().numpy()
-        # self._batch_size = dl_train.batch_size
+
         # paths for logging
         self._path_log = "logs/"
         self._path_main_log_file = self._path_log + "main_log.log"
         self._path_aux = self._path_log + "log.aux"
         self._current_time = ""
-        # Auxiliary variables
+
+        # auxiliary variables
         self.model = None
         self._model_history = None
         self._accuracy = []
@@ -73,7 +78,8 @@ class Model:
         self._val_loss = []
         self._dictionary_performance = {}
 
-    def model_history(self, comment="Model running"):
+    # TODO what type is this returning?
+    def model_history(self, comment: str = "Model running"):
         """
         Train the model. Return the history of the model.
 
@@ -82,19 +88,19 @@ class Model:
             Default set to "Model running".
 
         Returns:
-            The fitted model.
+            The fitted model history.
         """
         self.model = self._compile_model()  # start the model
-        # set training steps to use all training data in each epoch
-        # TODO: is above description correct?
+
+        # set training steps to use all training data in batches in each epoch
         steps_per_epoch = self._n_train // self._batch_size
-        # set val steps to number of samples, i.e validate images individually
-        # TODO: is above description correct?
-        validation_steps = self._n_val / self._batch_size
-        # Write the main log
+        # set val steps to use all validation data in batches
+        validation_steps = self._n_val // self._batch_size
+
+        # write the main log
         self._current_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
         self.logging(comment)
-        # Preparing the pickling.
+        # prepare model pickeling
         checkpoint_filepath = self._path_log + self._current_time + "/checkpoint"
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
@@ -103,7 +109,7 @@ class Model:
             mode="max",
             save_best_only=True,
         )
-        # Fitting the model
+        # fit the model
         self._model_history = self.model.fit(
             self.train_batches,
             epochs=self.epochs,
@@ -116,12 +122,13 @@ class Model:
         self._val_loss = self._model_history.history["val_loss"]
         self._accuracy = self._model_history.history["accuracy"]
         self._val_accuracy = self._model_history.history["val_accuracy"]
-        # logging performances
+
+        # log performance
         self._local_log(comment)
         self.saving_model_performance()
         self.show_predictions()
 
-        # Deleting the model if the val accuracy is worse than existing model.
+        # delete the model if the val accuracy is worse than existing model.
         max_perf = max(self._dictionary_performance.values())
         if max_perf > max(self._val_accuracy):
             for filename in glob.glob(checkpoint_filepath + "*"):
@@ -131,13 +138,13 @@ class Model:
 
         return self._model_history
 
-    def _compile_model(self):
+    def _compile_model(self) -> tf.keras.Model:
         """
         Takes the Unet models, and compile the model. Return the model.
 
         Returns:
-            the compiled model, with the ADAM gradient descent, the sparse categorical entropy
-            and the accuracy metric.
+            the compiled model, with the ADAM gradient descent, binary
+            crossentropy loss, and accuracy metrics.
         """
         model = self._setup_unet_model(output_channels=self.output_classes)
         model.compile(
@@ -147,7 +154,7 @@ class Model:
         )
         return model
 
-    def _setup_unet_model(self, output_channels: int):
+    def _setup_unet_model(self, output_channels: int) -> tf.keras.Model:
         """
         Unet model from the segmentation notebook by tensorflow. Define the model.
 
@@ -169,7 +176,7 @@ class Model:
         # define the input layer
         inputs = tf.keras.layers.Input(tf.TensorShape(self.input_shape))
 
-        # Downsampling through the model
+        # downsampling through the model
         # needs to have base model defined.
         down_stack = tf.keras.Model(
             inputs=base_model.input, outputs=selected_output_layers
@@ -177,13 +184,11 @@ class Model:
         # freeze the downstack layers
         down_stack.trainable = False
 
-        # TODO: what does this do and what is 'x'?
         skips = down_stack(inputs)
         layer = skips[-1]
         skips = reversed(skips[:-1])
 
-        # Upsampling and establishing the skip connections
-        # TODO: what does this do and why do we need it?
+        # upsampling and establishing the skip connections
         up_stack = [
             self._upsample(512, 3),  # 4x4 -> 8x8
             self._upsample(256, 3),  # 8x8 -> 16x16
@@ -191,13 +196,12 @@ class Model:
             self._upsample(64, 3),  # 32x32 -> 64x64
         ]
 
-        # TODO: how does this work?
         for up, skip in zip(up_stack, skips):
             layer = up(layer)
             concat = tf.keras.layers.Concatenate()
             layer = concat([layer, skip])
 
-        # This is the last layer of the model
+        # this is the last layer of the model
         last = tf.keras.layers.Conv2DTranspose(
             filters=output_channels,
             kernel_size=3,
@@ -209,7 +213,7 @@ class Model:
 
         return tf.keras.Model(inputs=inputs, outputs=layer)
 
-    def _get_base_model(self):
+    def _get_base_model(self) -> tf.keras.Model:
         """
         Define the base of the model, MobileNetV2. Note that a discussion on the shape
         is necessary: if the shape of the pictures is the default shape (224, 224, 3),
@@ -230,7 +234,8 @@ class Model:
             )
         return base_model
 
-    def _upsample(self, filters, size, apply_dropout=False):
+    # TODO what types are filters size (int?) and what type does this return?
+    def _upsample(self, filters, size, apply_dropout: bool = False):
         """Define the upsampling stack. Introduced as an alternative to the pix2pix
            implementation of the tensoflow notebook.
            Credit: https://www.tensorflow.org/tutorials/generative/pix2pix
@@ -264,11 +269,13 @@ class Model:
 
         return result
 
-    def _display(self, display_list):
+    # TODO what type should the elements in the display_list be?
+    def _display(self, display_list: List) -> None:
         """Display side by side the pictures contained in the list.
 
         Args:
-            a list of three images, aerial pictures, true mask, and predicted mask in that order.
+            display_list (List): Three images, aerial pictures, true mask,
+                                and predicted mask in that order.
 
         """
         plt.figure(figsize=(15, 15))
@@ -286,6 +293,7 @@ class Model:
         plt.savefig(path_fig)
         plt.close()
 
+    # TODO what type does this take and return?
     def _create_mask(self, pred_mask):
         """Create a mask from the predicted array.
 
@@ -299,28 +307,30 @@ class Model:
         pred_mask = (pred_mask > 0.5).astype(int) * 255
         return pred_mask
 
-    def show_predictions(self, dataset=None, num=1):
+    def show_predictions(self, dataset: tf.data.Dataset = None,
+                         num_batches: int = 1) -> None:
         """Display side by side an earial photography, its true mask, and the predicted mask.
 
         Args:
             A dataset in the form provided by the dataloader.
+            num_batches (int): number of batches to display.
 
         """
+        # default to the test dataset
         if dataset == None:
             dataset = self.test_batches
 
-        for image_batch, mask_batch in dataset.take(num):
+        for image_batch, mask_batch in dataset.take(num_batches):
             pred_mask_batch = self.model.predict(image_batch)
             for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
-                print(image.shape, mask.shape, pred_mask.shape)
                 self._display([image, mask, self._create_mask(pred_mask)])
 
-    def logging(self, comment: str):
+    def logging(self, comment: str) -> None:
         """
         Log the model in the main log.
 
         Args:
-            comment (str): take a string, containing the necessary comment on the model.
+            comment (str): the necessary comment on the model.
         """
 
         if not os.path.exists(self._path_log):
@@ -337,12 +347,12 @@ class Model:
         main_log.write("\n")
         main_log.close()
 
-    def _local_log(self, comment: str):
+    def _local_log(self, comment: str) -> None:
         """
         Create the local log.
 
         Args:
-            comment (str): take a string, containing the necessary comment on the model.
+            comment (str): the necessary comment on the model.
         """
 
         if not os.path.exists(self._path_log + self._current_time):
@@ -391,7 +401,8 @@ class Model:
         path_graph = self._path_log + self._current_time + "/accuracy.pdf"
         plt.savefig(path_graph)
         plt.close()
-        plt.plot(self._model_history.epoch, self._loss, "r", label="Training loss")
+        plt.plot(self._model_history.epoch, self._loss,
+                 "r", label="Training loss")
         plt.plot(
             self._model_history.epoch, self._val_loss, "bo", label="Validation loss"
         )
@@ -404,7 +415,7 @@ class Model:
         plt.savefig(path_graph)
         plt.close()
 
-    def saving_model_performance(self):
+    def saving_model_performance(self) -> None:
         """save the performance (accuracy) of the model. Print these
         performance in an auxiliary files.
         """
@@ -418,7 +429,7 @@ class Model:
                 (key, val) = line.split(":")
                 self._dictionary_performance[key] = float(val)
 
-    def logging_saved_model(self):
+    def logging_saved_model(self) -> None:
         """Log in the main file tha the model has been saved."""
         main_log = open(self._path_main_log_file, "a")
         main_log.write("Model saved!")
