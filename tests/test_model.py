@@ -23,7 +23,6 @@ class TestModel(unittest.TestCase):
             test_path,
             layer_names,
             epochs=2,
-            batch_size=2,
         )
 
         _ = model.model_history()
