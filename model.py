@@ -322,7 +322,7 @@ class Model:
 
         """
         # default to the test dataset
-        if dataset == None:
+        if dataset is None:
             dataset = self.test_batches
 
         for image_batch, mask_batch in dataset.take(num_batches):
@@ -341,16 +341,16 @@ class Model:
         if not os.path.exists(self._path_log):
             os.mkdir(self._path_log)
 
-        main_log = open(self._path_main_log_file, "a")
-        main_log.write("\n")
-        main_log.write("------")
-        main_log.write("\n")
-        main_log.write(self._current_time)
-        main_log.write("\n")
-        main_log.write(comment)
-        main_log.write("\n")
-        main_log.write("\n")
-        main_log.close()
+        with open(self._path_main_log_file, "a", encoding="utf-8") as main_log:
+            main_log.write("\n")
+            main_log.write("------")
+            main_log.write("\n")
+            main_log.write(self._current_time)
+            main_log.write("\n")
+            main_log.write(comment)
+            main_log.write("\n")
+            main_log.write("\n")
+            main_log.close()
 
     def _local_log(self, comment: str) -> None:
         """
@@ -364,30 +364,30 @@ class Model:
             os.mkdir(self._path_log)
 
         path_local_log = self._path_log + self._current_time + "/local_log.log"
-        local_log = open(path_local_log, "a")
-        local_log.write(self._current_time)
-        local_log.write("\n")
-        local_log.write(comment)
-        local_log.write("\n")
-        local_log.write(f"Train size: {self._n_train}")
-        local_log.write("\n")
-        local_log.write(f"Validation size: {self._n_val}")
-        local_log.write("\n")
-        local_log.write(f"Epochs:{self.epochs}")
-        local_log.write("\n")
-        local_log.write(f"Batches:{self._batch_size}")
-        local_log.write("\n")
-        local_log.write(f"Struture of the network: {self.layers}")
-        local_log.write("\n")
-        local_log.write(f"Accuracy:{self._accuracy}")
-        local_log.write("\n")
-        local_log.write(f"Val Accuracy:{self._val_accuracy}")
-        local_log.write("\n")
-        local_log.write(f"Losses:{self._loss}")
-        local_log.write("\n")
-        local_log.write(f"Val losses:{self._val_loss}")
-        local_log.write("\n")
-        local_log.close()
+
+        with open(path_local_log, "a", encoding="utf-8") as local_log:
+            local_log.write(self._current_time)
+            local_log.write("\n")
+            local_log.write(comment)
+            local_log.write("\n")
+            local_log.write(f"Train size: {self._n_train}")
+            local_log.write("\n")
+            local_log.write(f"Validation size: {self._n_val}")
+            local_log.write("\n")
+            local_log.write(f"Epochs:{self.epochs}")
+            local_log.write("\n")
+            local_log.write(f"Batches:{self._batch_size}")
+            local_log.write("\n")
+            local_log.write(f"Struture of the network: {self.layers}")
+            local_log.write("\n")
+            local_log.write(f"Accuracy:{self._accuracy}")
+            local_log.write("\n")
+            local_log.write(f"Val Accuracy:{self._val_accuracy}")
+            local_log.write("\n")
+            local_log.write(f"Losses:{self._loss}")
+            local_log.write("\n")
+            local_log.write(f"Val losses:{self._val_loss}")
+            local_log.write("\n")
 
         plt.plot(
             self._model_history.epoch, self._accuracy, "r", label="Training accuracy"
@@ -424,20 +424,20 @@ class Model:
         """save the performance (accuracy) of the model. Print these
         performance in an auxiliary files.
         """
-        aux_file = open(self._path_aux, "a")
-        aux_file.write(f"{self._current_time} : {max(self._val_accuracy)}")
-        aux_file.write("\n")
-        aux_file.close()
 
-        with open(self._path_aux) as aux_file:
+        with open(self._path_aux, "a", encoding="utf-8") as aux_file:
+            aux_file.write(f"{self._current_time} : {max(self._val_accuracy)}")
+            aux_file.write("\n")
+
+        with open(self._path_aux, "r", encoding="utf-8") as aux_file:
             for line in aux_file:
                 (key, val) = line.split(":")
                 self._dictionary_performance[key] = float(val)
 
     def logging_saved_model(self) -> None:
         """Log in the main file tha the model has been saved."""
-        main_log = open(self._path_main_log_file, "a")
-        main_log.write("Model saved!")
-        main_log.write("\n")
-        main_log.write(f"Validation accuracy: {max(self._val_accuracy)}")
-        main_log.close()
+
+        with open(self._path_main_log_file, "a", encoding="utf-8") as main_log:
+            main_log.write("Model saved!")
+            main_log.write("\n")
+            main_log.write(f"Validation accuracy: {max(self._val_accuracy)}")
