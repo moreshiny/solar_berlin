@@ -32,13 +32,13 @@ class Model:
         Args:
             dataset_train (tensorflow.dataset): batched training data
             dataset_train (tensorflow.dataset): batched validation data
-            layer_names (list of strings): list of strings defining the MobilenetV2 NN.
-            output_classes (int): the number of classes for the classification.
-                                Defaults to 1.
-            input_shape (3-tuple): a 3 tuple defining the shape of the input image.
-                                Defaults to (224, 224, 3)
-            epochs (int): the number of epochs to train the model. Defaults to 10.
-            batch_size (int): the size of the batches in training. Defaults to 32.
+            layer_names (list of strings): defining the MobilenetV2 NN.
+            output_classes (int): number of classes for the classification.
+                Defaults to 1.
+            input_shape (3-tuple): a 3 tuple defining the shape of the input
+                image. Defaults to (224, 224, 3)
+            epochs (int): number of epochs to train the model. Defaults to 10.
+            batch_size (int): size of the batches in training. Defaults to 32.
         """
 
         # save the unet model parameters
@@ -83,17 +83,17 @@ class Model:
         Train the model. Return the history of the model.
 
         Args:
-            comment (str): take a string, containing the necessary comment on the model.
-            Default set to "Model running".
+            comment (str): take a string, containing the necessary comment on
+            the model. Default set to "Model running".
 
         Returns:
             The fitted model history.
         """
         self.model = self._compile_model()  # start the model
 
-        # set training steps to use all training data in batches in each epoch
+        # use all train data in batches in each epoch (at least 1 step)
         steps_per_epoch = max(self._n_train // self._batch_size, 1)
-        # set val steps to use all validation data in batches
+        # use all validation data in batches (at least 1 batch)
         validation_steps = max(self._n_val // self._batch_size, 1)
 
         # write the main log
@@ -217,10 +217,11 @@ class Model:
 
     def _get_base_model(self) -> tensorflow.keras.Model:
         """
-        Define the base of the model, MobileNetV2. Note that a discussion on the shape
-        is necessary: if the shape of the pictures is the default shape (224, 224, 3),
-        the include top options needs to be set to True, and the input shape is not passed
-        as an argument of the base model. The default input shape is used.
+        Define the base of the model, MobileNetV2. Note that a discussion on
+        the shape is necessary: if the shape of the pictures is the default
+        shape (224, 224, 3), the include top options needs to be set to True,
+        and the input shape is not passed as an argument of the base model.
+        Otherwise the default input shape is used.
 
         Returns:
             the base model MobileNetV2
@@ -238,8 +239,8 @@ class Model:
 
     # TODO what types are filters size (int?) and what type does this return?
     def _upsample(self, filters, size, apply_dropout: bool = False):
-        """Define the upsampling stack. Introduced as an alternative to the pix2pix
-           implementation of the tensoflow notebook.
+        """Define the upsampling stack. Introduced as an alternative to the
+            pix2pix implementation of the tensoflow notebook.
            Credit: https://www.tensorflow.org/tutorials/generative/pix2pix
            Conv2DTranspose => Dropout => Relu
         Args:
@@ -314,7 +315,8 @@ class Model:
         dataset: tensorflow.data.Dataset = None,
         num_batches: int = 1
     ) -> None:
-        """Display side by side an earial photography, its true mask, and the predicted mask.
+        """Display side by side an earial photography, its true mask, and the
+            predicted mask.
 
         Args:
             A dataset in the form provided by the dataloader.
@@ -327,7 +329,8 @@ class Model:
 
         for image_batch, mask_batch in dataset.take(num_batches):
             pred_mask_batch = self.model.predict(image_batch)
-            for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
+            for image, mask, pred_mask\
+                    in zip(image_batch, mask_batch, pred_mask_batch):
                 self._display([image, mask, self._create_mask(pred_mask)])
 
     def logging(self, comment: str) -> None:
@@ -390,7 +393,10 @@ class Model:
             local_log.write("\n")
 
         plt.plot(
-            self._model_history.epoch, self._accuracy, "r", label="Training accuracy"
+            self._model_history.epoch,
+            self._accuracy,
+            "r",
+            label="Training accuracy",
         )
         plt.plot(
             self._model_history.epoch,
@@ -406,10 +412,17 @@ class Model:
         path_graph = self._path_log + self._current_time + "/accuracy.pdf"
         plt.savefig(path_graph)
         plt.close()
-        plt.plot(self._model_history.epoch, self._loss,
-                 "r", label="Training loss")
         plt.plot(
-            self._model_history.epoch, self._val_loss, "bo", label="Validation loss"
+            self._model_history.epoch,
+            self._loss,
+            "r",
+            label="Training loss",
+        )
+        plt.plot(
+            self._model_history.epoch,
+            self._val_loss,
+            "bo",
+            label="Validation loss",
         )
         plt.title("Training and Validation Loss")
         plt.xlabel("Epoch")
