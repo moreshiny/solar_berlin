@@ -109,7 +109,7 @@ class DataLoader:
             )
             return img
 
-        [img_rgba, ] = tensorflow.py_function(
+        [img_rgba,] = tensorflow.py_function(
             _decode_tensor_load_image, [tensor, "rgba"], [tensorflow.float32]
         )
 
@@ -118,8 +118,8 @@ class DataLoader:
         if channels == "RGB":
             img = img_rgba[:, :, :3]
         elif channels == "A":
-            img = tensorflow.reshape(tensorflow.math.ceil(
-                img_rgba[:, :, 3]), (224, 224, 1))
+            img = tensorflow.math.ceil(img_rgba[:, :, 3])
+            img = tensorflow.reshape(img, (224, 224, 1))
         # TODO: Double check the line above is correct. Why are there
         #       non-zero-one values in the alpha channel?
         else:
@@ -146,19 +146,14 @@ class DataLoader:
             buffer_size = self.n_samples
 
         # load images for inputs and targets
-        input_images = []
-        for item in self._dataset_input:
-            input_images.append(
-                self._load_image(item.numpy().decode("utf-8"), "RGB")
-            )
-        inputs = tensorflow.data.Dataset.from_tensor_slices(input_images)
-
-        target_images = []
-        for item in self._dataset_target:
-            target_images.append(
-                self._load_image(item.numpy().decode("utf-8"), "A")
-            )
-        targets = tensorflow.data.Dataset.from_tensor_slices(target_images)
+        inputs = self._dataset_input.map(
+            lambda t: self._load_image(tensor=t, channels="RGB"),
+            num_parallel_calls=tensorflow.data.experimental.AUTOTUNE,
+        )
+        targets = self._dataset_target.map(
+            lambda t: self._load_image(tensor=t, channels="A"),
+            num_parallel_calls=tensorflow.data.experimental.AUTOTUNE,
+        )
 
         # store in attribute
         self.dataset = tensorflow.data.Dataset.zip((inputs, targets))
