@@ -93,9 +93,9 @@ class Model:
         self.model = self._compile_model()  # start the model
 
         # set training steps to use all training data in batches in each epoch
-        steps_per_epoch = self._n_train // self._batch_size
+        steps_per_epoch = max(self._n_train // self._batch_size, 1)
         # set val steps to use all validation data in batches
-        validation_steps = self._n_val // self._batch_size
+        validation_steps = max(self._n_val // self._batch_size, 1)
 
         # write the main log
         self._current_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
@@ -307,8 +307,9 @@ class Model:
         pred_mask = (pred_mask > 0.5).astype(int) * 255
         return pred_mask
 
-    def show_predictions(self, dataset: tf.data.Dataset = None,
-                         num_batches: int = 1) -> None:
+    def show_predictions(
+        self, dataset: tf.data.Dataset = None, num_batches: int = 1
+    ) -> None:
         """Display side by side an earial photography, its true mask, and the predicted mask.
 
         Args:
@@ -401,8 +402,7 @@ class Model:
         path_graph = self._path_log + self._current_time + "/accuracy.pdf"
         plt.savefig(path_graph)
         plt.close()
-        plt.plot(self._model_history.epoch, self._loss,
-                 "r", label="Training loss")
+        plt.plot(self._model_history.epoch, self._loss, "r", label="Training loss")
         plt.plot(
             self._model_history.epoch, self._val_loss, "bo", label="Validation loss"
         )
