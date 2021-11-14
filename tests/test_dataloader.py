@@ -20,7 +20,7 @@ class TestDataLoader(unittest.TestCase):
         # length = 2
         for inputs, targets in dataloader.dataset.take(n_batches):
             self.assertEqual(inputs.shape, (32, 224, 224, 3))
-            self.assertEqual(targets.shape, (32, 224, 224))
+            self.assertEqual(targets.shape, (32, 224, 224, 1))
 
     def test_dataloader_returns_requested_number_of_images(self):
         dataloader = DataLoader(self.path, n_samples=10)
