@@ -20,13 +20,17 @@ class Model:
 
     def __init__(
         self,
-        path_train: tensorflow.data.Dataset,
-        path_test: tensorflow.data.Dataset,
+        path_train: str,
+        path_test: str,
         layer_names: List[str],
         output_classes: int = 1,
         input_shape: Tuple[int] = (224, 224, 3),
         epochs: int = 10,
         batch_size: int = 32,
+        model_name: str = "mmobilenetv2",
+        include_top: bool = True,
+        alpha: float = 1,
+        pooling: str = None,
     ) -> None:
         """Instantiate the class.
         Args:
@@ -68,6 +72,12 @@ class Model:
         self._path_aux = self._path_log + "log.aux"
         self._current_time = ""
 
+        # parameters of the model
+        self._model_name = model_name
+        self._alpha = alpha
+        self._include_top = include_top
+        self._pooling = pooling
+
         # auxiliary variables
         self.model = None
         self._model_history = None
@@ -108,6 +118,11 @@ class Model:
             mode="max",
             save_best_only=True,
         )
+        # Prepare the tesorboard
+        log_dir = "logs/tensorboard/" + self._current_time
+        tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
+            log_dir=log_dir, histogram_freq=1
+        )
         # fit the model
         self._model_history = self.model.fit(
             self.train_batches,
@@ -115,7 +130,7 @@ class Model:
             steps_per_epoch=steps_per_epoch,
             validation_steps=validation_steps,
             validation_data=self.test_batches,
-            callbacks=[model_checkpoint_callback],
+            callbacks=[model_checkpoint_callback, tensorboard_callback],
         )
         self._loss = self._model_history.history["loss"]
         self._val_loss = self._model_history.history["val_loss"]
@@ -173,15 +188,12 @@ class Model:
         ]
 
         # define the input layer
-        inputs = tensorflow.keras.layers.Input(
-            tensorflow.TensorShape(self.input_shape)
-        )
+        inputs = tensorflow.keras.layers.Input(tensorflow.TensorShape(self.input_shape))
 
         # downsampling through the model
         # needs to have base model defined.
         down_stack = tensorflow.keras.Model(
-            inputs=base_model.input,
-            outputs=selected_output_layers
+            inputs=base_model.input, outputs=selected_output_layers
         )
         # freeze the downstack layers
         down_stack.trainable = False
@@ -222,19 +234,21 @@ class Model:
         shape (224, 224, 3), the include top options needs to be set to True,
         and the input shape is not passed as an argument of the base model.
         Otherwise the default input shape is used.
-
         Returns:
             the base model MobileNetV2
         """
-        if self.input_shape == (224, 224, 3):
-            base_model = tensorflow.keras.applications.MobileNetV2(
-                include_top=True,
-            )
+
+        if self._include_top:
+            base_model = tensorflow.keras.applications.MobileNetV2(include_top=True)
+            self.input_shape = (224, 224, 3)
+
         else:
             base_model = tensorflow.keras.applications.MobileNetV2(
                 input_shape=self.input_shape,
                 include_top=False,
+                pooling=self._pooling,
             )
+
         return base_model
 
     # TODO what types are filters size (int?) and what type does this return?
@@ -311,9 +325,7 @@ class Model:
         return pred_mask
 
     def show_predictions(
-        self,
-        dataset: tensorflow.data.Dataset = None,
-        num_batches: int = 1
+        self, dataset: tensorflow.data.Dataset = None, num_batches: int = 1
     ) -> None:
         """Display side by side an earial photography, its true mask, and the
             predicted mask.
@@ -329,8 +341,7 @@ class Model:
 
         for image_batch, mask_batch in dataset.take(num_batches):
             pred_mask_batch = self.model.predict(image_batch)
-            for image, mask, pred_mask\
-                    in zip(image_batch, mask_batch, pred_mask_batch):
+            for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
                 self._display([image, mask, self._create_mask(pred_mask)])
 
     def logging(self, comment: str) -> None:
@@ -372,6 +383,14 @@ class Model:
             local_log.write(self._current_time)
             local_log.write("\n")
             local_log.write(comment)
+            local_log.write("\n")
+            local_log.write(f"Model name: {self._model_name}")
+            local_log.write("\n")
+            local_log.write(f"include top: {self._include_top}")
+            local_log.write("\n")
+            local_log.write(f"Alpha: {self._alpha}")
+            local_log.write("\n")
+            local_log.write(f"Image size: {self.input_shape}")
             local_log.write("\n")
             local_log.write(f"Train size: {self._n_train}")
             local_log.write("\n")
@@ -432,6 +451,11 @@ class Model:
         path_graph = self._path_log + self._current_time + "/losses.pdf"
         plt.savefig(path_graph)
         plt.close()
+
+        dot_img_file = self._path_log + self._current_time + "/model.jpg"
+        tensorflow.keras.utils.plot_model(
+            self.model, to_file=dot_img_file, show_shapes=True
+        )
 
     def saving_model_performance(self) -> None:
         """save the performance (accuracy) of the model. Print these
