@@ -1,5 +1,5 @@
 """Define the UNET model. BAsed in part on the image segmentation notebook
-https://www.tensorflow.org/tutorials/images/segmentation
+https://keras.io/examples/vision/oxford_pets_image_segmentation/
 """
 import os
 import glob
@@ -8,6 +8,8 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow
+from tensorflow import keras
+from tensorflow.keras import layers
 from dataloader import DataLoader
 
 
@@ -118,11 +120,14 @@ class Model:
             mode="max",
             save_best_only=True,
         )
-        # Prepare the tesorboard
+        # Prepare the tensorboard
         log_dir = "logs/tensorboard/" + self._current_time
         tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
             log_dir=log_dir, histogram_freq=1
         )
+        # Clearing the output
+        tensorflow.keras.backend.clear_session
+
         # fit the model
         self._model_history = self.model.fit(
             self.train_batches,
@@ -163,7 +168,7 @@ class Model:
         model = self._setup_unet_model(output_channels=self.output_classes)
         model.compile(
             optimizer="adam",
-            loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
+            loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
             metrics=["accuracy"],
         )
         return model
@@ -179,115 +184,73 @@ class Model:
             The model unet.
 
         """
-        # initiate the base model
-        base_model = self._get_base_model()
+        inputs = keras.Input(shape=self.input_shape)
 
-        # select the requested down stack layers
-        selected_output_layers = [
-            base_model.get_layer(name).output for name in self.layers
-        ]
+        ### [First half of the network: downsampling inputs] ###
 
-        # define the input layer
-        inputs = tensorflow.keras.layers.Input(tensorflow.TensorShape(self.input_shape))
+        # Entry block
+        intermediary = layers.Conv2D(32, 3, strides=2, padding="same")(inputs)
+        intermediary = layers.BatchNormalization()(intermediary)
+        intermediary = layers.Activation("relu")(intermediary)
 
-        # downsampling through the model
-        # needs to have base model defined.
-        down_stack = tensorflow.keras.Model(
-            inputs=base_model.input, outputs=selected_output_layers
-        )
-        # freeze the downstack layers
-        down_stack.trainable = False
+        previous_block_activation = intermediary  # Set aside residual
 
-        skips = down_stack(inputs)
-        layer = skips[-1]
-        skips = reversed(skips[:-1])
-
-        # upsampling and establishing the skip connections
-        up_stack = [
-            self._upsample(512, 3),  # 4x4 -> 8x8
-            self._upsample(256, 3),  # 8x8 -> 16x16
-            self._upsample(128, 3),  # 16x16 -> 32x32
-            self._upsample(64, 3),  # 32x32 -> 64x64
-        ]
-
-        for up, skip in zip(up_stack, skips):
-            layer = up(layer)
-            concat = tensorflow.keras.layers.Concatenate()
-            layer = concat([layer, skip])
-
-        # this is the last layer of the model
-        last = tensorflow.keras.layers.Conv2DTranspose(
-            filters=output_channels,
-            kernel_size=3,
-            strides=2,
-            padding="same",
-        )  # 64x64 -> 128x128
-
-        layer = last(layer)
-
-        return tensorflow.keras.Model(inputs=inputs, outputs=layer)
-
-    def _get_base_model(self) -> tensorflow.keras.Model:
-        """
-        Define the base of the model, MobileNetV2. Note that a discussion on
-        the shape is necessary: if the shape of the pictures is the default
-        shape (224, 224, 3), the include top options needs to be set to True,
-        and the input shape is not passed as an argument of the base model.
-        Otherwise the default input shape is used.
-        Returns:
-            the base model MobileNetV2
-        """
-
-        if self._include_top:
-            base_model = tensorflow.keras.applications.MobileNetV2(
-                include_top=True,
-                weights="imagenet",
+        # Blocks 1, 2, 3 are identical apart from the feature depth.
+        for filters in [64, 128, 256]:
+            intermediary = layers.Activation("relu")(intermediary)
+            intermediary = layers.SeparableConv2D(filters, 3, padding="same")(
+                intermediary
             )
-            self.input_shape = (224, 224, 3)
+            intermediary = layers.BatchNormalization()(intermediary)
 
-        else:
-            base_model = tensorflow.keras.applications.MobileNetV2(
-                input_shape=self.input_shape,
-                include_top=False,
-                pooling=self._pooling,
+            intermediary = layers.Activation("relu")(intermediary)
+            intermediary = layers.SeparableConv2D(filters, 3, padding="same")(
+                intermediary
+            )
+            intermediary = layers.BatchNormalization()(intermediary)
+
+            intermediary = layers.MaxPooling2D(3, strides=2, padding="same")(
+                intermediary
             )
 
-        return base_model
-
-    # TODO what types are filters size (int?) and what type does this return?
-    def _upsample(self, filters, size, apply_dropout: bool = False):
-        """Define the upsampling stack. Introduced as an alternative to the
-            pix2pix implementation of the tensoflow notebook.
-           Credit: https://www.tensorflow.org/tutorials/generative/pix2pix
-           Conv2DTranspose => Dropout => Relu
-        Args:
-            filters: number of filters
-            size: filter size
-            apply_dropout: If True, adds the dropout layer
-        Returns:
-               Upsample Sequential Model
-        """
-        initializer = tensorflow.random_normal_initializer(0.0, 0.02)
-        result = tensorflow.keras.Sequential()
-        result.add(
-            tensorflow.keras.layers.Conv2DTranspose(
-                filters,
-                size,
-                strides=2,
-                padding="same",
-                kernel_initializer=initializer,
-                use_bias=False,
+            # Project residual
+            residual = layers.Conv2D(filters, 1, strides=2, padding="same")(
+                previous_block_activation
             )
-        )
+            intermediary = layers.add([intermediary, residual])  # Add back residual
+            previous_block_activation = intermediary  # Set aside next residual
 
-        result.add(tensorflow.keras.layers.BatchNormalization())
+        ### [Second half of the network: upsampling inputs] ###
 
-        if apply_dropout:
-            result.add(tensorflow.keras.layers.Dropout(0.5))
+        for filters in [256, 128, 64, 32]:
+            intermediary = layers.Activation("relu")(intermediary)
+            intermediary = layers.Conv2DTranspose(filters, 3, padding="same")(
+                intermediary
+            )
+            intermediary = layers.BatchNormalization()(intermediary)
 
-        result.add(tensorflow.keras.layers.ReLU())
+            intermediary = layers.Activation("relu")(intermediary)
+            intermediary = layers.Conv2DTranspose(filters, 3, padding="same")(
+                intermediary
+            )
+            intermediary = layers.BatchNormalization()(intermediary)
 
-        return result
+            intermediary = layers.UpSampling2D(2)(intermediary)
+
+            # Project residual
+            residual = layers.UpSampling2D(2)(previous_block_activation)
+            residual = layers.Conv2D(filters, 1, padding="same")(residual)
+            intermediary = layers.add([intermediary, residual])  # Add back residual
+            previous_block_activation = intermediary  # Set aside next residual
+
+        # Add a per-pixel classification layer
+        outputs = layers.Conv2D(
+            output_channels, 3, activation="softmax", padding="same"
+        )(intermediary)
+
+        # Define the model
+        model = keras.Model(inputs, outputs)
+        return model
 
     # TODO what type should the elements in the display_list be?
     def _display(self, display_list: List) -> None:
