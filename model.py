@@ -26,11 +26,13 @@ class Model:
         output_classes: int = 1,
         input_shape: Tuple[int] = (224, 224, 3),
         epochs: int = 10,
+        fine_tune_epoch: int = 10,
         batch_size: int = 32,
         model_name: str = "mmobilenetv2",
         include_top: bool = True,
         alpha: float = 1,
         pooling: str = None,
+        fine_tune_at: int = 0,
     ) -> None:
         """Instantiate the class.
         Args:
@@ -48,6 +50,7 @@ class Model:
         # save the unet model parameters
         self.output_classes = output_classes  # 1 class for binary classification
         self.epochs = epochs
+        self._fine_tune_epochs = fine_tune_epoch
 
         # save the layer information for the unet model
         self.input_shape = input_shape  # default for RGB images size 224
@@ -77,10 +80,12 @@ class Model:
         self._alpha = alpha
         self._include_top = include_top
         self._pooling = pooling
+        self._fine_tune_at = fine_tune_at
 
         # auxiliary variables
         self.model = None
         self._model_history = None
+        self._model_history_fine = None
         self._accuracy = []
         self._val_accuracy = []
         self._loss = []
@@ -132,10 +137,27 @@ class Model:
             validation_data=self.test_batches,
             callbacks=[model_checkpoint_callback, tensorboard_callback],
         )
+
         self._loss = self._model_history.history["loss"]
         self._val_loss = self._model_history.history["val_loss"]
         self._accuracy = self._model_history.history["accuracy"]
         self._val_accuracy = self._model_history.history["val_accuracy"]
+
+        fine_tune_epochs = self._fine_tune_epochs
+
+        self._model_history_fine = self.model.fit(
+            self.train_batches,
+            epochs=self.epochs + self._fine_tune_epochs,
+            initial_epoch=self._model_history.epoch[-1],
+            steps_per_epoch=steps_per_epoch,
+            validation_steps=validation_steps,
+            validation_data=self.test_batches,
+            callbacks=[model_checkpoint_callback, tensorboard_callback],
+        )
+        self._loss += self._model_history_fine.history["loss"]
+        self._val_loss = self._model_history_fine.history["val_loss"]
+        self._accuracy = self._model_history_fine.history["accuracy"]
+        self._val_accuracy = self._model_history_fine.history["val_accuracy"]
 
         # log performance
         self._local_log(comment)
@@ -182,6 +204,13 @@ class Model:
         # initiate the base model
         base_model = self._get_base_model()
 
+        base_model.trainable = True
+
+        fine_tune_at = self._fine_tune_at
+
+        for layer in base_model.layers[:fine_tune_at]:
+            layer.trainable = False
+
         # select the requested down stack layers
         selected_output_layers = [
             base_model.get_layer(name).output for name in self.layers
@@ -193,7 +222,8 @@ class Model:
         # downsampling through the model
         # needs to have base model defined.
         down_stack = tensorflow.keras.Model(
-            inputs=base_model.input, outputs=selected_output_layers
+            inputs=base_model.input,
+            outputs=selected_output_layers,
         )
         # freeze the downstack layers
         down_stack.trainable = False
@@ -247,8 +277,9 @@ class Model:
 
         else:
             base_model = tensorflow.keras.applications.MobileNetV2(
-                input_shape=self.input_shape,
                 include_top=False,
+                weights="imagenet",
+                alpha=self._alpha,
                 pooling=self._pooling,
             )
 
@@ -414,46 +445,35 @@ class Model:
             local_log.write(f"Val losses:{self._val_loss}")
             local_log.write("\n")
 
-        plt.plot(
-            self._model_history.epoch,
-            self._accuracy,
-            "r",
-            label="Training accuracy",
-        )
-        plt.plot(
-            self._model_history.epoch,
-            self._val_accuracy,
-            "bo",
-            label="Validation accuracy",
-        )
-        plt.title("Training and Validation accuracy")
-        plt.xlabel("Epoch")
-        plt.ylabel("accuracy")
-        plt.ylim([0, 1])
-        plt.legend()
-        path_graph = self._path_log + self._current_time + "/accuracy.pdf"
-        plt.savefig(path_graph)
-        plt.close()
-        plt.plot(
-            self._model_history.epoch,
-            self._loss,
-            "r",
-            label="Training loss",
-        )
-        plt.plot(
-            self._model_history.epoch,
-            self._val_loss,
-            "bo",
-            label="Validation loss",
-        )
-        plt.title("Training and Validation Loss")
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss Value")
-        plt.ylim([0, 1])
-        plt.legend()
-        path_graph = self._path_log + self._current_time + "/losses.pdf"
-        plt.savefig(path_graph)
-        plt.close()
+            plt.figure(figsize=(8, 8))
+            plt.subplot(2, 1, 1)
+            plt.plot(self._accuracy, label="Training Accuracy")
+            plt.plot(self._val_accuracy, label="Validation Accuracy")
+            plt.ylim([0.8, 1])
+            plt.plot(
+                [self.epochs - 1, self.epochs - 1],
+                plt.ylim(),
+                label="Start Fine Tuning",
+            )
+            plt.legend(loc="lower right")
+            plt.title("Training and Validation Accuracy")
+
+            plt.subplot(2, 1, 2)
+            plt.plot(self._loss, label="Training Loss")
+            plt.plot(self._val_loss, label="Validation Loss")
+            plt.ylim([0, 1.0])
+            plt.plot(
+                [self.epochs + 0.5, self.epochs + 0.5],
+                plt.ylim(),
+                label="Start Fine Tuning",
+            )
+            plt.legend(loc="upper right")
+            plt.title("Training and Validation Loss")
+            plt.xlabel("epoch")
+
+            path_graph = self._path_log + self._current_time + "/losses.pdf"
+            plt.savefig(path_graph)
+            plt.close()
 
         dot_img_file = self._path_log + self._current_time + "/model.jpg"
         tensorflow.keras.utils.plot_model(
