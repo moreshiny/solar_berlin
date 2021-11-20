@@ -145,6 +145,8 @@ class Model:
 
         fine_tune_epochs = self._fine_tune_epochs
 
+        self.model = self._compile_model(trainable=True)
+
         self._model_history_fine = self.model.fit(
             self.train_batches,
             epochs=self.epochs + self._fine_tune_epochs,
@@ -155,9 +157,9 @@ class Model:
             callbacks=[model_checkpoint_callback, tensorboard_callback],
         )
         self._loss += self._model_history_fine.history["loss"]
-        self._val_loss = self._model_history_fine.history["val_loss"]
-        self._accuracy = self._model_history_fine.history["accuracy"]
-        self._val_accuracy = self._model_history_fine.history["val_accuracy"]
+        self._val_loss += self._model_history_fine.history["val_loss"]
+        self._accuracy += self._model_history_fine.history["accuracy"]
+        self._val_accuracy += self._model_history_fine.history["val_accuracy"]
 
         # log performance
         self._local_log(comment)
@@ -174,7 +176,7 @@ class Model:
 
         return self._model_history
 
-    def _compile_model(self) -> tensorflow.keras.Model:
+    def _compile_model(self, trainable: bool = False) -> tensorflow.keras.Model:
         """
         Takes the Unet models, and compile the model. Return the model.
 
@@ -182,7 +184,10 @@ class Model:
             the compiled model, with the ADAM gradient descent, binary
             crossentropy loss, and accuracy metrics.
         """
-        model = self._setup_unet_model(output_channels=self.output_classes)
+        model = self._setup_unet_model(
+            output_channels=self.output_classes,
+            trainable_layer=trainable,
+        )
         model.compile(
             optimizer="adam",
             loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
@@ -190,7 +195,11 @@ class Model:
         )
         return model
 
-    def _setup_unet_model(self, output_channels: int) -> tensorflow.keras.Model:
+    def _setup_unet_model(
+        self,
+        output_channels: int,
+        trainable_layer: bool = False,
+    ) -> tensorflow.keras.Model:
         """
         Unet model from the segmentation notebook by tensorflow. Define the model.
 
@@ -209,7 +218,7 @@ class Model:
         fine_tune_at = self._fine_tune_at
 
         for layer in base_model.layers[:fine_tune_at]:
-            layer.trainable = False
+            layer.trainable = trainable_layer
 
         # select the requested down stack layers
         selected_output_layers = [
@@ -451,7 +460,7 @@ class Model:
             plt.plot(self._val_accuracy, label="Validation Accuracy")
             plt.ylim([0.8, 1])
             plt.plot(
-                [self.epochs - 1, self.epochs - 1],
+                [self.epochs + 0.5, self.epochs + 0.5],
                 plt.ylim(),
                 label="Start Fine Tuning",
             )
