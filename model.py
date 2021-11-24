@@ -28,11 +28,12 @@ class Model:
         epochs: int = 10,
         fine_tune_epoch: int = 10,
         batch_size: int = 32,
-        model_name: str = "mmobilenetv2",
+        model_name: str = "mobilenetv2",
         include_top: bool = True,
         alpha: float = 1,
         pooling: str = None,
         fine_tune_at: int = 0,
+        drop_out: bool = False,
     ) -> None:
         """Instantiate the class.
         Args:
@@ -81,9 +82,11 @@ class Model:
         self._include_top = include_top
         self._pooling = pooling
         self._fine_tune_at = fine_tune_at
+        self._dropout = drop_out
 
         # auxiliary variables
         self.model = None
+        self._base_model = None
         self._model_history = None
         self._model_history_fine = None
         self._accuracy = []
@@ -145,21 +148,23 @@ class Model:
 
         fine_tune_epochs = self._fine_tune_epochs
 
-        self.model = self._compile_model(trainable=True)
+        if fine_tune_epochs > 0:
 
-        self._model_history_fine = self.model.fit(
-            self.train_batches,
-            epochs=self.epochs + self._fine_tune_epochs,
-            initial_epoch=self._model_history.epoch[-1],
-            steps_per_epoch=steps_per_epoch,
-            validation_steps=validation_steps,
-            validation_data=self.test_batches,
-            callbacks=[model_checkpoint_callback, tensorboard_callback],
-        )
-        self._loss += self._model_history_fine.history["loss"]
-        self._val_loss += self._model_history_fine.history["val_loss"]
-        self._accuracy += self._model_history_fine.history["accuracy"]
-        self._val_accuracy += self._model_history_fine.history["val_accuracy"]
+            self.freezing_layers()
+
+            self._model_history_fine = self.model.fit(
+                self.train_batches,
+                epochs=self.epochs + self._fine_tune_epochs,
+                initial_epoch=self._model_history.epoch[-1],
+                steps_per_epoch=steps_per_epoch,
+                validation_steps=validation_steps,
+                validation_data=self.test_batches,
+                callbacks=[model_checkpoint_callback, tensorboard_callback],
+            )
+            self._loss += self._model_history_fine.history["loss"]
+            self._val_loss += self._model_history_fine.history["val_loss"]
+            self._accuracy += self._model_history_fine.history["accuracy"]
+            self._val_accuracy += self._model_history_fine.history["val_accuracy"]
 
         # log performance
         self._local_log(comment)
@@ -176,7 +181,7 @@ class Model:
 
         return self._model_history
 
-    def _compile_model(self, trainable: bool = False) -> tensorflow.keras.Model:
+    def _compile_model(self) -> tensorflow.keras.Model:
         """
         Takes the Unet models, and compile the model. Return the model.
 
@@ -186,7 +191,6 @@ class Model:
         """
         model = self._setup_unet_model(
             output_channels=self.output_classes,
-            trainable_layer=trainable,
         )
         model.compile(
             optimizer="adam",
@@ -198,7 +202,6 @@ class Model:
     def _setup_unet_model(
         self,
         output_channels: int,
-        trainable_layer: bool = False,
     ) -> tensorflow.keras.Model:
         """
         Unet model from the segmentation notebook by tensorflow. Define the model.
@@ -211,14 +214,11 @@ class Model:
 
         """
         # initiate the base model
-        base_model = self._get_base_model()
+        self._base_model = self._get_base_model()
 
-        base_model.trainable = True
+        base_model = self._base_model
 
-        fine_tune_at = self._fine_tune_at
-
-        for layer in base_model.layers[:fine_tune_at]:
-            layer.trainable = trainable_layer
+        base_model.trainable = False
 
         # select the requested down stack layers
         selected_output_layers = [
@@ -242,11 +242,12 @@ class Model:
         skips = reversed(skips[:-1])
 
         # upsampling and establishing the skip connections
+        drop_out = self._dropout
         up_stack = [
-            self._upsample(512, 3),  # 4x4 -> 8x8
-            self._upsample(256, 3),  # 8x8 -> 16x16
-            self._upsample(128, 3),  # 16x16 -> 32x32
-            self._upsample(64, 3),  # 32x32 -> 64x64
+            self._upsample(512, 3, apply_dropout=drop_out),  # 4x4 -> 8x8
+            self._upsample(256, 3, apply_dropout=drop_out),  # 8x8 -> 16x16
+            self._upsample(128, 3, apply_dropout=drop_out),  # 16x16 -> 32x32
+            self._upsample(64, 3, apply_dropout=drop_out),  # 32x32 -> 64x64
         ]
 
         for up, skip in zip(up_stack, skips):
@@ -266,6 +267,38 @@ class Model:
 
         return tensorflow.keras.Model(inputs=inputs, outputs=layer)
 
+    def freezing_layers(self) -> None:
+        """
+        Freezing the last layers of the model.
+
+
+        Return:
+            The model with tuned layer.
+        """
+        path_layer_log = self._path_log + self._current_time + "/layer_log.log"
+        layer_log = open(path_layer_log, "a", encoding="utf-8")
+
+        fine_tune_at = self._fine_tune_at
+
+        self._base_model.trainable = True
+
+        for i, layer in enumerate(self._base_model.layers[0:-fine_tune_at]):
+            layer.trainable = False
+            layer_log.write("\n")
+            layer_log.write(f"{i} : {layer.name} : trainable = false")
+
+        for i, layer in enumerate(self._base_model.layers[-fine_tune_at:-9]):
+            layer.trainable = True
+            layer_log.write("\n")
+            layer_log.write(f"{i} : {layer.name} : trainable = true")
+
+        for i, layer in enumerate(self.model.layers[-9:]):
+            layer.trainable = True
+            layer_log.write("\n")
+            layer_log.write(f"{i} : {layer.name} : trainable = true")
+
+        layer_log.close()
+
     def _get_base_model(self) -> tensorflow.keras.Model:
         """
         Define the base of the model, MobileNetV2. Note that a discussion on
@@ -278,18 +311,22 @@ class Model:
         """
 
         if self._include_top:
-            base_model = tensorflow.keras.applications.MobileNetV2(
+            base_model = tensorflow.keras.applications.resnet_v2.ResNet101V2(
                 include_top=True,
                 weights="imagenet",
+                input_tensor=None,
+                input_shape=None,
+                pooling=None,
             )
             self.input_shape = (224, 224, 3)
 
         else:
-            base_model = tensorflow.keras.applications.MobileNetV2(
+            base_model = tensorflow.keras.applications.resnet_v2.ResNet101V2(
                 include_top=False,
                 weights="imagenet",
-                alpha=self._alpha,
-                pooling=self._pooling,
+                input_tensor=None,
+                input_shape=self.input_shape,
+                pooling=max,
             )
 
         return base_model
@@ -484,9 +521,15 @@ class Model:
             plt.savefig(path_graph)
             plt.close()
 
-        dot_img_file = self._path_log + self._current_time + "/model.jpg"
+        dot_img_file = self._path_log + self._current_time + "/model.pdf"
+
         tensorflow.keras.utils.plot_model(
-            self.model, to_file=dot_img_file, show_shapes=True
+            self.model,
+            to_file=dot_img_file,
+            show_shapes=True,
+            show_layer_names=True,
+            expand_nested=True,
+            dpi=96,
         )
 
     def saving_model_performance(self) -> None:
