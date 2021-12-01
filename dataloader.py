@@ -1,3 +1,4 @@
+import numpy as np
 import glob
 import os
 import tensorflow
@@ -6,7 +7,13 @@ import tensorflow
 class DataLoader:
     """Class for creating tensorflow dataset."""
 
-    def __init__(self, path: str, batch_size: int = 32, n_samples: int = None) -> None:
+    def __init__(
+        self,
+        path: str,
+        batch_size: int = 32,
+        n_samples: int = None,
+        input_shape: tuple = (224, 224, 2),
+    ) -> None:
         """Class instance initialization.
 
         Args:
@@ -23,6 +30,7 @@ class DataLoader:
         self._dataset_input = None
         self._dataset_target = None
         self.dataset = None
+        self.input_shape = input_shape
 
         # initialize self.dataset_input and self.dataset_target
         self._initialize_dataset_paths()
@@ -62,19 +70,21 @@ class DataLoader:
         # we need to get twice as many paths as requested samples (map and mask)
         n_paths = self.n_samples * 2
 
-        assert n_paths <= len(useable_paths),\
-            f"""n_samples ({self.n_samples}) is greater than number of
+        assert n_paths <= len(
+            useable_paths
+        ), f"""n_samples ({self.n_samples}) is greater than number of
                 available/useable images {len(useable_paths) // 2}."""
 
         # keep only the first n_paths paths
-        useable_paths = useable_paths[: n_paths]
+        useable_paths = useable_paths[:n_paths]
 
         # split input and target
         input_paths = [filename for filename in useable_paths if "map" in filename]
         target_paths = [filename for filename in useable_paths if "mask" in filename]
 
-        assert len(input_paths) == len(target_paths),\
-            f"""Number of input images ({len(input_paths)}) does not match
+        assert len(input_paths) == len(
+            target_paths
+        ), f"""Number of input images ({len(input_paths)}) does not match
                 number of target images ({len(target_paths)})."""
 
         return input_paths, target_paths
@@ -83,7 +93,7 @@ class DataLoader:
         """Discard wrong files; function is temporary."""
         correct_filenames = []
         for path in all_paths:
-            if tensorflow.keras.utils.load_img(path).size == (224, 224):
+            if tensorflow.keras.utils.load_img(path).size == self.input_shape[:2]:
                 correct_filenames.append(path)
         return correct_filenames
 
@@ -119,14 +129,14 @@ class DataLoader:
             img = img_rgba[:, :, :3]
         elif channels == "A":
             img = tensorflow.math.ceil(img_rgba[:, :, 3])
-            img = tensorflow.reshape(img, (224, 224, 1))
+            img = tensorflow.reshape(img, self.input_shape[:2] + tuple([1]))
         # TODO: Double check the line above is correct. Why are there
         #       non-zero-one values in the alpha channel?
         else:
             raise ValueError("Unkown channels specified. Use 'RGB' or 'A'.")
         return img
 
-    def load(self, buffer_size: int = None) -> None:
+    def load(self, buffer_size: int = 500) -> None:
         """Load images into dataset and store in self.dataset attribute. The
         dataset will contain (input, target) pairs. Addional settings actions
         performed on the dataset are:

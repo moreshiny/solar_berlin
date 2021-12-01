@@ -34,6 +34,7 @@ class Model:
         pooling: str = None,
         fine_tune_at: int = 0,
         drop_out: bool = False,
+        drop_out_rate: float = 0,
     ) -> None:
         """Instantiate the class.
         Args:
@@ -59,8 +60,16 @@ class Model:
         self._batch_size = batch_size
 
         # save the training and validation dataloaders
-        dl_train = DataLoader(path_train, batch_size=self._batch_size)
-        dl_val = DataLoader(path_test, batch_size=self._batch_size)
+        dl_train = DataLoader(
+            path_train,
+            batch_size=self._batch_size,
+            input_shape=self.input_shape,
+        )
+        dl_val = DataLoader(
+            path_test,
+            batch_size=self._batch_size,
+            input_shape=self.input_shape,
+        )
         dl_train.load()
         dl_val.load()
         self.train_batches = dl_train.dataset
@@ -83,6 +92,7 @@ class Model:
         self._pooling = pooling
         self._fine_tune_at = fine_tune_at
         self._dropout = drop_out
+        self._dropout_rate = drop_out_rate
 
         # auxiliary variables
         self.model = None
@@ -107,7 +117,9 @@ class Model:
         Returns:
             The fitted model history.
         """
+        print("compiling")
         self.model = self._compile_model()  # start the model
+        print("compiling done")
 
         # use all train data in batches in each epoch (at least 1 step)
         steps_per_epoch = max(self._n_train // self._batch_size, 1)
@@ -126,11 +138,16 @@ class Model:
             mode="max",
             save_best_only=True,
         )
-        # Prepare the tesorboard
+        # Prepare the tensorboard
         log_dir = "logs/tensorboard/" + self._current_time
         tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
             log_dir=log_dir, histogram_freq=1
         )
+        # Parameters for early stopping
+        early_stopping = (
+            tensorflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3),
+        )
+
         # fit the model
         self._model_history = self.model.fit(
             self.train_batches,
@@ -138,7 +155,11 @@ class Model:
             steps_per_epoch=steps_per_epoch,
             validation_steps=validation_steps,
             validation_data=self.test_batches,
-            callbacks=[model_checkpoint_callback, tensorboard_callback],
+            callbacks=[
+                model_checkpoint_callback,
+                tensorboard_callback,
+                early_stopping,
+            ],
         )
 
         self._loss = self._model_history.history["loss"]
@@ -159,7 +180,11 @@ class Model:
                 steps_per_epoch=steps_per_epoch,
                 validation_steps=validation_steps,
                 validation_data=self.test_batches,
-                callbacks=[model_checkpoint_callback, tensorboard_callback],
+                callbacks=[
+                    model_checkpoint_callback,
+                    tensorboard_callback,
+                    early_stopping,
+                ],
             )
             self._loss += self._model_history_fine.history["loss"]
             self._val_loss += self._model_history_fine.history["val_loss"]
@@ -189,9 +214,11 @@ class Model:
             the compiled model, with the ADAM gradient descent, binary
             crossentropy loss, and accuracy metrics.
         """
+        print("Model built")
         model = self._setup_unet_model(
             output_channels=self.output_classes,
         )
+
         model.compile(
             optimizer="adam",
             loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
@@ -213,6 +240,7 @@ class Model:
             The model unet.
 
         """
+        print("building model")
         # initiate the base model
         self._base_model = self._get_base_model()
 
@@ -244,10 +272,30 @@ class Model:
         # upsampling and establishing the skip connections
         drop_out = self._dropout
         up_stack = [
-            self._upsample(512, 3, apply_dropout=drop_out),  # 4x4 -> 8x8
-            self._upsample(256, 3, apply_dropout=drop_out),  # 8x8 -> 16x16
-            self._upsample(128, 3, apply_dropout=drop_out),  # 16x16 -> 32x32
-            self._upsample(64, 3, apply_dropout=drop_out),  # 32x32 -> 64x64
+            self._upsample(
+                512,
+                3,
+                apply_dropout=drop_out,
+                drop_out_rate=self._dropout_rate,
+            ),  # 4x4 -> 8x8
+            self._upsample(
+                256,
+                3,
+                apply_dropout=drop_out,
+                drop_out_rate=self._dropout_rate,
+            ),  # 8x8 -> 16x16
+            self._upsample(
+                128,
+                3,
+                apply_dropout=drop_out,
+                drop_out_rate=self._dropout_rate,
+            ),  # 16x16 -> 32x32
+            self._upsample(
+                64,
+                3,
+                apply_dropout=drop_out,
+                drop_out_rate=self._dropout_rate,
+            ),  # 32x32 -> 64x64
         ]
 
         for up, skip in zip(up_stack, skips):
@@ -265,15 +313,14 @@ class Model:
 
         layer = last(layer)
 
+        print("model built")
+
         return tensorflow.keras.Model(inputs=inputs, outputs=layer)
 
     def freezing_layers(self) -> None:
         """
         Freezing the last layers of the model.
 
-
-        Return:
-            The model with tuned layer.
         """
         path_layer_log = self._path_log + self._current_time + "/layer_log.log"
         layer_log = open(path_layer_log, "a", encoding="utf-8")
@@ -293,7 +340,7 @@ class Model:
             layer_log.write(f"{i} : {layer.name} : trainable = true")
 
         for i, layer in enumerate(self.model.layers[-9:]):
-            layer.trainable = True
+            layer.trainable = False
             layer_log.write("\n")
             layer_log.write(f"{i} : {layer.name} : trainable = true")
 
@@ -332,7 +379,13 @@ class Model:
         return base_model
 
     # TODO what types are filters size (int?) and what type does this return?
-    def _upsample(self, filters, size, apply_dropout: bool = False):
+    def _upsample(
+        self,
+        filters,
+        size,
+        apply_dropout: bool = False,
+        drop_out_rate: float() = 0,
+    ):
         """Define the upsampling stack. Introduced as an alternative to the
             pix2pix implementation of the tensoflow notebook.
            Credit: https://www.tensorflow.org/tutorials/generative/pix2pix
@@ -360,7 +413,7 @@ class Model:
         result.add(tensorflow.keras.layers.BatchNormalization())
 
         if apply_dropout:
-            result.add(tensorflow.keras.layers.Dropout(0.5))
+            result.add(tensorflow.keras.layers.Dropout(drop_out_rate))
 
         result.add(tensorflow.keras.layers.ReLU())
 
@@ -476,11 +529,25 @@ class Model:
             local_log.write("\n")
             local_log.write(f"Validation size: {self._n_val}")
             local_log.write("\n")
-            local_log.write(f"Epochs:{self.epochs}")
+            local_log.write(f"alpha: {self._alpha}")
+            local_log.write("\n")
+            local_log.write(f"pooling: {self._pooling}")
+            local_log.write("\n")
+            local_log.write(f"pooling:{self._fine_tune_at}")
+            local_log.write("\n")
+            local_log.write(f"Dropout: {self._dropout}")
+            local_log.write("\n")
+            local_log.write(f"Dropout rate: {self._dropout_rate}")
+            local_log.write("\n")
+            local_log.write(f"Epochs: {self.epochs}")
+            local_log.write("\n")
+            local_log.write(f"fine tune Epochs: {self.fine_tune_epoch}")
             local_log.write("\n")
             local_log.write(f"Batches:{self._batch_size}")
             local_log.write("\n")
             local_log.write(f"Struture of the network: {self.layers}")
+            local_log.write("\n")
+            local_log.write(f"fine tuned layer: {self._fine_tune_at}")
             local_log.write("\n")
             local_log.write(f"Accuracy:{self._accuracy}")
             local_log.write("\n")
