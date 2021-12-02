@@ -55,6 +55,8 @@ class Model:
         self.output_classes = output_classes  # 1 class for binary classification
         self.epochs = epochs
         self._fine_tune_epochs = fine_tune_epoch
+        self._trained_base_epochs = 0
+        self._trained_including_fine_tune = 0
 
         # save the layer information for the unet model
         self.input_shape = input_shape  # default for RGB images size 224
@@ -172,6 +174,7 @@ class Model:
         self._val_loss = self._model_history.history["val_loss"]
         self._accuracy = self._model_history.history["accuracy"]
         self._val_accuracy = self._model_history.history["val_accuracy"]
+        self._trained_base_epochs = len(self._loss)
 
         fine_tune_epochs = self._fine_tune_epochs
 
@@ -196,20 +199,21 @@ class Model:
             self._val_loss += self._model_history_fine.history["val_loss"]
             self._accuracy += self._model_history_fine.history["accuracy"]
             self._val_accuracy += self._model_history_fine.history["val_accuracy"]
+            self._trained_including_fine_tune = len(self._loss)
 
         # log performance
         self._local_log(comment)
         self.saving_model_performance()
         self.show_predictions()
 
-        # delete the model if the val accuracy is worse than existing model.
+        # Save the model if the val accuracy is as good as the one of an existing model.
         max_perf = max(self._dictionary_performance.values())
-        if max_perf > max(self._val_accuracy):
-            for filename in glob.glob(checkpoint_filepath + "*"):
-                os.remove(filename)
-        else:
+        if max_perf <= max(self._val_accuracy):
             self._logging_saved_model()
             self._make_archive()
+
+        # Erase the temporary folder where the model is saved
+        shutil.rmtree(self._path_log + self._current_time + "/model")
 
         return self._model_history
 
@@ -336,23 +340,23 @@ class Model:
         # )(layer)
 
         # Implementing dilation
-        filters = tensorflow.constant(
-            [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-        )
-        filters = tensorflow.expand_dims(filters, axis=-1)
-        rate_height = 1
-        rate_width = 1
-        stride_height = 1
-        stride_width = 1
+        # filters = tensorflow.constant(
+        #    [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+        # )
+        # filters = tensorflow.expand_dims(filters, axis=-1)
+        # rate_height = 1
+        # rate_width = 1
+        # stride_height = 1
+        # stride_width = 1
 
-        layer = tensorflow.nn.dilation2d(
-            input=layer,
-            filters=filters,
-            strides=[1, stride_height, stride_width, 1],
-            padding="SAME",
-            data_format="NHWC",
-            dilations=[1, rate_height, rate_width, 1],
-        )
+        # layer = tensorflow.nn.dilation2d(
+        #    input=layer,
+        #    filters=filters,
+        #    strides=[1, stride_height, stride_width, 1],
+        #    padding="SAME",
+        #    data_format="NHWC",
+        #    dilations=[1, rate_height, rate_width, 1],
+        # )
 
         print("model built")
 
@@ -574,15 +578,21 @@ class Model:
             local_log.write("\n")
             local_log.write(f"pooling: {self._pooling}")
             local_log.write("\n")
-            local_log.write(f"pooling:{self._fine_tune_at}")
+            local_log.write(f"Unfrozen layer: {self._fine_tune_at}")
             local_log.write("\n")
             local_log.write(f"Dropout: {self._dropout}")
             local_log.write("\n")
             local_log.write(f"Dropout rate: {self._dropout_rate}")
             local_log.write("\n")
-            local_log.write(f"Epochs: {self.epochs}")
+            local_log.write(f"Programmed base epochs: {self.epochs} ")
+            local_log.write(
+                f" trained base epochs: {self._trained_including_fine_tune}",
+            )
             local_log.write("\n")
-            local_log.write(f"fine tune Epochs: {self._fine_tune_epochs}")
+            local_log.write(f"Programmed fine tune epochs: {self._fine_tune_epochs}  ")
+            local_log.write(
+                f"trained fine tune epochs = {self._trained_including_fine_tune}"
+            )
             local_log.write("\n")
             local_log.write(f"Batches:{self._batch_size}")
             local_log.write("\n")
@@ -605,7 +615,7 @@ class Model:
             plt.plot(self._val_accuracy, label="Validation Accuracy")
             plt.ylim([0.8, 1])
             plt.plot(
-                [self.epochs + 0.5, self.epochs + 0.5],
+                [self._trained_base_epochs + 0.5, self._trained_base_epochs + 0.5],
                 plt.ylim(),
                 label="Start Fine Tuning",
             )
@@ -617,7 +627,7 @@ class Model:
             plt.plot(self._val_loss, label="Validation Loss")
             plt.ylim([0, 1.0])
             plt.plot(
-                [self.epochs + 0.5, self.epochs + 0.5],
+                [self._trained_base_epochs + 0.5, self._trained_base_epochs + 0.5],
                 plt.ylim(),
                 label="Start Fine Tuning",
             )
@@ -671,4 +681,3 @@ class Model:
                 self._path_log + self._current_time,
                 "model",
             )
-            shutil.rmtree(self._path_log + self._current_time + "/model")
