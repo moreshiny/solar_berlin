@@ -3,11 +3,13 @@ https://www.tensorflow.org/tutorials/images/segmentation
 """
 import os
 import glob
+import shutil
 from datetime import datetime
 from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow
+from tensorflow.keras.metrics import MeanIoU
 from dataloader import DataLoader
 
 
@@ -128,15 +130,19 @@ class Model:
 
         # write the main log
         self._current_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        self.logging(comment)
+        self._logging(comment)
         # prepare model pickeling
-        checkpoint_filepath = self._path_log + self._current_time + "/checkpoint"
+        checkpoint_filepath = (
+            self._path_log + self._current_time + "/model/checkpoint.ckpt"
+        )
+        # checkpoint_dir = os.path.dirname(checkpoint_filepath)
         model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
             save_weights_only=True,
             monitor="val_accuracy",
             mode="max",
             save_best_only=True,
+            verbose=1,
         )
         # Prepare the tensorboard
         log_dir = "logs/tensorboard/" + self._current_time
@@ -171,7 +177,7 @@ class Model:
 
         if fine_tune_epochs > 0:
 
-            self.freezing_layers()
+            self._freezing_layers()
 
             self._model_history_fine = self.model.fit(
                 self.train_batches,
@@ -202,7 +208,8 @@ class Model:
             for filename in glob.glob(checkpoint_filepath + "*"):
                 os.remove(filename)
         else:
-            self.logging_saved_model()
+            self._logging_saved_model()
+            self._make_archive()
 
         return self._model_history
 
@@ -224,6 +231,7 @@ class Model:
             loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
             metrics=[
                 "accuracy",
+                # tensorflow.keras.metrics.MeanIoU(num_classes=self.output_classes + 1),
                 # tensorflow.keras.metrics.Recall(),
                 # tensorflow.keras.metrics.Precision(),
             ],
@@ -329,7 +337,7 @@ class Model:
 
         # Implementing dilation
         filters = tensorflow.constant(
-            [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]]
+            [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
         )
         filters = tensorflow.expand_dims(filters, axis=-1)
         rate_height = 1
@@ -350,7 +358,7 @@ class Model:
 
         return tensorflow.keras.Model(inputs=inputs, outputs=layer)
 
-    def freezing_layers(self) -> None:
+    def _freezing_layers(self) -> None:
         """
         Freezing the last layers of the model.
 
@@ -381,13 +389,13 @@ class Model:
 
     def _get_base_model(self) -> tensorflow.keras.Model:
         """
-        Define the base of the model, MobileNetV2. Note that a discussion on
+        Define the base of the model, Resnetv2_101. Note that a discussion on
         the shape is necessary: if the shape of the pictures is the default
         shape (224, 224, 3), the include top options needs to be set to True,
         and the input shape is not passed as an argument of the base model.
         Otherwise the default input shape is used.
         Returns:
-            the base model MobileNetV2
+            the base model Resnetv2_101
         """
 
         if self._include_top:
@@ -510,7 +518,7 @@ class Model:
             for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
                 self._display([image, mask, self._create_mask(pred_mask)])
 
-    def logging(self, comment: str) -> None:
+    def _logging(self, comment: str) -> None:
         """
         Log the model in the main log.
 
@@ -646,10 +654,21 @@ class Model:
                 (key, val) = line.split(":")
                 self._dictionary_performance[key] = float(val)
 
-    def logging_saved_model(self) -> None:
+    def _logging_saved_model(self) -> None:
         """Log in the main file tha the model has been saved."""
 
         with open(self._path_main_log_file, "a", encoding="utf-8") as main_log:
             main_log.write("Model saved!")
             main_log.write("\n")
             main_log.write(f"Validation accuracy: {max(self._val_accuracy)}")
+
+    def _make_archive(self):
+        if os.path.exists(self._path_log + self._current_time + "/model"):
+            print("Compressing model")
+            shutil.make_archive(
+                self._path_log + self._current_time + "/model",
+                "zip",
+                self._path_log + self._current_time,
+                "model",
+            )
+            shutil.rmtree(self._path_log + self._current_time + "/model")
