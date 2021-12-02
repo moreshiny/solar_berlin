@@ -145,7 +145,7 @@ class Model:
         )
         # Parameters for early stopping
         early_stopping = (
-            tensorflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3),
+            tensorflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5),
         )
 
         # fit the model
@@ -222,8 +222,13 @@ class Model:
         model.compile(
             optimizer="adam",
             loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
-            metrics=["accuracy"],
+            metrics=[
+                "accuracy",
+                # tensorflow.keras.metrics.Recall(),
+                # tensorflow.keras.metrics.Precision(),
+            ],
         )
+
         return model
 
     def _setup_unet_model(
@@ -304,14 +309,42 @@ class Model:
             layer = concat([layer, skip])
 
         # this is the last layer of the model
-        last = tensorflow.keras.layers.Conv2DTranspose(
+        last_conv = tensorflow.keras.layers.Conv2DTranspose(
             filters=output_channels,
             kernel_size=3,
             strides=2,
             padding="same",
         )  # 64x64 -> 128x128
 
-        layer = last(layer)
+        layer = last_conv(layer)
+
+        # resizing after the dilation
+        # TODO Hardcoded size!!!
+        # layer = tensorflow.keras.layers.Resizing(
+        #    1024,
+        #    1024,
+        #    interpolation="bilinear",
+        #    crop_to_aspect_ratio=False,
+        # )(layer)
+
+        # Implementing dilation
+        filters = tensorflow.constant(
+            [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]]
+        )
+        filters = tensorflow.expand_dims(filters, axis=-1)
+        rate_height = 1
+        rate_width = 1
+        stride_height = 1
+        stride_width = 1
+
+        layer = tensorflow.nn.dilation2d(
+            input=layer,
+            filters=filters,
+            strides=[1, stride_height, stride_width, 1],
+            padding="SAME",
+            data_format="NHWC",
+            dilations=[1, rate_height, rate_width, 1],
+        )
 
         print("model built")
 
@@ -541,7 +574,7 @@ class Model:
             local_log.write("\n")
             local_log.write(f"Epochs: {self.epochs}")
             local_log.write("\n")
-            local_log.write(f"fine tune Epochs: {self.fine_tune_epoch}")
+            local_log.write(f"fine tune Epochs: {self._fine_tune_epochs}")
             local_log.write("\n")
             local_log.write(f"Batches:{self._batch_size}")
             local_log.write("\n")
