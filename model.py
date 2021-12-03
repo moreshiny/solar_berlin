@@ -152,8 +152,9 @@ class Model:
             log_dir=log_dir, histogram_freq=1
         )
         # Parameters for early stopping
-        early_stopping = (
-            tensorflow.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5),
+        early_stopping = tensorflow.keras.callbacks.EarlyStopping(
+            monitor="val_loss",
+            patience=3,
         )
 
         # fit the model
@@ -179,9 +180,16 @@ class Model:
         fine_tune_epochs = self._fine_tune_epochs
 
         if fine_tune_epochs > 0:
+            # compile the model with a slower learning rate
+            self._compile_model(
+                fine_tune_epochs=fine_tune_epochs,
+                learning_rate=0.0001,
+            )
 
-            self._freezing_layers()
-
+            early_stopping = tensorflow.keras.callbacks.EarlyStopping(
+                monitor="val_loss",
+                patience=7,
+            )
             self._model_history_fine = self.model.fit(
                 self.train_batches,
                 epochs=self.epochs + self._fine_tune_epochs,
@@ -217,7 +225,11 @@ class Model:
 
         return self._model_history
 
-    def _compile_model(self) -> tensorflow.keras.Model:
+    def _compile_model(
+        self,
+        fine_tune_epochs: int = 0,
+        learning_rate: float = 0.001,
+    ) -> tensorflow.keras.Model:
         """
         Takes the Unet models, and compile the model. Return the model.
 
@@ -226,12 +238,19 @@ class Model:
             crossentropy loss, and accuracy metrics.
         """
         print("Model built")
+        # calling the model
         model = self._setup_unet_model(
             output_channels=self.output_classes,
         )
+        # If the model is in the fine tuning phase, freezing the up-stacks.
+        if fine_tune_epochs > 0:
+            self._freezing_layers()
+        # Setting up the optimizer
+
+        opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
 
         model.compile(
-            optimizer="adam",
+            optimizer=opt,
             loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
             metrics=[
                 "accuracy",
