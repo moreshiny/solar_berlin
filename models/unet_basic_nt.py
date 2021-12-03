@@ -29,7 +29,7 @@ class Model:
         input_shape: Tuple[int] = (224, 224, 3),
         epochs: int = 10,
         batch_size: int = 32,
-        model_name: str = "mmobilenetv2",
+        model_name: str = "UNET",
         include_top: bool = True,
         alpha: float = 1,
         pooling: str = None,
@@ -417,11 +417,6 @@ class Model:
         path_graph = self._path_log + self._current_time + "/losses.pdf"
         plt.savefig(path_graph)
         plt.close()
-
-        dot_img_file = self._path_log + self._current_time + "/model.jpg"
-        tensorflow.keras.utils.plot_model(
-            self.model, to_file=dot_img_file, show_shapes=True
-        )
 
     def saving_model_performance(self) -> None:
         """save the performance (accuracy) of the model. Print these
