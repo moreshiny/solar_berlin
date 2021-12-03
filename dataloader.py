@@ -12,7 +12,7 @@ class DataLoader:
         path: str,
         batch_size: int = 32,
         n_samples: int = None,
-        input_shape: tuple = (224, 224, 2),
+        input_shape: tuple = (224, 224, 3),
     ) -> None:
         """Class instance initialization.
 
