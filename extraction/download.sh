@@ -1,7 +1,9 @@
 #!/bin/sh
 
+DATA_FOLDER="../data"
+
 # set the raw data folder
-RAW_DATA_FOLDER="data/raw"
+RAW_DATA_FOLDER="$DATA_FOLDER/raw"
 
 # set the raw raster folder
 RAW_RASTER_FOLDER="$RAW_DATA_FOLDER/raster"

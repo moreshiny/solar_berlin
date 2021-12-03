@@ -1,14 +1,16 @@
 #!/bin/sh
 
+DATA_FOLDER="../data"
+
 # set the raw data folder that contains the raster zip files
-RAW_RASTER_FOLDER="data/raw/raster"
+RAW_RASTER_FOLDER="$DATA_FOLDER/raw/raster"
 
 #set the temporary folder to extract zip files to
 TEMPORARY_FOLDER="$RAW_RASTER_FOLDER/temp"
 mkdir -pv $TEMPORARY_FOLDER
 
 # set the output folder
-CONVERTED_FOLDER="data/converted/raster"
+CONVERTED_FOLDER="$DATA_FOLDER/converted/raster"
 mkdir -pv $CONVERTED_FOLDER
 
 # for each file in the raw folder
