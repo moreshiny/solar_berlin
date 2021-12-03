@@ -658,17 +658,6 @@ class Model:
             plt.savefig(path_graph)
             plt.close()
 
-        dot_img_file = self._path_log + self._current_time + "/model.pdf"
-
-        tensorflow.keras.utils.plot_model(
-            self.model,
-            to_file=dot_img_file,
-            show_shapes=True,
-            show_layer_names=True,
-            expand_nested=True,
-            dpi=96,
-        )
-
     def saving_model_performance(self) -> None:
         """save the performance (accuracy) of the model. Print these
         performance in an auxiliary files.
