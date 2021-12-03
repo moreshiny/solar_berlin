@@ -1,14 +1,14 @@
 import unittest
 
-from model import Model
+from models.unet_basic_nt import Model
 
 
 class TestModel(unittest.TestCase):
 
     def test_model_simple_run_does_not_result_in_error(self):
 
-        train_path = "data/test_selected/train"
-        test_path = "data/test_selected/test"
+        train_path = "data/test_data_224/train"
+        test_path = "data/test_data_224/test"
 
         layer_names = [
             "block_1_expand_relu",   # 64x64
@@ -22,7 +22,8 @@ class TestModel(unittest.TestCase):
             train_path,
             test_path,
             layer_names,
-            epochs=2,
+            epochs=1,
+            batch_size=8
         )
 
         _ = model.model_history()
