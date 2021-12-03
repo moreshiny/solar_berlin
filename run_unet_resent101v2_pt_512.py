@@ -26,7 +26,7 @@ alpha = 1.0
 epochs = 1
 fine_tune_at = 1
 fine_tune_epoch = 1
-drop_out_rate = 0.3
+drop_out_rate = {"512": 0.2, "256": 0.25, "128": 0.3, "64": 0.35}
 
 
 model = Model(
@@ -40,7 +40,6 @@ model = Model(
     batch_size=4,
     model_name=model_name,
     include_top=False,
-    alpha=alpha,
     pooling=max,
     fine_tune_at=fine_tune_at,
     drop_out=True,
@@ -117,11 +116,9 @@ for fine_tune_layer in range(5, 40, 5):
         batch_size=8,
         model_name=model_name,
         include_top=False,
-        alpha=alpha,
         pooling=max,
         fine_tune_at=fine_tune_layer,
         drop_out=True,
-        drop_out_rate=drop_out_rate,
     )
     comment = f"Unet model, {model_name}, weight on imagenet turned on,\n\
             base model not trainable, new layers for concatenation follwing the central line\n\

@@ -9,7 +9,7 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow
-from tensorflow.keras.metrics import MeanIoU
+
 from dataloader import DataLoader
 
 
@@ -30,25 +30,36 @@ class Model:
         epochs: int = 10,
         fine_tune_epoch: int = 10,
         batch_size: int = 32,
-        model_name: str = "mobilenetv2",
+        model_name: str = "Unet",
         include_top: bool = True,
-        alpha: float = 1,
         pooling: str = None,
         fine_tune_at: int = 0,
         drop_out: bool = False,
-        drop_out_rate: float = 0,
+        drop_out_rate: dict = {"512": 0, "256": 0, "128": 0, "64": 0},
+        patience: int = 10,
+        patience_fine_tune: int = 10,
     ) -> None:
         """Instantiate the class.
         Args:
-            dataset_train (tensorflow.dataset): batched training data
-            dataset_train (tensorflow.dataset): batched validation data
-            layer_names (list of strings): defining the MobilenetV2 NN.
-            output_classes (int): number of classes for the classification.
-                Defaults to 1.
-            input_shape (3-tuple): a 3 tuple defining the shape of the input
-                image. Defaults to (224, 224, 3)
-            epochs (int): number of epochs to train the model. Defaults to 10.
-            batch_size (int): size of the batches in training. Defaults to 32.
+            path_train: str: path to the train dataset folder
+            path_test: str: path to the test dataset folder
+            layer_names: List[str]: list of layers doing the skip connections in the unet
+            output_classes: int = 1: number of categories in the classification
+            input_shape: Tuple[int] = (224, 224, 3): input size of the image, defaukt to (224, 224, 3).
+            epochs: int = 10: number of epochs training before finie tuning, default to 10.
+            fine_tune_epoch: int = 10: number of epochs in the fine tuning epochs, default to 10
+            batch_size: int = 32: batche size. Default to 32. 
+            model_name: str = "Unet"; Model name, Default to unet. 
+            include_top: bool = True. Wether to include the claissification layer of the pretrained network.\
+                Default to False. 
+            pooling: str = None,: Pooling in the convolution layers, default to None. 
+            fine_tune_at: int = 0, Number of layers at the top of the network to be fine tuned. Default to 0. 
+            drop_out: bool = False. Activating the dropout in the up-sample stacks; DAfault to False. 
+            drop_out_rate: dict. Dropout rate in the up-sample stack, in the form of a dictionary with keys\
+                512, 256, 128, 64. Default to {"512": 0, "256": 0, "128": 0, "64": 0}.
+            patience: int = 10. Time before early stopping of the training. Default to ten.
+            patience_fine_tuning: int = 10. Time before early stopping of the training after fine tuning.\
+                Default to ten.
         """
 
         # save the unet model parameters
@@ -91,12 +102,13 @@ class Model:
 
         # parameters of the model
         self._model_name = model_name
-        self._alpha = alpha
         self._include_top = include_top
         self._pooling = pooling
         self._fine_tune_at = fine_tune_at
         self._dropout = drop_out
         self._dropout_rate = drop_out_rate
+        self._patience = patience
+        self._patience_fine_tune = patience_fine_tune
 
         # auxiliary variables
         self.model = None
@@ -107,6 +119,10 @@ class Model:
         self._val_accuracy = []
         self._loss = []
         self._val_loss = []
+        self._precision = []
+        self._val_precision = []
+        self._recal = []
+        self._val_recall = []
         self._dictionary_performance = {}
 
     # TODO what type is this returning?
@@ -122,8 +138,15 @@ class Model:
             The fitted model history.
         """
         print("compiling")
-        self.model = self._compile_model()  # start the model
-        print("compiling done")
+        # Calling the model.
+        self.model = self._setup_unet_model(
+            output_channels=self.output_classes,
+        )
+        print("Model called")
+
+        # Compile the model.
+        self._compile_model(self.model)  # start the model
+        print("first compiling done")
 
         # use all train data in batches in each epoch (at least 1 step)
         steps_per_epoch = max(self._n_train // self._batch_size, 1)
@@ -137,13 +160,14 @@ class Model:
         checkpoint_filepath = (
             self._path_log + self._current_time + "/model/checkpoint.ckpt"
         )
+
         # checkpoint_dir = os.path.dirname(checkpoint_filepath)
         model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
-            save_weights_only=True,
+            save_weights_only=False,
             monitor="val_accuracy",
             mode="max",
-            save_best_only=True,
+            # save_best_only=True,
             verbose=1,
         )
         # Prepare the tensorboard
@@ -154,9 +178,9 @@ class Model:
         # Parameters for early stopping
         early_stopping = tensorflow.keras.callbacks.EarlyStopping(
             monitor="val_loss",
-            patience=3,
+            patience=self._patience,
         )
-
+        print("Training the model")
         # fit the model
         self._model_history = self.model.fit(
             self.train_batches,
@@ -171,25 +195,46 @@ class Model:
             ],
         )
 
+        # Saving the basic data of the model.
         self._loss = self._model_history.history["loss"]
         self._val_loss = self._model_history.history["val_loss"]
         self._accuracy = self._model_history.history["accuracy"]
         self._val_accuracy = self._model_history.history["val_accuracy"]
+        self._precision = self._model_history.history["precision"]
+        self._val_precision = self._model_history.history["val_precision"]
+        self._recall = self._model_history.history["recall"]
+        self._val_recall = self._model_history.history["val_recall"]
         self._trained_base_epochs = len(self._loss)
 
         fine_tune_epochs = self._fine_tune_epochs
 
+        # DEmarring the fine tuning.
         if fine_tune_epochs > 0:
-            # compile the model with a slower learning rate
+            print("Fine tuning training starting")
+
+            # Freezing the layers
+            self._freezing_layers()
+
+            # Loading the last best state of the model. Loading the weight only to prevent overwriting the trainability of the layers
+            self.model.load_weights(checkpoint_filepath)
+
+            print("Compiling the model in fine tuning mode")
+
+            #  Prepare the compilation of the model in the fine tuning training.
             self._compile_model(
+                model=self.model,
                 fine_tune_epochs=fine_tune_epochs,
                 learning_rate=0.0001,
             )
+            print("Training the model in fine tuning mode")
 
+            # Defining the early stopping for the model in the fine tuning epochs.
             early_stopping = tensorflow.keras.callbacks.EarlyStopping(
                 monitor="val_loss",
-                patience=7,
+                patience=self._patience_fine_tune,
             )
+
+            # Training the model in the fine tuning epochs.
             self._model_history_fine = self.model.fit(
                 self.train_batches,
                 epochs=self.epochs + self._fine_tune_epochs,
@@ -203,10 +248,15 @@ class Model:
                     early_stopping,
                 ],
             )
+            # Saving the parameters of the model
             self._loss += self._model_history_fine.history["loss"]
             self._val_loss += self._model_history_fine.history["val_loss"]
             self._accuracy += self._model_history_fine.history["accuracy"]
             self._val_accuracy += self._model_history_fine.history["val_accuracy"]
+            self._precision += self._model_history_fine.history["precision"]
+            self._val_precision += self._model_history_fine.history["val_precision"]
+            self._recall += self._model_history_fine.history["recall"]
+            self._val_recall += self._model_history_fine.history["val_recall"]
             self._trained_including_fine_tune = len(self._loss)
 
         # log performance
@@ -215,18 +265,19 @@ class Model:
         self.show_predictions()
 
         # Save the model if the val accuracy is as good as the one of an existing model.
-        max_perf = max(self._dictionary_performance.values())
-        if max_perf <= max(self._val_accuracy):
-            self._logging_saved_model()
-            self._make_archive()
+        # max_perf = max(self._dictionary_performance.values())
+        # if max_perf <= max(self._val_accuracy):
+        self._logging_saved_model()
+        # self._make_archive()
 
         # Erase the temporary folder where the model is saved
-        shutil.rmtree(self._path_log + self._current_time + "/model")
+        # shutil.rmtree(self._path_log + self._current_time + "/model")
 
         return self._model_history
 
     def _compile_model(
         self,
+        model: tensorflow.keras.Model,
         fine_tune_epochs: int = 0,
         learning_rate: float = 0.001,
     ) -> tensorflow.keras.Model:
@@ -237,26 +288,17 @@ class Model:
             the compiled model, with the ADAM gradient descent, binary
             crossentropy loss, and accuracy metrics.
         """
-        print("Model built")
-        # calling the model
-        model = self._setup_unet_model(
-            output_channels=self.output_classes,
-        )
-        # If the model is in the fine tuning phase, freezing the up-stacks.
-        if fine_tune_epochs > 0:
-            self._freezing_layers()
-        # Setting up the optimizer
+        print("Model compiled")
 
         opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
 
         model.compile(
             optimizer=opt,
-            loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
+            loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
             metrics=[
                 "accuracy",
-                # tensorflow.keras.metrics.MeanIoU(num_classes=self.output_classes + 1),
-                # tensorflow.keras.metrics.Recall(),
-                # tensorflow.keras.metrics.Precision(),
+                tensorflow.keras.metrics.Recall(name="recall"),
+                tensorflow.keras.metrics.Precision(name="precision"),
             ],
         )
 
@@ -312,25 +354,25 @@ class Model:
                 512,
                 3,
                 apply_dropout=drop_out,
-                drop_out_rate=self._dropout_rate,
+                drop_out_rate=self._dropout_rate["512"],
             ),  # 4x4 -> 8x8
             self._upsample(
                 256,
                 3,
                 apply_dropout=drop_out,
-                drop_out_rate=self._dropout_rate,
+                drop_out_rate=self._dropout_rate["256"],
             ),  # 8x8 -> 16x16
             self._upsample(
                 128,
                 3,
                 apply_dropout=drop_out,
-                drop_out_rate=self._dropout_rate,
+                drop_out_rate=self._dropout_rate["128"],
             ),  # 16x16 -> 32x32
             self._upsample(
                 64,
                 3,
                 apply_dropout=drop_out,
-                drop_out_rate=self._dropout_rate,
+                drop_out_rate=self._dropout_rate["64"],
             ),  # 32x32 -> 64x64
         ]
 
@@ -345,6 +387,7 @@ class Model:
             kernel_size=3,
             strides=2,
             padding="same",
+            activation="sigmoid",
         )  # 64x64 -> 128x128
 
         layer = last_conv(layer)
@@ -585,15 +628,11 @@ class Model:
             local_log.write("\n")
             local_log.write(f"include top: {self._include_top}")
             local_log.write("\n")
-            local_log.write(f"Alpha: {self._alpha}")
-            local_log.write("\n")
             local_log.write(f"Image size: {self.input_shape}")
             local_log.write("\n")
             local_log.write(f"Train size: {self._n_train}")
             local_log.write("\n")
             local_log.write(f"Validation size: {self._n_val}")
-            local_log.write("\n")
-            local_log.write(f"alpha: {self._alpha}")
             local_log.write("\n")
             local_log.write(f"pooling: {self._pooling}")
             local_log.write("\n")
@@ -623,13 +662,21 @@ class Model:
             local_log.write("\n")
             local_log.write(f"Val Accuracy:{self._val_accuracy}")
             local_log.write("\n")
+            local_log.write(f"Precision:{self._precision}")
+            local_log.write("\n")
+            local_log.write(f"Val Precision:{self._val_precision}")
+            local_log.write("\n")
+            local_log.write(f"Recall:{self._recall}")
+            local_log.write("\n")
+            local_log.write(f"Val Recall:{self._val_recall}")
+            local_log.write("\n")
             local_log.write(f"Losses:{self._loss}")
             local_log.write("\n")
             local_log.write(f"Val losses:{self._val_loss}")
             local_log.write("\n")
 
-            plt.figure(figsize=(8, 8))
-            plt.subplot(2, 1, 1)
+            plt.figure(figsize=(8, 16))
+            plt.subplot(4, 1, 1)
             plt.plot(self._accuracy, label="Training Accuracy")
             plt.plot(self._val_accuracy, label="Validation Accuracy")
             plt.ylim([0.8, 1])
@@ -641,7 +688,31 @@ class Model:
             plt.legend(loc="lower right")
             plt.title("Training and Validation Accuracy")
 
-            plt.subplot(2, 1, 2)
+            plt.subplot(4, 1, 2)
+            plt.plot(self._precision, label="Precision")
+            plt.plot(self._val_precision, label="Validation Precision")
+            plt.ylim([0, 1.0])
+            plt.plot(
+                [self._trained_base_epochs + 0.5, self._trained_base_epochs + 0.5],
+                plt.ylim(),
+                label="Start Fine Tuning",
+            )
+            plt.legend(loc="upper right")
+            plt.title("Training and Validation Precision")
+
+            plt.subplot(4, 1, 3)
+            plt.plot(self._recall, label="Recall")
+            plt.plot(self._val_recall, label="Validation Recall")
+            plt.ylim([0, 1.0])
+            plt.plot(
+                [self._trained_base_epochs + 0.5, self._trained_base_epochs + 0.5],
+                plt.ylim(),
+                label="Start Fine Tuning",
+            )
+            plt.legend(loc="upper right")
+            plt.title("Training and Validation Recall")
+
+            plt.subplot(4, 1, 4)
             plt.plot(self._loss, label="Training Loss")
             plt.plot(self._val_loss, label="Validation Loss")
             plt.ylim([0, 1.0])
