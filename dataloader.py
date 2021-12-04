@@ -13,6 +13,8 @@ class DataLoader:
         batch_size: int = 32,
         n_samples: int = None,
         input_shape: tuple = (224, 224, 3),
+        multiclass: bool = False,
+        legacy_mode: bool = True,
     ) -> None:
         """Class instance initialization.
 
@@ -31,6 +33,12 @@ class DataLoader:
         self._dataset_target = None
         self.dataset = None
         self.input_shape = input_shape
+
+        if legacy_mode:
+            assert multiclass == False, "Legacy mode is not compatible with multiclass mode."
+
+        self._legacy_mode = legacy_mode
+        self._multiclass = multiclass
 
         # initialize self.dataset_input and self.dataset_target
         self._initialize_dataset_paths()
@@ -58,6 +66,7 @@ class DataLoader:
         """
         # get all paths
         all_paths = glob.glob(os.path.join(self.path, "*.tif"))
+        all_paths += glob.glob(os.path.join(self.path, "*.png"))
 
         # data has not been curated and wrongly sized images are discarded
         useable_paths = self._discard_wrong_img_paths(all_paths)
@@ -79,8 +88,10 @@ class DataLoader:
         useable_paths = useable_paths[:n_paths]
 
         # split input and target
-        input_paths = [filename for filename in useable_paths if "map" in filename]
-        target_paths = [filename for filename in useable_paths if "mask" in filename]
+        input_paths = [
+            filename for filename in useable_paths if "map" in filename]
+        target_paths = [
+            filename for filename in useable_paths if "mask" in filename or "msk" in filename]
 
         assert len(input_paths) == len(
             target_paths
@@ -118,20 +129,40 @@ class DataLoader:
                 color_mode=color_mode,
             )
             return img
-
-        [img_rgba, ] = tf.py_function(
-            _decode_tensor_load_image, [tensor, "rgba"], [tf.float32]
-        )
+        if channels == "RGB" or channels == "A":
+            [image, ] = tf.py_function(
+                _decode_tensor_load_image, [
+                    tensor, "rgba"], [tf.float32]
+            )
+        elif channels == "L":
+            [image, ] = tf.py_function(
+                _decode_tensor_load_image, [
+                    tensor, "grayscale"], [tf.float32]
+            )
 
         # normalize and keep queried channels
-        img_rgba = tf.math.divide(img_rgba, 255.0)
+        image = tf.math.divide(image, 255.0)
         if channels == "RGB":
-            img = img_rgba[:, :, :3]
+            img = image[:, :, :3]
         elif channels == "A":
-            img = tf.math.ceil(img_rgba[:, :, 3])
+            # for mask images - legacy mode
+            # legacy images are (partially) transparent in non-roof areas
+            # take ceiling of transparancy so "no roof" is 1 and "roof" is 0
+            img = tf.math.ceil(image[:, :, 3])
             img = tf.reshape(img, self.input_shape[:2] + tuple([1]))
-        # TODO: Double check the line above is correct. Why are there
-        #       non-zero-one values in the alpha channel?
+        elif channels == "L":
+            # for mask images - grey scale with minimum value for "no roof"
+            # higher values indicate better pv suitability categories
+            if self._multiclass:
+                # normalise image to 0-4 (0 = no roof, 4 = best pv category)
+                img = tf.math.multiply(image, 4)
+                img = tf.math.ceil(img)
+                img = tf.reshape(img, self.input_shape[:2] + tuple([1]))
+            else:
+                # floor and invert image so "no roof" is 1 and "roof" is 0
+                img = tf.math.floor(image)
+                img = tf.math.subtract(1.0, img)
+                img = tf.reshape(img, self.input_shape[:2] + tuple([1]))
         else:
             raise ValueError("Unkown channels specified. Use 'RGB' or 'A'.")
         return img
@@ -160,10 +191,17 @@ class DataLoader:
             lambda t: self._load_image(tensor=t, channels="RGB"),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )
-        targets = self._dataset_target.map(
-            lambda t: self._load_image(tensor=t, channels="A"),
-            num_parallel_calls=tf.data.experimental.AUTOTUNE,
-        )
+
+        if self._legacy_mode:
+            targets = self._dataset_target.map(
+                lambda t: self._load_image(tensor=t, channels="A"),
+                num_parallel_calls=tf.data.experimental.AUTOTUNE,
+            )
+        else:
+            targets = self._dataset_target.map(
+                lambda t: self._load_image(tensor=t, channels="L"),
+                num_parallel_calls=tf.data.experimental.AUTOTUNE,
+            )
 
         # store in attribute
         self.dataset = tf.data.Dataset.zip((inputs, targets))
