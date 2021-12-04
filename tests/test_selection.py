@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import filecmp
+=======
+# basic unittest structure
+>>>>>>> 4241abc (First working version of data selector with multiclass)
 import unittest
 import os
 import shutil
@@ -8,22 +12,36 @@ from PIL import Image
 
 
 from extraction.selection import DataSelector
+<<<<<<< HEAD
 from extraction.selection import InvalidPathError, AbsolutePathError
 from extraction.selection import InvalidTileSizeError, InsuffientDataError
+=======
+>>>>>>> 4241abc (First working version of data selector with multiclass)
 
 INPUT_PATH = os.path.join("data", "testing", "converted")
 OUTPUT_PATH = os.path.join("data", "testing", "selected")
 
 TILE_SIZES = (250, 500)
+<<<<<<< HEAD
 SELECTION_SIZES = ((10, 5),)
+=======
+SELECTION_SIZES = ((10, 5), )
+>>>>>>> 4241abc (First working version of data selector with multiclass)
 RANDOM_SEED = 42
 
 
 class TestSelection(unittest.TestCase):
+<<<<<<< HEAD
     @classmethod
     def setUpClass(cls):
 
         # remove output from last run
+=======
+
+    @classmethod
+    def setUpClass(cls):
+
+>>>>>>> 4241abc (First working version of data selector with multiclass)
         cls.clean_up()
 
         cls._first_run = True
@@ -43,6 +61,7 @@ class TestSelection(unittest.TestCase):
                     test_n=selection_size[1],
                     random_seed=RANDOM_SEED,
                 )
+<<<<<<< HEAD
                 cls.selected_paths.append(
                     os.path.join(
                         OUTPUT_PATH,
@@ -53,6 +72,16 @@ class TestSelection(unittest.TestCase):
                         + f"_{RANDOM_SEED}",
                     )
                 )
+=======
+                cls.selected_paths.append(os.path.join(
+                    OUTPUT_PATH,
+                    f"selected_tiles"
+                    + f"_{tile_size}"
+                    + f"_{selection_size[0]}"
+                    + f"_{selection_size[1]}"
+                    + f"_{RANDOM_SEED}"
+                ))
+>>>>>>> 4241abc (First working version of data selector with multiclass)
 
     @staticmethod
     def clean_up():
@@ -67,26 +96,44 @@ class TestSelection(unittest.TestCase):
                     + f"{tile_size}"
                     + f"_{selection_size[0]}"
                     + f"_{selection_size[1]}"
+<<<<<<< HEAD
                     + f"_{RANDOM_SEED}",
+=======
+                    + f"_{RANDOM_SEED}"
+>>>>>>> 4241abc (First working version of data selector with multiclass)
                 )
                 if os.path.exists(selection_path):
                     shutil.rmtree(selection_path)
 
     def test_data_selector_creates_output_paths(self):
         for selected_path in self.selected_paths:
+<<<<<<< HEAD
             self.assertTrue(os.path.exists(os.path.join(selected_path, "train")))
             self.assertTrue(os.path.exists(os.path.join(selected_path, "test")))
+=======
+            self.assertTrue(os.path.exists(
+                os.path.join(selected_path, "train")))
+            self.assertTrue(os.path.exists(
+                os.path.join(selected_path, "test")))
+>>>>>>> 4241abc (First working version of data selector with multiclass)
 
     def test_data_selector_selects_requested_number_of_images(self):
         for selected_path in self.selected_paths:
             for selection_size in SELECTION_SIZES:
                 # count of train/test files is half the total due to map/msk
+<<<<<<< HEAD
                 train_files_no = (
                     len(os.listdir(os.path.join(selected_path, "train"))) // 2
                 )
                 test_files_no = (
                     len(os.listdir(os.path.join(selected_path, "test"))) // 2
                 )
+=======
+                train_files_no = len(os.listdir(
+                    os.path.join(selected_path, "train"))) // 2
+                test_files_no = len(os.listdir(
+                    os.path.join(selected_path, "test"))) // 2
+>>>>>>> 4241abc (First working version of data selector with multiclass)
                 self.assertEqual(train_files_no, selection_size[0])
                 self.assertEqual(test_files_no, selection_size[1])
 
@@ -96,7 +143,11 @@ class TestSelection(unittest.TestCase):
         test_n = 5
         tile_size = 500
 
+<<<<<<< HEAD
         with self.assertRaises(InsuffientDataError):
+=======
+        with self.assertRaises(ValueError):
+>>>>>>> 4241abc (First working version of data selector with multiclass)
 
             self.selector.select_data(
                 tile_size=tile_size,
@@ -153,11 +204,19 @@ class TestSelection(unittest.TestCase):
                     self.assertEqual(image.shape, (tile_size, tile_size))
 
     def test_data_selector_raises_error_on_invalid_image_size_0(self):
+<<<<<<< HEAD
         with self.assertRaises(InvalidTileSizeError):
             self.selector.select_data(0, 10, 5, OUTPUT_PATH, 42)
 
     def test_data_selector_raises_error_on_invalid_image_size_11k(self):
         with self.assertRaises(InvalidTileSizeError):
+=======
+        with self.assertRaises(ValueError):
+            self.selector.select_data(0, 10, 5, OUTPUT_PATH, 42)
+
+    def test_data_selector_raises_error_on_invalid_image_size_11k(self):
+        with self.assertRaises(ValueError):
+>>>>>>> 4241abc (First working version of data selector with multiclass)
             self.selector.select_data(11_000, 10, 5, OUTPUT_PATH, 42)
 
     def test_data_selector_raises_error_on_invalid_image_size_224(self):
@@ -165,24 +224,37 @@ class TestSelection(unittest.TestCase):
             self.selector.select_data(224, 10, 5, OUTPUT_PATH, 42)
 
     def test_data_selector_raises_error_on_invalid_input_path(self):
+<<<<<<< HEAD
         with self.assertRaises(InvalidPathError):
+=======
+        with self.assertRaises(FileNotFoundError):
+>>>>>>> 4241abc (First working version of data selector with multiclass)
             DataSelector(
                 input_path="invalid_path",
             )
 
     def test_data_selector_raises_error_on_absolute_path(self):
+<<<<<<< HEAD
         with self.assertRaises(AbsolutePathError):
+=======
+        with self.assertRaises(ValueError):
+>>>>>>> 4241abc (First working version of data selector with multiclass)
             DataSelector(
                 input_path=os.path.abspath(INPUT_PATH),
             )
 
     def test_data_selector_raises_error_on_empty_input_path(self):
+<<<<<<< HEAD
         with self.assertRaises(InvalidPathError):
+=======
+        with self.assertRaises(FileNotFoundError):
+>>>>>>> 4241abc (First working version of data selector with multiclass)
             DataSelector(
                 input_path="",
             )
 
     def test_data_selector_raises_error_on_absolute_output_path(self):
+<<<<<<< HEAD
         with self.assertRaises(AbsolutePathError):
             self.selector.select_data(
                 500,
@@ -190,13 +262,23 @@ class TestSelection(unittest.TestCase):
                 5,
                 output_path=os.path.abspath(OUTPUT_PATH),
             )
+=======
+        with self.assertRaises(ValueError):
+            self.selector.select_data(
+                500, 10, 5, output_path=os.path.abspath(OUTPUT_PATH),)
+>>>>>>> 4241abc (First working version of data selector with multiclass)
 
     def test_data_selector_produces_masks_with_expected_categories(self):
         all_msk_files = []
         for selected_path in self.selected_paths:
+<<<<<<< HEAD
             all_msk_files += glob.glob(
                 os.path.join(selected_path, "**", "*_msk.png"), recursive=True
             )
+=======
+            all_msk_files += glob.glob(os.path.join(
+                selected_path, "**", "*_msk.png"), recursive=True)
+>>>>>>> 4241abc (First working version of data selector with multiclass)
         msk_set = set()
         for msk_file in all_msk_files:
             msk_array = np.array(Image.open(msk_file))
@@ -205,6 +287,7 @@ class TestSelection(unittest.TestCase):
         true_set = {0, 63, 127, 191, 255}
         self.assertSetEqual(msk_set, true_set)
 
+<<<<<<< HEAD
     def test_data_selector_produces_expected_images(self):
         for selected_path in self.selected_paths:
             all_files_new = glob.glob(
@@ -221,6 +304,8 @@ class TestSelection(unittest.TestCase):
         for i in range(len(all_files_new)):
             self.assertTrue(filecmp.cmp(all_files_new[i], all_files_known[i]))
 
+=======
+>>>>>>> 4241abc (First working version of data selector with multiclass)
 
 if __name__ == "__main__":
     unittest.main()
