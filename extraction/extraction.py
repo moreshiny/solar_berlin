@@ -8,7 +8,7 @@ class OutputPathExistsError(Exception):
     pass
 
 def select_random_map_images(train_size: int, test_size: int,
-                             input_path: str) -> list:
+                             input_path: str, random_seed: int = 0) -> list:
     """Selects a random subset of map images from the input path and returns
     them as a List of two Lists (one each for train and test) of tuples pairs
     of map and mask images.
@@ -24,7 +24,7 @@ def select_random_map_images(train_size: int, test_size: int,
     # get all files in input directory
     files = os.listdir(input_path)
     files_map = [file for file in files if "map" in file]
-    files_mask = [file for file in files if "mask" in file]
+    files_mask = [file for file in files if "msk" in file or "mask" in file]
 
     # sort files by name
     files_map.sort()
@@ -33,6 +33,7 @@ def select_random_map_images(train_size: int, test_size: int,
     files_zipped = list(zip(files_map, files_mask))
 
     # shuffle the file pairs
+    random.seed(random_seed)
     random.shuffle(files_zipped)
 
     # select train and test from (shuffled) front
