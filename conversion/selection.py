@@ -1,17 +1,25 @@
 import os
+<<<<<<< HEAD
 import random
+=======
+>>>>>>> 4c82acd (First working version of data selector with multiclass)
 import shutil
 import glob
 from PIL import Image
 from osgeo import gdal
 from osgeo import ogr
 
+<<<<<<< HEAD
 from selection.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
 from selection.errors import InvalidTileSizeError, InsuffientDataError
+=======
+from extraction.extraction import select_random_map_images, copy_image_files
+>>>>>>> 4c82acd (First working version of data selector with multiclass)
 
 RASTER_TILE_SIZE = 10_000
 
 
+<<<<<<< HEAD
 class DataHandler():
     def __init__(self):
         pass
@@ -43,11 +51,32 @@ class DataSelector(DataHandler):
         self._verify_path(output_path)
         # if os.path.isabs(output_path):
         #     raise AbsolutePathError(f"Output path {output_path} is absolute")
+=======
+class DataSelector():
+
+    def __init__(self, input_path, testing: bool = False):
+
+        if not os.path.exists(input_path):
+            raise FileNotFoundError(f"Input path {input_path} does not exist")
+
+        if os.path.isabs(input_path):
+            raise ValueError(f"Input path {input_path} is absolute")
+
+        self.input_path = input_path
+        self.output_path = None
+        self._testing = testing
+
+    def select_data(self, tile_size, train_n, test_n, output_path, random_seed=0, multiclass=True):
+
+        if os.path.isabs(output_path):
+            raise ValueError(f"Output path {output_path} is absolute")
+>>>>>>> 4c82acd (First working version of data selector with multiclass)
 
         self.output_path = os.path.join(
             output_path, f"selected_tiles_{tile_size}_{train_n}_{test_n}_{random_seed}")
 
         if not type(tile_size) is int or tile_size < 1:
+<<<<<<< HEAD
             raise InvalidTileSizeError(
                 f"Tile size {tile_size} is not an integer or less than 1")
 
@@ -59,12 +88,24 @@ class DataSelector(DataHandler):
                     f"tile_size must be a factor of {RASTER_TILE_SIZE} or raster edges will be discarded. Set lossy=True to allow this.")
         else:
             self.raster_tile_size = RASTER_TILE_SIZE
+=======
+            raise ValueError(
+                f"Tile size {tile_size} is not an integer or less than 1")
+
+        if RASTER_TILE_SIZE % tile_size != 0:
+            raise ValueError(
+                f"tile_size must be a factor of {RASTER_TILE_SIZE}")
+>>>>>>> 4c82acd (First working version of data selector with multiclass)
 
         current_tile_path = os.path.join(
             self.input_path, "tiled_" + str(tile_size))
 
         if self._request_size_too_large(tile_size, train_n, test_n):
+<<<<<<< HEAD
             raise InsuffientDataError(
+=======
+            raise ValueError(
+>>>>>>> 4c82acd (First working version of data selector with multiclass)
                 f"Not enough tiles to extract {train_n} training and {test_n} testing tiles")
 
         if os.path.exists(current_tile_path):
@@ -73,25 +114,42 @@ class DataSelector(DataHandler):
         else:
             self._extract_data(tile_size, current_tile_path, train_n, test_n)
 
+<<<<<<< HEAD
         file_lists = self._select_random_map_images(
+=======
+        file_lists = select_random_map_images(
+>>>>>>> 4c82acd (First working version of data selector with multiclass)
             train_size=train_n,
             test_size=test_n,
             input_path=current_tile_path,
             random_seed=random_seed,
         )
 
+<<<<<<< HEAD
         self._copy_image_files(
+=======
+        copy_image_files(
+>>>>>>> 4c82acd (First working version of data selector with multiclass)
             file_lists,
             input_path=current_tile_path,
             output_path=self.output_path,
         )
 
     def _request_size_too_large(self, tile_size, train_n, test_n):
+<<<<<<< HEAD
         if self._testing:
             # limit input to 32 tiles for faster testing
             raster_tile_size = min(self.raster_tile_size, tile_size*4)
         else:
             raster_tile_size = self.raster_tile_size
+=======
+
+        if self._testing:
+            # limit input to 32 tiles for faster testing
+            raster_tile_size = min(RASTER_TILE_SIZE, tile_size*4)
+        else:
+            raster_tile_size = RASTER_TILE_SIZE
+>>>>>>> 4c82acd (First working version of data selector with multiclass)
 
         raster_map_fns = glob.glob(os.path.join(
             self.input_path, "raster", "*.tif"))
@@ -101,6 +159,7 @@ class DataSelector(DataHandler):
 
         return total_no_of_pixels < requested_no_of_pixels
 
+<<<<<<< HEAD
     @staticmethod
     def _select_random_map_images(train_size: int, test_size: int,
                                   input_path: str, random_seed: int = 0) -> list:
@@ -186,6 +245,10 @@ class DataSelector(DataHandler):
                     shutil.copy(full_path_in, full_path_out)
 
     def _extract_data(self, tile_size, current_tile_path, train_n, test_n):
+=======
+    def _extract_data(self, tile_size, current_tile_path, train_n, test_n):
+
+>>>>>>> 4c82acd (First working version of data selector with multiclass)
         if self._testing:
             raster_tile_size = min(RASTER_TILE_SIZE, tile_size*4)
         else:
