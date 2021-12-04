@@ -167,21 +167,24 @@ class Model:
             save_weights_only=False,
             monitor="val_accuracy",
             mode="max",
-            # save_best_only=True,
+            save_best_only=True,
             verbose=1,
         )
+
         # Prepare the tensorboard
         log_dir = "logs/tensorboard/" + self._current_time
         tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
             log_dir=log_dir, histogram_freq=1
         )
+
         # Parameters for early stopping
         early_stopping = tensorflow.keras.callbacks.EarlyStopping(
             monitor="val_loss",
             patience=self._patience,
         )
-        print("Training the model")
+
         # fit the model
+        print("Training the model")
         self._model_history = self.model.fit(
             self.train_batches,
             epochs=self.epochs,
@@ -441,7 +444,7 @@ class Model:
             layer_log.write("\n")
             layer_log.write(f"{i} : {layer.name} : trainable = false")
 
-        for i, layer in enumerate(self._base_model.layers[-fine_tune_at:-9]):
+        for i, layer in enumerate(self._base_model.layers[-fine_tune_at:]):
             layer.trainable = True
             layer_log.write("\n")
             layer_log.write(f"{i} : {layer.name} : trainable = true")
@@ -449,7 +452,7 @@ class Model:
         for i, layer in enumerate(self.model.layers[-9:]):
             layer.trainable = False
             layer_log.write("\n")
-            layer_log.write(f"{i} : {layer.name} : trainable = true")
+            layer_log.write(f"{i} : {layer.name} : trainable = false")
 
         layer_log.close()
 
@@ -709,7 +712,7 @@ class Model:
                 plt.ylim(),
                 label="Start Fine Tuning",
             )
-            plt.legend(loc="upper right")
+            plt.legend(loc="lower right")
             plt.title("Training and Validation Recall")
 
             plt.subplot(4, 1, 4)
