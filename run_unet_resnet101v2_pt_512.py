@@ -2,7 +2,7 @@
 """
 import numpy as np
 import tensorflow
-from model import Model
+from models.unet_resnet101v2_pt import Model
 
 PATH_TRAIN = "data/small_large/train"
 PATH_VAL = "data/small_large/test"
