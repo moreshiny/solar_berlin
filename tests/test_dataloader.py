@@ -17,10 +17,16 @@ class TestDataLoader(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data_paths = [
-            os.path.join("data", "testing", "selected_test",
-                         "selected_tiles_224", "train"),
-            os.path.join("data", "testing", "selected_test",
-                         "selected_tiles_500_10_5_42", "train"),
+            os.path.join(
+                "data", "testing", "selected_test", "selected_tiles_224", "train"
+            ),
+            os.path.join(
+                "data",
+                "testing",
+                "selected_test",
+                "selected_tiles_500_10_5_42",
+                "train",
+            ),
         ]
 
     def _tile_size_from_path(self, data_path):
@@ -48,6 +54,7 @@ class TestDataLoader(unittest.TestCase):
             dataloader.load()
 
             n_batches = self._count_batches(dataloader)
+
             for inputs, targets in dataloader.dataset.take(n_batches):
                 self.assertEqual(inputs.shape, (32, tile_size, tile_size, 3))
                 self.assertEqual(targets.shape, (32, tile_size, tile_size, 1))
