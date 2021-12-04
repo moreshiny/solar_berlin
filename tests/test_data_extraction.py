@@ -1,4 +1,4 @@
-from extraction.data_extraction import select_random_map_images, copy_image_files
+from extraction.extraction import select_random_map_images, copy_image_files
 import unittest
 import os
 import shutil
@@ -15,7 +15,7 @@ class TestSelectMapImages(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         """Initialise some shared test parameters."""
         super().__init__(*args, **kwargs)
-        self.data_path = "data"
+        self.data_path = "data/testing"
         self.input_path = os.path.join(self.data_path, "map")
         self.output_path = os.path.join(self.data_path, "split")
 
@@ -104,7 +104,7 @@ class TestCopyImageFiles(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         """Initialise some shared test parameters."""
         super().__init__(*args, **kwargs)
-        self.data_path = "data"
+        self.data_path = "data/testing"
         self.input_path = os.path.join(self.data_path, "map")
         self.output_path = os.path.join(self.data_path, "test_selected")
 
