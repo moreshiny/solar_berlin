@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from models.unet_basic_nt import Model
+from unet.unet_basic_nt import Model
 
 
 class TestModel(unittest.TestCase):
