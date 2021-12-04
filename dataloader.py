@@ -136,7 +136,7 @@ class DataLoader:
             raise ValueError("Unkown channels specified. Use 'RGB' or 'A'.")
         return img
 
-    def load(self, buffer_size: int = 500) -> None:
+    def load(self, buffer_size: int = None) -> None:
         """Load images into dataset and store in self.dataset attribute. The
         dataset will contain (input, target) pairs. Addional settings actions
         performed on the dataset are:
