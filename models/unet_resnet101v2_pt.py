@@ -38,6 +38,7 @@ class Model:
         drop_out_rate: dict = {"512": 0, "256": 0, "128": 0, "64": 0},
         patience: int = 10,
         patience_fine_tune: int = 10,
+        buffer_size: int = 500,
     ) -> None:
         """Instantiate the class.
         Args:
@@ -60,6 +61,7 @@ class Model:
             patience: int = 10. Time before early stopping of the training. Default to ten.
             patience_fine_tuning: int = 10. Time before early stopping of the training after fine tuning.\
                 Default to ten.
+            bufer_size: int = 500. Size of the shuffle buffer. Defaults to 500.
         """
 
         # save the unet model parameters
@@ -73,6 +75,7 @@ class Model:
         self.input_shape = input_shape  # default for RGB images size 224
         self.layers = layer_names  # layers to be used in the up stack
         self._batch_size = batch_size
+        self._buffer_size = buffer_size
 
         # save the training and validation dataloaders
         dl_train = DataLoader(
@@ -85,8 +88,8 @@ class Model:
             batch_size=self._batch_size,
             input_shape=self.input_shape,
         )
-        dl_train.load()
-        dl_val.load()
+        dl_train.load(buffer_size=self._buffer_size)
+        dl_val.load(buffer_size=self._buffer_size)
         self.train_batches = dl_train.dataset
         self.test_batches = dl_val.dataset
 
