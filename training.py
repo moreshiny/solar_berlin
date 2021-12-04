@@ -84,7 +84,7 @@ print(model_dict)
 
 # saving the model
 
-model.save("mymodel")
+tensorflow.saved_model.save(model, "mymodel")
 
 # Loading model weights. Note that the full model cannot be loaded for subclassed model
-# loaded_1 = tensorflow.keras.models.load_model("mymodel", custom_objects=model_dict)
+loaded_1 = tensorflow.saved_model.load("mymodel")

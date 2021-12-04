@@ -74,6 +74,7 @@ class Unet(tensorflow.keras.Model):
             activation="sigmoid",
         )
 
+    @tensorflow.function
     def call(self, input):
         """
         Build the Unet model.
@@ -184,6 +185,7 @@ class Upsample(tensorflow.keras.Model):
 
         self.activation_layer = tensorflow.keras.layers.ReLU()
 
+    @tensorflow.function
     def call(self, input):
         """Build the model."""
 
