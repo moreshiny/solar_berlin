@@ -8,10 +8,14 @@ from datetime import datetime
 
 
 class Logs:
-    def __init__(self):
+    def __init__(self, model: tensorflow.keras.Model = None) -> None:
         """
         Initialisation of the class.
+        Args:
+            model: a tensofrlow keras model.
         """
+        # saving the passed variables
+        self._model = model
 
         # Paths for the logs
         self._path_log = "logs/"  # Log directory
@@ -46,12 +50,12 @@ class Logs:
             main_log.write("\n")
             main_log.write(comment)
             main_log.write("\n")
+            main_log.write(f"Configuration dictionary: {self._model.get_config()}")
             main_log.write("\n")
 
     def show_predictions(
         self,
         dataset: tensorflow.data.Dataset = None,
-        model: tensorflow.keras.Model = None,
         num_batches: int = 1,
     ) -> None:
         """Display side by side an earial photography, its true mask, and the
@@ -64,7 +68,7 @@ class Logs:
 
         """
         for image_batch, mask_batch in dataset.take(num_batches):
-            pred_mask_batch = model.predict(image_batch)
+            pred_mask_batch = self._model.predict(image_batch)
             for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
                 self._display([image, mask, self._create_mask(pred_mask)])
 
