@@ -17,7 +17,14 @@ PATH_TRAIN, string: path to the test folder containing the input pictures compat
 the dataloader format.
 """
 import tensorflow
+<<<<<<< HEAD
 from roof.dataloader import DataLoader
+=======
+
+from dataloader import DataLoader
+from class_unet_resnet101v2 import Unet
+from roof.logging import Logs
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
 
 # Importing the model class
 from unet.unet_resnet101v2 import Unet
@@ -30,6 +37,11 @@ from roof.logging import Logs
 
 tensorflow.keras.backend.clear_session()
 
+<<<<<<< HEAD
+=======
+# Layers for the skip connections.
+
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
 # parameters of the model.
 OUTPUT_CLASSES = 5  # number of categorical classes. For 2 classes = 1.
 INPUT_SHAPE = (512, 512, 3)  # input size
@@ -53,8 +65,12 @@ PATH_TEST = "data/bin_clean_8000/test"
 
 # calling the model.
 model = Unet(
+<<<<<<< HEAD
     output_classes=OUTPUT_CLASSES,
     input_shape=INPUT_SHAPE,
+=======
+    output_classes=output_classes,
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
     drop_out=True,
     drop_out_rate={"512": 0.3, "256": 0.4, "128": 0.45, "64": 0.5},
     multiclass=bool(OUTPUT_CLASSES - 1),
@@ -123,7 +139,13 @@ dl_train = DataLoader(
     legacy_mode=False,
     multiclass=MULTICLASS,
 )
-
+dl_test = DataLoader(
+    path_test,
+    batch_size=batch_size,
+    input_shape=input_shape,
+)
+dl_train.load()
+dl_test.load()
 
 dl_test = DataLoader(
     PATH_TEST,
@@ -175,10 +197,16 @@ model.compile(optimizer=opt, loss=loss, metrics=metrics)
 
 print("compiling done")
 # training the model.
+<<<<<<< HEAD
 
 steps_per_epoch = dl_train.n_samples // BATCH_SIZE
 validation_steps = max(dl_test.n_samples // BATCH_SIZE, 1)
 
+=======
+epochs = 1
+steps_per_epoch = dl_train.n_samples / batch_size
+validation_steps = max(dl_test.n_samples // batch_size, 1)
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
 
 history = model.fit(
     train_batches,
@@ -193,6 +221,7 @@ history = model.fit(
     ],
 )
 
+<<<<<<< HEAD
 accuracies = {}
 accuracies["loss"] = [history.history["loss"], history.history["val_" + "loss"]]
 
@@ -217,3 +246,23 @@ log.show_predictions(
 
 
 tensorflow.keras.backend.clear_session()
+=======
+# I am explaining how to load the model's weight for a custom model.
+# First you get the overwritten configuration of the custim model.
+model_dict = model.get_config()
+
+# Second you create the model from the configuration dictionary. This creates a new models with the same layer configuration
+new_model = model.from_config(model_dict)
+# Finally, you load the weights in the new models.
+new_model.load_weights(log.checkpoint_filepath)
+
+
+# logging examples of prediction on the test data sets.
+num_batches = 4  # number of batches used to display sample predictions.
+
+log.show_predictions(
+    dataset=dl_test.dataset,
+    model=new_model,
+    num_batches=num_batches,
+)
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
