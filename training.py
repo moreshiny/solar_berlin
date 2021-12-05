@@ -14,8 +14,8 @@ output_classes = 1  # number of categorical classes.
 input_shape = (512, 512, 3)  # input size
 batch_size = 4  # batchsize
 # Path to the data
-path_train = "data/small_large/train"
-path_test = "data/small_large/test"
+path_train = "data/large/train"
+path_test = "data/large/test"
 
 
 # calling the model.
@@ -46,8 +46,9 @@ test_batches = dl_test.dataset
 
 # Starting the logs
 
-log = Logs()
-comment = "This is a smart comment"
+log = Logs(model=model)
+comment = "Full large dataset, increasing dropping rate in upstack,\n\
+     new version of the model in its class form. "
 log.comment(comment=comment)
 
 
@@ -70,7 +71,7 @@ tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
     write_graph=True,
 )
 
-patience = 10
+patience = 20
 # Parameters for early stopping
 early_stopping = tensorflow.keras.callbacks.EarlyStopping(
     monitor="val_loss",
@@ -126,6 +127,5 @@ num_batches = 4  # number of batches used to display sample predictions.
 
 log.show_predictions(
     dataset=dl_test.dataset,
-    model=new_model,
     num_batches=num_batches,
 )
