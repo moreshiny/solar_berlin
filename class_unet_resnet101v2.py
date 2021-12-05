@@ -8,7 +8,6 @@ class Unet(tensorflow.keras.Model):
 
     def __init__(
         self,
-        layer_names: List[str],
         output_classes: int = 1,
         drop_out: bool = False,
         drop_out_rate: dict = {"512": 0, "256": 0, "128": 0, "64": 0},
@@ -16,15 +15,14 @@ class Unet(tensorflow.keras.Model):
     ):
         """Class initialisation:
         Args:
-            layer_names: list of layers defining the skip connections of the networks.
             output_classes: number of categorical classes. Default to one.
             drop_out: boolean, wether the dropout in the upstack of the model is activated; Default to False.
             drop_out_rate: If drop_out, defines the dropout rate in the up stacks. Defaults to {"512": 0, "256": 0, "128": 0, "64": 0}
             fine_tune_at: if non zero, freeze the upstacks, and unfreeze the corresponding number of layers in bottom of the pretrained network.
         """
         super(Unet, self).__init__()
-        # saved the passed variable.
-        self._layers = layer_names
+
+        # save the passed variable.
         self._output_classes = output_classes
         self._drop_out = drop_out
         self._drop_out_rate = drop_out_rate
@@ -39,7 +37,14 @@ class Unet(tensorflow.keras.Model):
         )
         self._base_model.trainable = False
 
-        # Define the layers for the skip connections.
+        # Define first the layers for skip conenctions within the down stacl/pretrained networks
+        self._layers = [
+            "conv1_conv",
+            "conv2_block2_out",
+            "conv3_block3_out",
+            "conv4_block22_out",
+            "conv5_block2_out",
+        ]
         self._selected_output_layers = [
             self._base_model.get_layer(name).output for name in self._layers
         ]
@@ -126,7 +131,6 @@ class Unet(tensorflow.keras.Model):
         https://www.tensorflow.org/guide/keras/save_and_serialize#custom_objects
         """
         return {
-            "layer_names": self._layers,
             "output_classes": self._output_classes,
             "drop_out": self._drop_out,
             "drop_out_rate": self._drop_out_rate,

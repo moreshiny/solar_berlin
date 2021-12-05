@@ -3,7 +3,6 @@ import os
 from typing import List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
-
 import tensorflow
 from datetime import datetime
 
