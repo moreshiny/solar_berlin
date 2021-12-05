@@ -13,6 +13,7 @@ from datetime import datetime
 
 class Logs:
 <<<<<<< HEAD
+<<<<<<< HEAD
     def __init__(
         self,
         custom_path: str = "",
@@ -27,10 +28,20 @@ class Logs:
         self._custom_path = custom_path
 =======
     def __init__(self):
+=======
+    def __init__(self, model: tensorflow.keras.Model = None) -> None:
+>>>>>>> e83f518 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
         """
         Initialisation of the class.
+        Args:
+            model: a tensofrlow keras model.
         """
+<<<<<<< HEAD
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
+=======
+        # saving the passed variables
+        self._model = model
+>>>>>>> e83f518 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
 
         # Paths for the logs
         self._path_log = "logs/"  # Log directory
@@ -154,13 +165,13 @@ class Logs:
 =======
             main_log.write(comment)
             main_log.write("\n")
+            main_log.write(f"Configuration dictionary: {self._model.get_config()}")
             main_log.write("\n")
 
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
     def show_predictions(
         self,
         dataset: tensorflow.data.Dataset = None,
-        model: tensorflow.keras.Model = None,
         num_batches: int = 1,
 <<<<<<< HEAD
         multiclass: bool = False,
@@ -182,7 +193,7 @@ class Logs:
 
         """
         for image_batch, mask_batch in dataset.take(num_batches):
-            pred_mask_batch = model.predict(image_batch)
+            pred_mask_batch = self._model.predict(image_batch)
             for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
 <<<<<<< HEAD
                 self._display(
