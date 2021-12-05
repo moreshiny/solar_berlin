@@ -3,12 +3,16 @@ import os
 from typing import List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
+<<<<<<< HEAD
 
+=======
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
 import tensorflow
 from datetime import datetime
 
 
 class Logs:
+<<<<<<< HEAD
     def __init__(
         self,
         custom_path: str = "",
@@ -21,6 +25,12 @@ class Logs:
         """
         # saving the passed variables
         self._custom_path = custom_path
+=======
+    def __init__(self):
+        """
+        Initialisation of the class.
+        """
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
 
         # Paths for the logs
         self._path_log = "logs/"  # Log directory
@@ -34,6 +44,7 @@ class Logs:
         # Preparing the local logs:
         self._current_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
+<<<<<<< HEAD
         # Defining the local path
         if self._custom_path == "":
             self._local_path = self._path_log + self._current_time
@@ -60,12 +71,28 @@ class Logs:
         """
         self._comment = comment
         self._model_config = model_config
+=======
+        # model checkpoint path
+        self.checkpoint_filepath = (
+            self._path_log + self._current_time + "/checkpoint.ckpt"
+        )
+        # tensorboard path
+        self.tensorboard_path = self._path_log + "tensorboard/" + self._current_time
+
+    def comment(self, comment: str = "test run") -> None:
+        """Writing the experience report from the main log.
+        Args:
+            comment: a string detailing the experience which is run. Default to "test run".
+        """
+
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
         with open(self.path_main_log_file, "a", encoding="utf-8") as main_log:
             main_log.write("\n")
             main_log.write("------")
             main_log.write("\n")
             main_log.write(self._current_time)
             main_log.write("\n")
+<<<<<<< HEAD
             main_log.write(self._comment)
             main_log.write("\n")
             main_log.write(f"Configuration dictionary: {self._model_config}")
@@ -124,12 +151,21 @@ class Logs:
         plt.savefig(path_graph)
         plt.close()
 
+=======
+            main_log.write(comment)
+            main_log.write("\n")
+            main_log.write("\n")
+
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
     def show_predictions(
         self,
         dataset: tensorflow.data.Dataset = None,
         model: tensorflow.keras.Model = None,
         num_batches: int = 1,
+<<<<<<< HEAD
         multiclass: bool = False,
+=======
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
     ) -> None:
         """Display side by side an earial photography, its true mask, and the
             predicted mask.
@@ -138,13 +174,17 @@ class Logs:
             A dataset in the form provided by the dataloader.
             A tensorflow keras model.
             num_batches (int): number of batches to display.
+<<<<<<< HEAD
             multiclass (bool): if True, activate the calculation of the mask\
                  prediction for multiclass problems.
+=======
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
 
         """
         for image_batch, mask_batch in dataset.take(num_batches):
             pred_mask_batch = model.predict(image_batch)
             for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
+<<<<<<< HEAD
                 self._display(
                     [image, mask, self._create_mask(pred_mask, multiclass=multiclass)]
                 )
@@ -156,17 +196,30 @@ class Logs:
             pred_mask: a predicted mask, through the predict method.
             multiclass: A boolean. If true, activate the multiclass calculation of for the calculation of the mask
 
+=======
+                self._display([image, mask, self._create_mask(pred_mask)])
+
+    def _create_mask(self, pred_mask):
+        """Create a mask from the predicted array.
+
+        Args:
+            a predicted image, through the predict method.
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
 
         Returns:
             a mask.
 
         """
+<<<<<<< HEAD
         if multiclass:
             pred_mask = np.argmax(pred_mask, axis=-1)
             pred_mask = np.expand_dims(pred_mask, axis=-1)
         else:
             pred_mask = (pred_mask > 0.5).astype(int) * 255
 
+=======
+        pred_mask = (pred_mask > 0.5).astype(int) * 255
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
         return pred_mask
 
     def _display(self, display_list: List) -> None:
@@ -177,6 +230,7 @@ class Logs:
                                 and predicted mask in that order.
 
         """
+<<<<<<< HEAD
         path_snapshot = self._local_path + "/snapshots"
         if not os.path.exists(path_snapshot):
             os.mkdir(path_snapshot)
@@ -195,6 +249,19 @@ class Logs:
         plt.title("Predicted Mask")
         plt.imshow(display_list[2], cmap="plasma")
         plt.axis("off")
+=======
+        plt.figure(figsize=(15, 8))
+        title = ["Input Image", "True Mask", "Predicted Mask"]
+        for i in range(len(display_list)):
+            plt.subplot(1, len(display_list), i + 1)
+            plt.title(title[i])
+            type(display_list[i])
+            plt.imshow(tensorflow.keras.utils.array_to_img(display_list[i]))
+            plt.axis("off")
+        path_snapshot = self._path_log + self._current_time + "/snapshots"
+        if not os.path.exists(path_snapshot):
+            os.mkdir(path_snapshot)
+>>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
         path_fig = path_snapshot + f"/output{np.random.rand()}.pdf"
         plt.savefig(path_fig)
         plt.close()
