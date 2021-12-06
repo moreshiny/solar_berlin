@@ -128,6 +128,7 @@ dl_train = DataLoader(
     legacy_mode=False,
     multiclass=MULTICLASS,
 )
+
 dl_test = DataLoader(
     path_test,
     batch_size=batch_size,
@@ -154,6 +155,10 @@ test_batches = dl_test.dataset
 
 print("data loaded")
 
+log.local_log(
+    train_data_config=dl_train.get_config(),
+    val_data_config=dl_test.get_config(),
+)
 
 # Preparing the model to be saved using a checkpoint
 
