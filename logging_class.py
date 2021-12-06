@@ -3,6 +3,7 @@ import os
 from typing import List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
+
 import tensorflow
 from datetime import datetime
 
@@ -20,13 +21,6 @@ class Logs:
         """
         # saving the passed variables
         self._custom_path = custom_path
-        """
-        Initialisation of the class.
-        Args:
-            model: a tensofrlow keras model.
-        """
-        # saving the passed variables
-        self._model = model
 
         # Paths for the logs
         self._path_log = "logs/"  # Log directory
@@ -133,6 +127,7 @@ class Logs:
     def show_predictions(
         self,
         dataset: tensorflow.data.Dataset = None,
+        model: tensorflow.keras.Model = None,
         num_batches: int = 1,
         multiclass: bool = False,
     ) -> None:
@@ -148,7 +143,7 @@ class Logs:
 
         """
         for image_batch, mask_batch in dataset.take(num_batches):
-            pred_mask_batch = self._model.predict(image_batch)
+            pred_mask_batch = model.predict(image_batch)
             for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
                 self._display(
                     [image, mask, self._create_mask(pred_mask, multiclass=multiclass)]
