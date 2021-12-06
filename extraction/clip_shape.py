@@ -23,8 +23,10 @@ for raster_file in raster_filenames:
 
     # get the extent of the current raster
     ds = gdal.Open(raster_file)
-    x_min, x_max, y_min, y_max = ds.GetGeoTransform()[0], ds.GetGeoTransform()[0] + ds.RasterXSize * ds.GetGeoTransform()[
-        1], ds.GetGeoTransform()[3] + ds.RasterYSize * ds.GetGeoTransform()[5], ds.GetGeoTransform()[3]
+    x_min, x_max, y_min, y_max =\
+        ds.GetGeoTransform()[0], ds.GetGeoTransform()[0]\
+        + ds.RasterXSize * ds.GetGeoTransform()[1], ds.GetGeoTransform()[3]\
+        + ds.RasterYSize * ds.GetGeoTransform()[5], ds.GetGeoTransform()[3]
     ds = None
 
     out_shapefile = shapefile.cx[x_min:x_max, y_min:y_max]
@@ -33,7 +35,7 @@ for raster_file in raster_filenames:
     filename = os.path.basename(raster_file)
     base_filename = os.path.splitext(filename)[0]
 
-    # save the shape file matching the rester extent to the output directory
+    # save the shape file matching the raster extent to the output directory
     if not os.path.exists(os.path.join(out_dir, base_filename)):
         os.makedirs(os.path.join(out_dir, base_filename))
         try:

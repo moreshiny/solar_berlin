@@ -14,7 +14,7 @@ RAW_OVERLAY_FOLDER="$RAW_DATA_FOLDER/overlay"
 # create the raw data folder
 mkdir -p $RAW_DATA_FOLDER
 
-# download the 2013 arial image raster file zips:
+# download the 2013 aerial image raster file zips:
 wget -nc https://fbinter.stadt-berlin.de/fb/atom/DOP/dop20true_2013/Mitte.zip \
         -O $RAW_RASTER_FOLDER/Mitte.zip
 wget -nc https://fbinter.stadt-berlin.de/fb/atom/DOP/dop20true_2013/Nord.zip \
@@ -41,5 +41,5 @@ wget -nc https://fbinter.stadt-berlin.de/fb/atom/solar/ST_PV_Potenzial_2013.zip 
 # check the sha256sum of the downloaded files:
 sha256sum -c sha256sum.txt
 
-# create new sha256sum file from downloaded files:
+# uncomment this to create new sha256sum file from downloaded files:
 # sha256sum $RAW_RASTER_FOLDER/*.zip $RAW_OVERLAY_FOLDER/*.zip > sha256sum.txt
