@@ -69,6 +69,24 @@ class Unet(tensorflow.keras.Model):
             activation="sigmoid",
         )
 
+    def freezing_layers(self, fine_tune_at: int = 0) -> None:
+        """
+        When called, freeze the up-stacks, and unfreeze some of the top layers of the pretrained model.
+        Args:
+            fine_tune_at: number of layers of the pretrained model which are unfrozen.Default to 0.
+
+        """
+        self._down_stack.trainable = True
+
+        for i, layer in enumerate(self._down_stack.layers[0:-fine_tune_at]):
+            layer.trainable = False
+
+        for i, layer in enumerate(self._down_stack.layers[-fine_tune_at:]):
+            layer.trainable = True
+
+        for stack in self._up_stack:
+            stack.trainable = False
+
     @tensorflow.function
     def call(self, input):
         """
@@ -229,7 +247,7 @@ class Downsample(tensorflow.keras.Model):
     def get_config(self):
         """Overwrite the get_config() methods to save and load the model."""
         return {
-            "filter": self._filter,
+            "layer_names": self._layers,
         }
 
     @classmethod
