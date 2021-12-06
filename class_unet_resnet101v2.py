@@ -11,7 +11,6 @@ class Unet(tensorflow.keras.Model):
         output_classes: int = 1,
         drop_out: bool = False,
         drop_out_rate: dict = {"512": 0, "256": 0, "128": 0, "64": 0},
-        fine_tune_at: int = 0,
     ):
         """Class initialisation:
         Args:
@@ -37,6 +36,7 @@ class Unet(tensorflow.keras.Model):
         )
         self._base_model.trainable = False
 
+        # Define the layers for the skip connections.
         # Define first the layers for skip conenctions within the down stacl/pretrained networks
         self._layers = [
             "conv1_conv",
@@ -113,7 +113,6 @@ class Unet(tensorflow.keras.Model):
             fine_tune_at: number of layers of the pretrained model which are unfrozen.Default to 0.
 
         """
-
         self._base_model.trainable = True
 
         for i, layer in enumerate(self._base_model.layers[0:-fine_tune_at]):
