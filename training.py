@@ -46,6 +46,8 @@ dl_test.load()
 train_batches = dl_train.dataset
 test_batches = dl_test.dataset
 
+print("data loaded")
+
 # Starting the logs
 
 log = Logs()
@@ -61,6 +63,7 @@ log.local_log(
     val_data_config=dl_test.get_config(),
 )
 
+print("log created")
 # Preparing the model to be saved using a checkpoint
 
 model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
@@ -88,6 +91,8 @@ early_stopping = tensorflow.keras.callbacks.EarlyStopping(
 )
 
 
+print("callbacks defined")
+
 # compiling the model
 learning_rate = 0.001
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
@@ -103,8 +108,9 @@ model.compile(
 )
 
 
+print("compiling done")
 # training the model.
-epochs = 1
+epochs = 10
 steps_per_epoch = dl_train.n_samples / batch_size
 validation_steps = max(dl_test.n_samples // batch_size, 1)
 
@@ -121,10 +127,9 @@ history = model.fit(
     ],
 )
 
+print("first fitting round")
 tensorflow.keras.backend.clear_session()
 
-# I am explaining how to load the model's weight for a custom model.
-# First you get the overwritten configuration of the custim model.
 model_dict = model.get_config()
 
 # Second you create the model from the configuration dictionary. This creates a new models with the same layer configuration
@@ -133,12 +138,55 @@ best_model = model.from_config(model_dict)
 best_model.load_weights(log.checkpoint_filepath)
 
 
+best_model.freezing_layers(fine_tune_at=1)
+
+best_model.build((1, 512, 512, 3))
+
+print("best model loaded")
+best_model.summary()
+
+print
+opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate / 10)
+
+best_model.compile(
+    optimizer=opt,
+    loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
+    metrics=[
+        "accuracy",
+        tensorflow.keras.metrics.Recall(name="recall"),
+        tensorflow.keras.metrics.Precision(name="precision"),
+    ],
+)
+
+history = best_model.fit(
+    train_batches,
+    epochs=epochs,
+    steps_per_epoch=steps_per_epoch,
+    validation_steps=validation_steps,
+    validation_data=test_batches,
+    callbacks=[
+        model_checkpoint_callback,
+        tensorboard_callback,
+        early_stopping,
+    ],
+)
+
+# I am explaining how to load the model's weight for a custom model.
+# First you get the overwritten configuration of the custim model.
+model_dict = best_model.get_config()
+
+# Second you create the model from the configuration dictionary. This creates a new models with the same layer configuration
+best_best_model = best_model.from_config(model_dict)
+# Finally, you load the weights in the new models.
+best_best_model.load_weights(log.checkpoint_filepath)
+
+
 # logging examples of prediction on the test data sets.
 num_batches = 20  # number of batches used to display sample predictions.
 
 log.show_predictions(
     dataset=dl_test.dataset,
-    model=best_model,
+    model=best_best_model,
     num_batches=num_batches,
 )
 
