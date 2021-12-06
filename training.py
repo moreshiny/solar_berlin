@@ -23,6 +23,10 @@ model = Unet(
     drop_out=True,
     drop_out_rate={"512": 0.2, "256": 0.25, "128": 0.3, "64": 0.35},
 )
+model.build((1, 512, 512, 3))
+
+model.summary()
+
 
 # Loading the data
 dl_train = DataLoader(
@@ -117,6 +121,8 @@ history = model.fit(
     ],
 )
 
+tensorflow.keras.backend.clear_session()
+
 # I am explaining how to load the model's weight for a custom model.
 # First you get the overwritten configuration of the custim model.
 model_dict = model.get_config()
@@ -135,3 +141,5 @@ log.show_predictions(
     model=best_model,
     num_batches=num_batches,
 )
+
+tensorflow.keras.backend.clear_session()

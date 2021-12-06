@@ -4,9 +4,13 @@ from typing import List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
+=======
+import pprint
+>>>>>>> 03cf8a4 (updated class, model and logs files.)
 import tensorflow
 from datetime import datetime
 
@@ -14,10 +18,14 @@ from datetime import datetime
 class Logs:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 03cf8a4 (updated class, model and logs files.)
     def __init__(
         self,
         custom_path: str = "",
     ) -> None:
+<<<<<<< HEAD
         """
         Initialisation of the class.
         Args:
@@ -31,17 +39,24 @@ class Logs:
 =======
     def __init__(self, model: tensorflow.keras.Model = None) -> None:
 >>>>>>> e83f518 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
+=======
+>>>>>>> 03cf8a4 (updated class, model and logs files.)
         """
         Initialisation of the class.
         Args:
-            model: a tensofrlow keras model.
+            local_path: a string defining the name of the loacal path in the form "logs/custom_path"; Default to "".
+
         """
 <<<<<<< HEAD
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
 =======
         # saving the passed variables
+<<<<<<< HEAD
         self._model = model
 >>>>>>> e83f518 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
+=======
+        self._custom_path = custom_path
+>>>>>>> 03cf8a4 (updated class, model and logs files.)
 
         # Paths for the logs
         self._path_log = "logs/"  # Log directory
@@ -56,6 +71,9 @@ class Logs:
         self._current_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 03cf8a4 (updated class, model and logs files.)
         # Defining the local path
         if self._custom_path == "":
             self._local_path = self._path_log + self._current_time
@@ -65,6 +83,7 @@ class Logs:
         # Path to local log file
         self.path_local_log_file = self._local_path + "/local_log.log"
 
+<<<<<<< HEAD
         # model checkpoint path
         self.checkpoint_filepath = self._local_path + "/checkpoint.ckpt"
         # tensorboard path
@@ -83,26 +102,37 @@ class Logs:
         self._comment = comment
         self._model_config = model_config
 =======
+=======
+>>>>>>> 03cf8a4 (updated class, model and logs files.)
         # model checkpoint path
-        self.checkpoint_filepath = (
-            self._path_log + self._current_time + "/checkpoint.ckpt"
-        )
+        self.checkpoint_filepath = self._local_path + "/checkpoint.ckpt"
         # tensorboard path
         self.tensorboard_path = self._path_log + "tensorboard/" + self._current_time
 
-    def comment(self, comment: str = "test run") -> None:
+        # local variables
+        self._model_config = {}
+        self._comment = ""
+
+    def main_log(self, comment: str = "test run", model_config: dict = {}) -> None:
         """Writing the experience report from the main log.
         Args:
             comment: a string detailing the experience which is run. Default to "test run".
+            model_config: a dictionary obtained though the get_confi for the model. default to {}.
         """
+<<<<<<< HEAD
 
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
+=======
+        self._comment = comment
+        self._model_config = model_config
+>>>>>>> 03cf8a4 (updated class, model and logs files.)
         with open(self.path_main_log_file, "a", encoding="utf-8") as main_log:
             main_log.write("\n")
             main_log.write("------")
             main_log.write("\n")
             main_log.write(self._current_time)
             main_log.write("\n")
+<<<<<<< HEAD
 <<<<<<< HEAD
             main_log.write(self._comment)
             main_log.write("\n")
@@ -164,14 +194,48 @@ class Logs:
 
 =======
             main_log.write(comment)
+=======
+            main_log.write(self._comment)
+>>>>>>> 03cf8a4 (updated class, model and logs files.)
             main_log.write("\n")
-            main_log.write(f"Configuration dictionary: {self._model.get_config()}")
+            main_log.write(f"Configuration dictionary: {self._model_config}")
             main_log.write("\n")
 
+<<<<<<< HEAD
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
+=======
+    def local_log(
+        self,
+        comment: str = "test run",
+        train_data_config: dict = {},
+        val_data_config: dict = {},
+    ) -> None:
+        """Write the local with the characteristics of the model and the used data for the training and validation
+        Args:
+            train_data_config: a dictionary of train data obtained from the get_config() function of the dataloader\
+                 Default to {}.
+            val_data_config: a dictionary of val data obtained from the get_config() function of the dataloader\
+            Default to {}.
+        """
+        if not os.path.exists(self._local_path):
+            os.mkdir(self._local_path)
+
+        with open(self.path_local_log_file, "a", encoding="utf-8") as local_log:
+            local_log.write(self._current_time)
+            local_log.write("\n")
+            local_log.write(self._comment)
+            local_log.write("\n")
+            local_log.write(f"Configuration dictionary: {self._model_config}")
+            local_log.write("\n")
+            local_log.write(f"Train configuration: {train_data_config}")
+            local_log.write("\n")
+            local_log.write(f"Val configuration: {val_data_config}")
+
+>>>>>>> 03cf8a4 (updated class, model and logs files.)
     def show_predictions(
         self,
         dataset: tensorflow.data.Dataset = None,
+        model: tensorflow.keras.Model = None,
         num_batches: int = 1,
 <<<<<<< HEAD
         multiclass: bool = False,
@@ -193,7 +257,7 @@ class Logs:
 
         """
         for image_batch, mask_batch in dataset.take(num_batches):
-            pred_mask_batch = self._model.predict(image_batch)
+            pred_mask_batch = model.predict(image_batch)
             for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
 <<<<<<< HEAD
                 self._display(

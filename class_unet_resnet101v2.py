@@ -26,16 +26,6 @@ class Unet(tensorflow.keras.Model):
         self._drop_out = drop_out
         self._drop_out_rate = drop_out_rate
 
-        # call the pretrained model. Trained
-        self._base_model = tensorflow.keras.applications.resnet_v2.ResNet101V2(
-            include_top=False,
-            weights="imagenet",
-            input_tensor=None,
-            # input_shape=self.input_shape,
-            pooling=max,
-        )
-        self._base_model.trainable = False
-
         # Define the layers for the skip connections.
         # Define first the layers for skip conenctions within the down stacl/pretrained networks
         self._layers = [
@@ -45,15 +35,12 @@ class Unet(tensorflow.keras.Model):
             "conv4_block22_out",
             "conv5_block2_out",
         ]
-        self._selected_output_layers = [
-            self._base_model.get_layer(name).output for name in self._layers
-        ]
 
         # Define the Unet downstacks.
-        self._down_stack = tensorflow.keras.Model(
-            inputs=self._base_model.input,
-            outputs=self._selected_output_layers,
-        )
+
+        self._down_stack = Downsample(self._layers)
+
+        self._down_stack.trainable = False
 
         # Parameters of the up-stacks.
         FILTERS = [512, 256, 128, 64]
@@ -70,6 +57,9 @@ class Unet(tensorflow.keras.Model):
             )
             self._up_stack.append(upsample)
 
+        # Concatenate layer
+        self.concatenate = tensorflow.keras.layers.Concatenate()
+
         # Last convolution layers.
         self._last_conv = tensorflow.keras.layers.Conv2DTranspose(
             filters=self._output_classes,
@@ -84,45 +74,23 @@ class Unet(tensorflow.keras.Model):
         """
         Build the Unet model.
         Args:
-            Input: A 4D-tensors
+            Input: A 4D-keras-tensor
 
         """
-
         # building the downstacks
+
         skips = self._down_stack(input)
         layer = skips[-1]
         skips = reversed(skips[:-1])
 
-        # upsampling and establishing the skip connections
-        drop_out = self._drop_out
-
         # Building the skip connections.
         for up, skip in zip(self._up_stack, skips):
             layer = up(layer)
-            concat = tensorflow.keras.layers.Concatenate()
-            layer = concat([layer, skip])
+            layer = self.concatenate([layer, skip])
         # Last layers
         layer = self._last_conv(layer)
 
         return layer
-
-    def freezing_layers(self, fine_tune_at: int = 0) -> None:
-        """
-        When called, freeze the up-stacks, and unfreeze some of the top layers of the pretrained model.
-        Args:
-            fine_tune_at: number of layers of the pretrained model which are unfrozen.Default to 0.
-
-        """
-        self._base_model.trainable = True
-
-        for i, layer in enumerate(self._base_model.layers[0:-fine_tune_at]):
-            layer.trainable = False
-
-        for i, layer in enumerate(self._base_model.layers[-fine_tune_at:]):
-            layer.trainable = True
-
-        for stack in self._up_stack:
-            stack.trainable = False
 
     def get_config(self):
         """Overwrite the get_config() methods to save and load the model.
@@ -209,6 +177,59 @@ class Upsample(tensorflow.keras.Model):
             "size": self._size,
             "apply_drop_out": self._drop_out,
             "drop_out_rate": self._drop_out_rate,
+        }
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+class Downsample(tensorflow.keras.Model):
+    """Define the downstacks of the unet Model."""
+
+    def __init__(self, layer_names: List = []) -> None:
+        """Class initialisation:
+        Args:
+            layer_names: list of strings containing the layer names which defines the skip connections. Defaukt to [].
+        """
+        super(Downsample, self).__init__()
+        # Saving the layer names.
+
+        self._layers = layer_names
+
+        # Calling the base model.
+        self._base_model = tensorflow.keras.applications.resnet_v2.ResNet101V2(
+            include_top=False,
+            weights="imagenet",
+            input_tensor=None,
+            pooling=max,
+        )
+
+        # Listing the output of the model.
+        self._selected_output_layers = [
+            self._base_model.get_layer(name).output for name in self._layers
+        ]
+
+        self._down_stack = tensorflow.keras.Model(
+            inputs=self._base_model.input,
+            outputs=self._selected_output_layers,
+        )
+
+        self._down_stack.trainable = False
+
+    @tensorflow.function
+    def call(self, input):
+        """Build the model:
+        Args:
+            input: a 4d tf Tensor.
+
+        """
+        return self._down_stack(input)
+
+    def get_config(self):
+        """Overwrite the get_config() methods to save and load the model."""
+        return {
+            "filter": self._filter,
         }
 
     @classmethod
