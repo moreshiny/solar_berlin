@@ -28,10 +28,13 @@ class DataLoader:
             batch_size (int, optional): Batch size for model training.
                 Defaults to 32.
 <<<<<<< HEAD:roof/dataloader.py
+<<<<<<< HEAD:roof/dataloader.py
 =======
             n_samples(int, optional): Number of input-target pairs to load.
                 Returns all available pairs if set to None. Defaults to None.
 >>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
+=======
+>>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
             input_shape (tuple, optional): Shape of input images.
                 Defaults to (224, 224, 3).
             multiclass (bool, optional): Whether to use multiclass or binary
@@ -41,7 +44,11 @@ class DataLoader:
         """
         # initialize attributes
         if not os.path.exists(path):
+<<<<<<< HEAD:roof/dataloader.py
             raise InvalidPathError(f"Path {path} does not exist.")
+=======
+            raise FileNotFoundError(f"Path {path} does not exist.")
+>>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
         self.path = path
         self.batch_size = batch_size
         self._dataset_input = None
@@ -101,9 +108,15 @@ class DataLoader:
         useable_paths = self._discard_wrong_img_paths(all_paths)
 
         if len(useable_paths) == 0:
+<<<<<<< HEAD:roof/dataloader.py
             raise InsuffientDataError(
                 f"No images found in {self.path} with the correct size."
             )
+=======
+            raise FileNotFoundError(
+                f"No images found in {self.path} with the correct size."
+                )
+>>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
 
         useable_paths.sort()
 
@@ -148,10 +161,14 @@ class DataLoader:
                 Either "RGB", "A" (alpha), or "L" (greyscale). All channels are
                 normalized such that 255 -> 1.0 (in "RGB" and "A") or 255 ->
 <<<<<<< HEAD:roof/dataloader.py
+<<<<<<< HEAD:roof/dataloader.py
                 4.0 (in "L").
 =======
                 4.0 (in "L"). 
 >>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
+=======
+                4.0 (in "L").
+>>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
 
         Returns:
             tf.image: An image tensor of type float32. In "RGB" and "A"

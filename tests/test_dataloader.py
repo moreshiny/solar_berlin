@@ -75,10 +75,11 @@ class TestDataLoader(unittest.TestCase):
         for data_path in self.data_paths:
 
             tile_size = int(data_path.split("_")[2])
-            n_samples = 10
 
             dataloader = DataLoader(
-                data_path, n_samples=n_samples, input_shape=(tile_size, tile_size, 3))
+                data_path,
+                input_shape=(tile_size, tile_size, 3)
+            )
             dataloader.load()
 
             # find the number of elements in the tensorflow dataset
@@ -91,6 +92,7 @@ class TestDataLoader(unittest.TestCase):
                 self.assertEqual(inputs.shape, (32, tile_size, tile_size, 3))
                 self.assertEqual(targets.shape, (32, tile_size, tile_size, 1))
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     def test_dataloader_returns_all_images(self):
         # this test ist done only on the origial curated dataset
@@ -301,6 +303,9 @@ class TestDataLoader(unittest.TestCase):
                 DataLoader(data_path, n_samples=1_000_000_000)
 
     def test_dataloader_does_not_fail_without_n_samples_set(self):
+=======
+    def test_dataloader_returns_all_images(self):
+>>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling)
         # this test ist done only on the origial curated dataset
         data_path = self.data_paths[0]
         tile_size = int(data_path.split("_")[2])
@@ -313,9 +318,10 @@ class TestDataLoader(unittest.TestCase):
     def test_dataloader_returns_matching_pairs_map_mask(self):
         for data_path in self.data_paths:
             tile_size = int(data_path.split("_")[2])
-            n_samples = 10
             dataloader = DataLoader(
-                data_path, n_samples=n_samples, input_shape=(tile_size, tile_size, 3))
+                data_path,
+                input_shape=(tile_size, tile_size, 3)
+                )
 
             # find the number of elements in the tensorflow dataset
             n_batches = math.ceil(dataloader._dataset_input
@@ -345,9 +351,11 @@ class TestDataLoader(unittest.TestCase):
                 legacy_mode = True
             else:
                 legacy_mode = False
-            n_samples = 10
             dataloader = DataLoader(
-                data_path, n_samples=n_samples, input_shape=(tile_size, tile_size, 3), legacy_mode=legacy_mode)
+                data_path,
+                input_shape=(tile_size, tile_size, 3),
+                legacy_mode=legacy_mode
+                )
             dataloader.load()
             # find the number of elements in the tensorflow dataset
             n_batches = math.ceil(dataloader._dataset_input
@@ -365,9 +373,11 @@ class TestDataLoader(unittest.TestCase):
         for data_path in self.data_paths[1:]:
             tile_size = int(data_path.split("_")[2])
             legacy_mode = False
-            n_samples = 10
             dataloader = DataLoader(
-                data_path, n_samples=n_samples, input_shape=(tile_size, tile_size, 3), legacy_mode=legacy_mode, multiclass=True)
+                data_path,
+                input_shape=(tile_size, tile_size, 3),
+                legacy_mode=legacy_mode, multiclass=True
+                )
             dataloader.load()
             # find the number of elements in the tensorflow dataset
             n_batches = math.ceil(dataloader._dataset_input
@@ -387,4 +397,22 @@ class TestDataLoader(unittest.TestCase):
         data_path = self.data_paths[0]
         with self.assertRaises(AssertionError):
             DataLoader(data_path, legacy_mode=True, multiclass=True)
+<<<<<<< HEAD
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+
+    def test_dataloader_raises_error_invalid_path(self):
+        with self.assertRaises(FileNotFoundError):
+            DataLoader("/invalid/path")
+
+    def test_dataload_raises_error_no_valid_images_found(self):
+
+        tile_size = 600  # non-matching tile size
+
+        for data_path in self.data_paths:
+            with self.assertRaises(FileNotFoundError):
+                DataLoader(
+                    data_path,
+                    input_shape=(tile_size, tile_size,3)
+                )
+>>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling)
