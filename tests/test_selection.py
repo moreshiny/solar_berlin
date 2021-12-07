@@ -159,7 +159,6 @@ class TestSelection(unittest.TestCase):
                 test_n=test_n,
                 output_path=OUTPUT_PATH,
                 random_seed=42,
-                multiclass=True,
             )
 
     def test_data_selector_produces_expected_filenames(self):
@@ -225,6 +224,7 @@ class TestSelection(unittest.TestCase):
 
     def test_data_selector_raises_error_on_invalid_image_size_224(self):
         with self.assertRaises(ValueError):
+            # lossy is False by default, so this should fail
             self.selector.select_data(224, 10, 5, OUTPUT_PATH, 42)
 
     def test_data_selector_raises_error_on_invalid_input_path(self):
@@ -312,10 +312,32 @@ class TestSelection(unittest.TestCase):
             self.assertTrue(filecmp.cmp(all_files_new[i], all_files_known[i]))
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 4241abc (First working version of data selector with multiclass)
 =======
 >>>>>>> 1658920 (Fix binary mask loading and add mask category test cases)
+=======
+    # TODO add test to verify binary and multiclass output are correct and predictable
+
+    def test_data_selector_can_select_images_of_size_512(self):
+        selected_path = os.path.join(OUTPUT_PATH, "selected_tiles_512_10_5_42")
+        if os.path.exists(selected_path):
+            shutil.rmtree(selected_path)
+        self.selector.select_data(
+            512,
+            10,
+            5,
+            output_path=OUTPUT_PATH,
+            random_seed=42,
+            lossy=True,
+        )
+        images_selected = glob.glob(
+            os.path.join(selected_path, "**", "*.png"),
+            recursive=True,
+        )
+        self.assertEqual(len(images_selected), (10 + 5) * 2)
+>>>>>>> c3118cb (Allow lossy selection of arbitrary image sizes)
 
 if __name__ == "__main__":
     unittest.main()
