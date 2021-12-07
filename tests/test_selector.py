@@ -8,7 +8,7 @@ from PIL import Image
 
 
 from selection.selection import DataSelector
-from selection.errors import InvalidPathError, AbsolutePathError
+from selection.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
 from selection.errors import InvalidTileSizeError, InsuffientDataError
 
 INPUT_PATH = os.path.join("data", "testing", "converted")
@@ -19,7 +19,7 @@ SELECTION_SIZES = ((10, 5), )
 RANDOM_SEED = 42
 
 
-class TestSelection(unittest.TestCase):
+class TestDataSelector(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -82,12 +82,28 @@ class TestSelection(unittest.TestCase):
         for selected_path in self.selected_paths:
             for selection_size in SELECTION_SIZES:
                 # count of train/test files is half the total due to map/msk
-                train_files_no = len(os.listdir(
-                    os.path.join(selected_path, "train"))) // 2
-                test_files_no = len(os.listdir(
-                    os.path.join(selected_path, "test"))) // 2
+                train_files = os.listdir(os.path.join(selected_path, "train"))
+                train_files_no = len(train_files) // 2
+                test_files = os.listdir(os.path.join(selected_path, "test"))
+                test_files_no = len(test_files) // 2
                 self.assertEqual(train_files_no, selection_size[0])
                 self.assertEqual(test_files_no, selection_size[1])
+
+    def test_data_selector_refuses_to_overwrite_existing_directory(self):
+        existing_path = os.path.join(
+            OUTPUT_PATH,
+            "existing_path"
+        )
+        with self.assertRaises(OutputPathExistsError):
+            DataSelector(
+                input_path=INPUT_PATH,
+            ).select_data(
+                tile_size=250,
+                output_path=existing_path,
+                train_n=10,
+                test_n=5,
+                random_seed=42,
+            )
 
     def test_data_selector_throws_error_more_images_requested_than_exist(self):
         # huge train_n (only 32 tiles are available during testing)
@@ -233,6 +249,48 @@ class TestSelection(unittest.TestCase):
         )
         self.assertEqual(len(images_selected), (10 + 5) * 2)
 
+    def test_data_selector_picks_different_images_for_different_random_seeds(self):
+
+        random_seeds = (43, 44)
+        tile_size = 250
+        train_n = 10
+        test_n = 5
+
+        selected_images = []
+
+        for random_seed in random_seeds:
+            selected_path = os.path.join(
+                OUTPUT_PATH,
+                f"selected_tiles_{tile_size}_{train_n}_{test_n}_{random_seed}"
+            )
+            if os.path.exists(selected_path):
+                shutil.rmtree(selected_path)
+            self.selector.select_data(
+                tile_size=tile_size,
+                train_n=train_n,
+                test_n=test_n,
+                output_path=OUTPUT_PATH,
+                random_seed=random_seed,
+            )
+            selected_images.append(glob.glob(
+                os.path.join(selected_path, "**", "*.png"),
+                recursive=True,
+            ))
+
+        duplicates = set(selected_images[0]).intersection(selected_images[1])
+        self.assertEqual(len(duplicates), 0)
+
+    def test_data_selector_does_not_pick_same_images_in_test_and_train(self):
+        for selected_path in self.selected_paths:
+            train_fns = glob.glob(
+                os.path.join(selected_path, "train", "**", "*.png"),
+            )
+            test_fns = glob.glob(
+                os.path.join(selected_path, "test", "**", "*.png"),
+            )
+
+            for test_file in test_fns:
+                self.assertNotIn(test_file, train_fns)
 
 if __name__ == "__main__":
     unittest.main()
