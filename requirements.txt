@@ -2,3 +2,4 @@ pillow
 tensorflow>=2.6
 numpy
 matplotlib
+gdal
