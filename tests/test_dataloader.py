@@ -23,9 +23,15 @@ class TestDataLoader(unittest.TestCase):
 
             tile_size = int(data_path.split("_")[2])
 
+            if tile_size == 224:
+                legacy_mode = True
+            else:
+                legacy_mode = False
+
             dataloader = DataLoader(
                 data_path,
-                input_shape=(tile_size, tile_size, 3)
+                input_shape=(tile_size, tile_size, 3),
+                legacy_mode=legacy_mode,
             )
             dataloader.load()
 
@@ -51,9 +57,16 @@ class TestDataLoader(unittest.TestCase):
     def test_dataloader_returns_matching_pairs_map_mask(self):
         for data_path in self.data_paths:
             tile_size = int(data_path.split("_")[2])
+
+            if tile_size == 224:
+                legacy_mode = True
+            else:
+                legacy_mode = False
+
             dataloader = DataLoader(
                 data_path,
-                input_shape=(tile_size, tile_size, 3)
+                input_shape=(tile_size, tile_size, 3),
+                legacy_mode=legacy_mode,
                 )
 
             # find the number of elements in the tensorflow dataset
@@ -135,13 +148,20 @@ class TestDataLoader(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             DataLoader("/invalid/path")
 
-    def test_dataload_raises_error_no_valid_images_found(self):
-
+    def test_dataloader_raises_error_no_valid_images_found(self):
         tile_size = 600  # non-matching tile size
-
         for data_path in self.data_paths:
             with self.assertRaises(FileNotFoundError):
                 DataLoader(
                     data_path,
                     input_shape=(tile_size, tile_size,3)
                 )
+
+    def test_dataloader_raises_error_legacy_mode_new_data(self):
+        tile_size = 500
+        with self.assertRaises(ValueError):
+            DataLoader(
+                self.data_paths[1],  # new type dataset
+                input_shape=(tile_size, tile_size, 3),
+                legacy_mode=True  # legacy mode should not be allowed
+            )
