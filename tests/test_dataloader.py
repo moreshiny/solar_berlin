@@ -45,6 +45,11 @@ class TestDataLoader(unittest.TestCase):
             else:
                 legacy_mode = False
 
+            if tile_size == 224:
+                legacy_mode = True
+            else:
+                legacy_mode = False
+
             dataloader = DataLoader(
                 data_path,
                 input_shape=(tile_size, tile_size, 3),
