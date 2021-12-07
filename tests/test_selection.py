@@ -1,4 +1,5 @@
 # basic unittest structure
+import filecmp
 import unittest
 import os
 import shutil
@@ -195,6 +196,22 @@ class TestSelection(unittest.TestCase):
 
         true_set = {0, 63, 127, 191, 255}
         self.assertSetEqual(msk_set, true_set)
+
+    def test_data_selector_produces_expected_images(self):
+        for selected_path in self.selected_paths:
+            all_files_new = glob.glob(
+                os.path.join(selected_path, "**", "*.png"),
+                recursive=True,
+            )
+
+            all_files_known = glob.glob(
+                os.path.join(selected_path + "_fixed", "**", "*.png"),
+                recursive=True,
+            )
+        # check that all files are identical
+        self.assertEqual(len(all_files_new), len(all_files_known))
+        for i in range(len(all_files_new)):
+            self.assertTrue(filecmp.cmp(all_files_new[i], all_files_known[i]))
 
 
 if __name__ == "__main__":
