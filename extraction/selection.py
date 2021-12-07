@@ -24,7 +24,7 @@ class DataSelector():
         self.output_path = None
         self._testing = testing
 
-    def select_data(self, tile_size, train_n, test_n, output_path, random_seed=0, multiclass=True):
+    def select_data(self, tile_size, train_n, test_n, output_path, random_seed=0, lossy=False):
 
         if os.path.isabs(output_path):
             raise ValueError(f"Output path {output_path} is absolute")
@@ -37,8 +37,13 @@ class DataSelector():
                 f"Tile size {tile_size} is not an integer or less than 1")
 
         if RASTER_TILE_SIZE % tile_size != 0:
-            raise ValueError(
-                f"tile_size must be a factor of {RASTER_TILE_SIZE}")
+            if lossy:
+                self.raster_tile_size = RASTER_TILE_SIZE // tile_size * tile_size
+            else:
+                raise ValueError(
+                    f"tile_size must be a factor of {RASTER_TILE_SIZE} or raster edges will be discarded. Set lossy=True to allow this.")
+        else:
+            self.raster_tile_size = RASTER_TILE_SIZE
 
         current_tile_path = os.path.join(
             self.input_path, "tiled_" + str(tile_size))
@@ -70,9 +75,9 @@ class DataSelector():
 
         if self._testing:
             # limit input to 32 tiles for faster testing
-            raster_tile_size = min(RASTER_TILE_SIZE, tile_size*4)
+            raster_tile_size = min(self.raster_tile_size, tile_size*4)
         else:
-            raster_tile_size = RASTER_TILE_SIZE
+            raster_tile_size = self.raster_tile_size
 
         raster_map_fns = glob.glob(os.path.join(
             self.input_path, "raster", "*.tif"))
