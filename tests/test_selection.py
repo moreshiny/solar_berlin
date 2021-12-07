@@ -7,9 +7,9 @@ import numpy as np
 from PIL import Image
 
 
-from extraction.selection import DataSelector
-from extraction.selection import InvalidPathError, AbsolutePathError
-from extraction.selection import InvalidTileSizeError, InsuffientDataError
+from selection.selection import DataSelector
+from selection.errors import InvalidPathError, AbsolutePathError
+from selection.errors import InvalidTileSizeError, InsuffientDataError
 
 INPUT_PATH = os.path.join("data", "testing", "converted")
 OUTPUT_PATH = os.path.join("data", "testing", "selected")
@@ -214,8 +214,6 @@ class TestSelection(unittest.TestCase):
         self.assertEqual(len(all_files_new), len(all_files_known))
         for i in range(len(all_files_new)):
             self.assertTrue(filecmp.cmp(all_files_new[i], all_files_known[i]))
-
-    # TODO add test to verify binary and multiclass output are correct and predictable
 
     def test_data_selector_can_select_images_of_size_512(self):
         selected_path = os.path.join(OUTPUT_PATH, "selected_tiles_512_10_5_42")
