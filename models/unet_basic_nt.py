@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from dataloader import DataLoader
@@ -36,8 +36,8 @@ class Model:
     ) -> None:
         """Instantiate the class.
         Args:
-            dataset_train (tensorflow.dataset): batched training data
-            dataset_train (tensorflow.dataset): batched validation data
+            dataset_train (tf.dataset): batched training data
+            dataset_train (tf.dataset): batched validation data
             layer_names (list of strings): defining the MobilenetV2 NN.
             output_classes (int): number of classes for the classification.
                 Defaults to 1.
@@ -113,7 +113,7 @@ class Model:
         self.logging(comment)
         # prepare model pickeling
         checkpoint_filepath = self._path_log + self._current_time + "/checkpoint"
-        model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
             save_weights_only=True,
             monitor="val_accuracy",
@@ -122,11 +122,11 @@ class Model:
         )
         # Prepare the tensorboard
         log_dir = "logs/tensorboard/" + self._current_time
-        tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(
             log_dir=log_dir, histogram_freq=1
         )
         # Clearing the output
-        tensorflow.keras.backend.clear_session
+        tf.keras.backend.clear_session
 
         # fit the model
         self._model_history = self.model.fit(
@@ -157,7 +157,7 @@ class Model:
 
         return self._model_history
 
-    def _compile_model(self) -> tensorflow.keras.Model:
+    def _compile_model(self) -> tf.keras.Model:
         """
         Takes the Unet models, and compile the model. Return the model.
 
@@ -168,14 +168,14 @@ class Model:
         model = self._setup_unet_model(output_channels=self.output_classes)
         model.compile(
             optimizer="adam",
-            loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
+            loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
             metrics=["accuracy"],
         )
         return model
 
-    def _setup_unet_model(self, output_channels: int) -> tensorflow.keras.Model:
+    def _setup_unet_model(self, output_channels: int) -> tf.keras.Model:
         """
-        Unet model from the segmentation notebook by tensorflow. Define the model.
+        Unet model from the segmentation notebook by tf. Define the model.
 
         Args:
         output_channels (int): number of categories in the classification.
@@ -267,7 +267,7 @@ class Model:
             plt.subplot(1, len(display_list), i + 1)
             plt.title(title[i])
             type(display_list[i])
-            plt.imshow(tensorflow.keras.utils.array_to_img(display_list[i]))
+            plt.imshow(tf.keras.utils.array_to_img(display_list[i]))
             plt.axis("off")
         path_snapshot = self._path_log + self._current_time + "/snapshots"
         if not os.path.exists(path_snapshot):
@@ -291,7 +291,7 @@ class Model:
         return pred_mask
 
     def show_predictions(
-        self, dataset: tensorflow.data.Dataset = None, num_batches: int = 1
+        self, dataset: tf.data.Dataset = None, num_batches: int = 1
     ) -> None:
         """Display side by side an earial photography, its true mask, and the
             predicted mask.

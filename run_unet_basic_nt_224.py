@@ -1,4 +1,4 @@
-import tensorflow
+import tensorflow as tf
 
 from models.unet_basic_nt import Model
 
@@ -10,7 +10,7 @@ model_name = "UNET"
 epochs = 1
 batch_size = 8
 
-tensorflow.keras.backend.clear_session()
+tf.keras.backend.clear_session()
 
 model = Model(
     path_train=PATH_TRAIN,

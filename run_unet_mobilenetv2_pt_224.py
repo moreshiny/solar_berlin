@@ -1,4 +1,4 @@
-import tensorflow
+import tensorflow as tf
 from models.unet_mobilenetv2_pt import Model
 
 PATH_TRAIN = "data/test_data_224/train"
@@ -16,7 +16,7 @@ epochs = 1
 batch_size = 8
 alpha = 1.0
 
-tensorflow.keras.backend.clear_session()
+tf.keras.backend.clear_session()
 
 model = Model(
     path_train=PATH_TRAIN,

@@ -1,5 +1,5 @@
 """Define the UNET model. BAsed in part on the image segmentation notebook
-https://www.tensorflow.org/tutorials/images/segmentation
+https://www.tf.org/tutorials/images/segmentation
 """
 import os
 import glob
@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow
+import tensorflow as tf
 
 from dataloader import DataLoader
 
@@ -48,13 +48,13 @@ class Model:
             input_shape: Tuple[int] = (224, 224, 3): input size of the image, defaukt to (224, 224, 3).
             epochs: int = 10: number of epochs training before finie tuning, default to 10.
             fine_tune_epoch: int = 10: number of epochs in the fine tuning epochs, default to 10
-            batch_size: int = 32: batche size. Default to 32. 
-            model_name: str = "Unet"; Model name, Default to unet. 
+            batch_size: int = 32: batche size. Default to 32.
+            model_name: str = "Unet"; Model name, Default to unet.
             include_top: bool = True. Wether to include the claissification layer of the pretrained network.\
-                Default to False. 
-            pooling: str = None,: Pooling in the convolution layers, default to None. 
-            fine_tune_at: int = 0, Number of layers at the top of the network to be fine tuned. Default to 0. 
-            drop_out: bool = False. Activating the dropout in the up-sample stacks; DAfault to False. 
+                Default to False.
+            pooling: str = None,: Pooling in the convolution layers, default to None.
+            fine_tune_at: int = 0, Number of layers at the top of the network to be fine tuned. Default to 0.
+            drop_out: bool = False. Activating the dropout in the up-sample stacks; DAfault to False.
             drop_out_rate: dict. Dropout rate in the up-sample stack, in the form of a dictionary with keys\
                 512, 256, 128, 64. Default to {"512": 0, "256": 0, "128": 0, "64": 0}.
             patience: int = 10. Time before early stopping of the training. Default to ten.
@@ -162,7 +162,7 @@ class Model:
         )
 
         # checkpoint_dir = os.path.dirname(checkpoint_filepath)
-        model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
             save_weights_only=False,
             monitor="val_accuracy",
@@ -173,12 +173,12 @@ class Model:
 
         # Prepare the tensorboard
         log_dir = "logs/tensorboard/" + self._current_time
-        tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(
             log_dir=log_dir, histogram_freq=1
         )
 
         # Parameters for early stopping
-        early_stopping = tensorflow.keras.callbacks.EarlyStopping(
+        early_stopping = tf.keras.callbacks.EarlyStopping(
             monitor="val_loss",
             patience=self._patience,
         )
@@ -232,7 +232,7 @@ class Model:
             print("Training the model in fine tuning mode")
 
             # Defining the early stopping for the model in the fine tuning epochs.
-            early_stopping = tensorflow.keras.callbacks.EarlyStopping(
+            early_stopping = tf.keras.callbacks.EarlyStopping(
                 monitor="val_loss",
                 patience=self._patience_fine_tune,
             )
@@ -280,10 +280,10 @@ class Model:
 
     def _compile_model(
         self,
-        model: tensorflow.keras.Model,
+        model: tf.keras.Model,
         fine_tune_epochs: int = 0,
         learning_rate: float = 0.001,
-    ) -> tensorflow.keras.Model:
+    ) -> tf.keras.Model:
         """
         Takes the Unet models, and compile the model. Return the model.
 
@@ -293,15 +293,15 @@ class Model:
         """
         print("Model compiled")
 
-        opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
+        opt = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
         model.compile(
             optimizer=opt,
-            loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
+            loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
             metrics=[
                 "accuracy",
-                tensorflow.keras.metrics.Recall(name="recall"),
-                tensorflow.keras.metrics.Precision(name="precision"),
+                tf.keras.metrics.Recall(name="recall"),
+                tf.keras.metrics.Precision(name="precision"),
             ],
         )
 
@@ -310,9 +310,9 @@ class Model:
     def _setup_unet_model(
         self,
         output_channels: int,
-    ) -> tensorflow.keras.Model:
+    ) -> tf.keras.Model:
         """
-        Unet model from the segmentation notebook by tensorflow. Define the model.
+        Unet model from the segmentation notebook by tf. Define the model.
 
         Args:
         output_channels (int): number of categories in the classification.
@@ -335,11 +335,11 @@ class Model:
         ]
 
         # define the input layer
-        inputs = tensorflow.keras.layers.Input(tensorflow.TensorShape(self.input_shape))
+        inputs = tf.keras.layers.Input(tf.TensorShape(self.input_shape))
 
         # downsampling through the model
         # needs to have base model defined.
-        down_stack = tensorflow.keras.Model(
+        down_stack = tf.keras.Model(
             inputs=base_model.input,
             outputs=selected_output_layers,
         )
@@ -381,11 +381,11 @@ class Model:
 
         for up, skip in zip(up_stack, skips):
             layer = up(layer)
-            concat = tensorflow.keras.layers.Concatenate()
+            concat = tf.keras.layers.Concatenate()
             layer = concat([layer, skip])
 
         # this is the last layer of the model
-        last_conv = tensorflow.keras.layers.Conv2DTranspose(
+        last_conv = tf.keras.layers.Conv2DTranspose(
             filters=output_channels,
             kernel_size=3,
             strides=2,
@@ -397,7 +397,7 @@ class Model:
 
         # resizing after the dilation
         # TODO Hardcoded size!!!
-        # layer = tensorflow.keras.layers.Resizing(
+        # layer = tf.keras.layers.Resizing(
         #    1024,
         #    1024,
         #    interpolation="bilinear",
@@ -405,16 +405,16 @@ class Model:
         # )(layer)
 
         # Implementing dilation
-        # filters = tensorflow.constant(
+        # filters = tf.constant(
         #    [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
         # )
-        # filters = tensorflow.expand_dims(filters, axis=-1)
+        # filters = tf.expand_dims(filters, axis=-1)
         # rate_height = 1
         # rate_width = 1
         # stride_height = 1
         # stride_width = 1
 
-        # layer = tensorflow.nn.dilation2d(
+        # layer = tf.nn.dilation2d(
         #    input=layer,
         #    filters=filters,
         #    strides=[1, stride_height, stride_width, 1],
@@ -425,7 +425,7 @@ class Model:
 
         print("model built")
 
-        return tensorflow.keras.Model(inputs=inputs, outputs=layer)
+        return tf.keras.Model(inputs=inputs, outputs=layer)
 
     def _freezing_layers(self) -> None:
         """
@@ -456,7 +456,7 @@ class Model:
 
         layer_log.close()
 
-    def _get_base_model(self) -> tensorflow.keras.Model:
+    def _get_base_model(self) -> tf.keras.Model:
         """
         Define the base of the model, Resnetv2_101. Note that a discussion on
         the shape is necessary: if the shape of the pictures is the default
@@ -468,7 +468,7 @@ class Model:
         """
 
         if self._include_top:
-            base_model = tensorflow.keras.applications.resnet_v2.ResNet101V2(
+            base_model = tf.keras.applications.resnet_v2.ResNet101V2(
                 include_top=True,
                 weights="imagenet",
                 input_tensor=None,
@@ -478,7 +478,7 @@ class Model:
             self.input_shape = (224, 224, 3)
 
         else:
-            base_model = tensorflow.keras.applications.resnet_v2.ResNet101V2(
+            base_model = tf.keras.applications.resnet_v2.ResNet101V2(
                 include_top=False,
                 weights="imagenet",
                 input_tensor=None,
@@ -507,10 +507,10 @@ class Model:
         Returns:
                Upsample Sequential Model
         """
-        initializer = tensorflow.random_normal_initializer(0.0, 0.02)
-        result = tensorflow.keras.Sequential()
+        initializer = tf.random_normal_initializer(0.0, 0.02)
+        result = tf.keras.Sequential()
         result.add(
-            tensorflow.keras.layers.Conv2DTranspose(
+            tf.keras.layers.Conv2DTranspose(
                 filters,
                 size,
                 strides=2,
@@ -520,12 +520,12 @@ class Model:
             )
         )
 
-        result.add(tensorflow.keras.layers.BatchNormalization())
+        result.add(tf.keras.layers.BatchNormalization())
 
         if apply_dropout:
-            result.add(tensorflow.keras.layers.Dropout(drop_out_rate))
+            result.add(tf.keras.layers.Dropout(drop_out_rate))
 
-        result.add(tensorflow.keras.layers.ReLU())
+        result.add(tf.keras.layers.ReLU())
 
         return result
 
@@ -544,7 +544,7 @@ class Model:
             plt.subplot(1, len(display_list), i + 1)
             plt.title(title[i])
             type(display_list[i])
-            plt.imshow(tensorflow.keras.utils.array_to_img(display_list[i]))
+            plt.imshow(tf.keras.utils.array_to_img(display_list[i]))
             plt.axis("off")
         path_snapshot = self._path_log + self._current_time + "/snapshots"
         if not os.path.exists(path_snapshot):
@@ -568,7 +568,7 @@ class Model:
         return pred_mask
 
     def show_predictions(
-        self, dataset: tensorflow.data.Dataset = None, num_batches: int = 1
+        self, dataset: tf.data.Dataset = None, num_batches: int = 1
     ) -> None:
         """Display side by side an earial photography, its true mask, and the
             predicted mask.
