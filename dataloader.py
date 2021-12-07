@@ -96,9 +96,15 @@ class DataLoader:
         useable_paths.sort()
 
         # split input and target
-        input_paths = [filename for filename in useable_paths if "map" in filename]
+        input_paths = [
+            filename for filename in useable_paths
+            if "map" in filename
+        ]
         # TODO "mask" is needed only for legacy mode, remove when no longer needed
-        target_paths = [filename for filename in useable_paths if "mask" in filename or "msk" in filename]
+        target_paths = [
+            filename for filename in useable_paths
+            if "mask" in filename or "msk" in filename
+        ]
 
         assert len(input_paths) == len(
             target_paths
