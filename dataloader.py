@@ -19,11 +19,22 @@ class DataLoader:
         """Class instance initialization.
 
         Args:
-            path (str): Path to data folder with "map" and "mask" pairs.
+            path (str): Path to data folder with "map" and "mask" pairs. For
+                legacy mode the masks should be in .tif format and have an
+                alpha channel with roofs classed 1-255 and no roof as 0.
+                For non-legacy mode the masks should be in .png format and have
+                a single channel with "no roof" classed as 0 and pv potenial
+                coded as 63 (worst), 127, 191, and 255 (best).
             batch_size (int, optional): Batch size for model training.
                 Defaults to 32.
             n_samples(int, optional): Number of input-target pairs to load.
                 Returns all available pairs if set to None. Defaults to None.
+            input_shape (tuple, optional): Shape of input images.
+                Defaults to (224, 224, 3).
+            multiclass (bool, optional): Whether to use multiclass or binary
+                classification. Defaults to False.
+            legacy_mode (bool, optional): Whether to use legacy mode or not.
+                Defaults to True.
         """
         # initialize attributes
         self.path = path
@@ -34,9 +45,9 @@ class DataLoader:
         self.dataset = None
         self.input_shape = input_shape
 
+        # TODO remove legacy mode when no longer needed
         if legacy_mode:
             assert multiclass == False, "Legacy mode is not compatible with multiclass mode."
-
         self._legacy_mode = legacy_mode
         self._multiclass = multiclass
 
@@ -61,7 +72,7 @@ class DataLoader:
         Returns:
             tuple: A tuple of style (input_paths, target_paths) where
                 both input_paths and target_paths are sorted lists with file
-                path names to .tif images. The Nth element of target_paths
+                paths of .tif or .png images. The Nth element of target_paths
                 corresponds to the target of the Nth element of input_paths.
         """
         # get all paths
@@ -88,10 +99,9 @@ class DataLoader:
         useable_paths = useable_paths[:n_paths]
 
         # split input and target
-        input_paths = [
-            filename for filename in useable_paths if "map" in filename]
-        target_paths = [
-            filename for filename in useable_paths if "mask" in filename or "msk" in filename]
+        input_paths = [filename for filename in useable_paths if "map" in filename]
+        # TODO "mask" is needed only for legacy mode, remove when no longer needed
+        target_paths = [filename for filename in useable_paths if "mask" in filename or "msk" in filename]
 
         assert len(input_paths) == len(
             target_paths
@@ -115,12 +125,14 @@ class DataLoader:
             tensor (tf.Tensor): Tensor with file name path of .tif
                 image to be loaded.
             channels (str): The color channels of the image that is desired.
-                Either "RGB" or "A" (alpha). All channels are normalized such
-                that 255 = 1.0.
+                Either "RGB", "A" (alpha), or "L" (greyscale). All channels are
+                normalized such that 255 -> 1.0 (in "RGB" and "A") or 255 ->
+                4.0 (in "L"). 
 
         Returns:
-            tf.image: An image tensor of type float32 normalized from
-                0-255 to 0.0-1.0.
+            tf.image: An image tensor of type float32. In "RGB" and "A"
+            mode the image is normalized from 0-255 to 0.0-1.0. In "L" mode the
+            image is normalized from 0-255 to 0.0-4.0.
         """
         # decode tensor and read image using helper function
         def _decode_tensor_load_image(tensor, color_mode):
@@ -151,7 +163,7 @@ class DataLoader:
             img = tf.math.ceil(image[:, :, 3])
             img = tf.reshape(img, self.input_shape[:2] + tuple([1]))
         elif channels == "L":
-            # for mask images - grey scale with minimum value for "no roof"
+            # for mask images - greyscale with minimum value for "no roof"
             # higher values indicate better pv suitability categories
             if self._multiclass:
                 # normalise image to 0-4 (0 = no roof, 4 = best pv category)
