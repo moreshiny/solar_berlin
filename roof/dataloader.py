@@ -82,7 +82,11 @@ class DataLoader:
         if self._legacy_mode:
             for target_path in target_paths:
                 if "msk" in target_path:
+<<<<<<< HEAD:roof/dataloader.py
                     raise LegacyModeError(
+=======
+                    raise ValueError(
+>>>>>>> a887e5d (Add legacy mode sanity check (by filename)):dataloader.py
                         "Filnames indicate new type data but legacy mode is enabled."
                     )
 
