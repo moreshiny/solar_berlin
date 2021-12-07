@@ -4,6 +4,20 @@ import os
 import tensorflow as tf
 
 
+class LegacyModeError(Exception):
+    """ Raised when legacy modes is used on incompatible data """
+    pass
+
+
+class InvalidPathError(Exception):
+    """ Raised when an invalid path is given """
+    pass
+
+
+class InsuffientDataError(Exception):
+    """ Raised when a path does not contain sufficient images of the right size """
+    pass
+
 class DataLoader:
     """Class for creating tensorflow dataset."""
 
@@ -35,7 +49,7 @@ class DataLoader:
         """
         # initialize attributes
         if not os.path.exists(path):
-            raise FileNotFoundError(f"Path {path} does not exist.")
+            raise InvalidPathError(f"Path {path} does not exist.")
         self.path = path
         self.batch_size = batch_size
         self._dataset_input = None
@@ -63,7 +77,7 @@ class DataLoader:
         if self._legacy_mode:
             for target_path in target_paths:
                 if "msk" in target_path:
-                    raise ValueError(
+                    raise LegacyModeError(
                         "Filnames indicate new type data but legacy mode is enabled."
                     )
 
@@ -89,7 +103,7 @@ class DataLoader:
         useable_paths = self._discard_wrong_img_paths(all_paths)
 
         if len(useable_paths) == 0:
-            raise FileNotFoundError(
+            raise InsuffientDataError(
                 f"No images found in {self.path} with the correct size."
                 )
 
