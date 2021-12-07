@@ -438,4 +438,96 @@ class TestDataLoader(unittest.TestCase):
                 input_shape=(tile_size, tile_size, 3),
                 legacy_mode=True  # legacy mode should not be allowed
             )
+<<<<<<< HEAD
 >>>>>>> a887e5d (Add legacy mode sanity check (by filename))
+=======
+
+    def test_dataloader_returns_expected_values_for_binary_mode_more(self):
+        image_dir = "data/testing/selected/selected_tiles_250_10_5_42_fixed/more_roof/"
+        dataloader = DataLoader(
+            image_dir,
+            input_shape=(250, 250, 3),
+            legacy_mode=False,
+            multiclass=False,
+            batch_size=1,
+        )
+        dataloader.load()
+
+        for image_fn in os.listdir(image_dir):
+            if "msk" in image_fn:
+                msk_fn = os.path.join(image_dir, image_fn)
+                msk = np.array(Image.open(msk_fn))
+                true_roof = (msk > 0).sum()
+
+        for _, msk in dataloader.dataset.take(1):
+            roof = msk.numpy() > 0
+            no_roof = msk.numpy() == 0
+            self.assertGreater(np.sum(roof), 0)
+            self.assertLess(np.sum(no_roof), np.sum(roof))
+            self.assertEqual(np.sum(roof), true_roof)
+
+    def test_dataloader_returns_expected_values_for_binary_mode_less(self):
+
+        image_dir = "data/testing/selected/selected_tiles_250_10_5_42_fixed/less_roof/"
+        dataloader = DataLoader(
+            image_dir,
+            input_shape=(250, 250, 3),
+            legacy_mode=False,
+            multiclass=False,
+            batch_size=1,
+        )
+        dataloader.load()
+
+        for image_fn in os.listdir(image_dir):
+            if "msk" in image_fn:
+                msk_fn = os.path.join(image_dir, image_fn)
+                msk = np.array(Image.open(msk_fn))
+                true_roof = (msk > 0).sum()
+
+        for _, msk in dataloader.dataset.take(1):
+            roof = msk.numpy() > 0
+            no_roof = msk.numpy() == 0
+            self.assertGreater(np.sum(roof), 0)
+            self.assertGreater(np.sum(no_roof), np.sum(roof))
+            self.assertEqual(np.sum(roof), true_roof)
+
+    def test_dataloader_returns_expected_values_for_multiclass_mode(self):
+        image_dirs = [
+            "data/testing/selected/selected_tiles_250_10_5_42_fixed/pv3/",
+            "data/testing/selected/selected_tiles_250_10_5_42_fixed/pv4/",
+        ]
+
+        for image_dir in image_dirs:
+            dataloader = DataLoader(
+                image_dir,
+                input_shape=(250, 250, 3),
+                legacy_mode=False,
+                multiclass=True,
+                batch_size=1,
+            )
+            dataloader.load()
+
+            for image_fn in os.listdir(image_dir):
+                if "msk" in image_fn:
+                    msk_fn = os.path.join(image_dir, image_fn)
+                    msk = np.array(Image.open(msk_fn))
+                    true_no_roof = (msk == 0).sum()
+                    true_pv1 = (msk == 63).sum()
+                    true_pv2 = (msk == 127).sum()
+                    true_pv3 = (msk == 191).sum()
+                    true_pv4 = (msk == 255).sum()
+
+            true_values = [true_no_roof, true_pv1,
+                           true_pv2, true_pv3, true_pv4]
+
+            for _, msk in dataloader.dataset.take(1):
+                no_roof = (msk.numpy() == 0).sum()
+                pv1 = (msk.numpy() == 1).sum()
+                pv2 = (msk.numpy() == 2).sum()
+                pv3 = (msk.numpy() == 3).sum()
+                pv4 = (msk.numpy() == 4).sum()
+                self.assertListEqual(
+                    [no_roof, pv1, pv2, pv3, pv4],
+                    true_values
+                )
+>>>>>>> 1658920 (Fix binary mask loading and add mask category test cases)

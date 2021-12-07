@@ -2,7 +2,11 @@
 import filecmp
 =======
 # basic unittest structure
+<<<<<<< HEAD
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+import filecmp
+>>>>>>> 1658920 (Fix binary mask loading and add mask category test cases)
 import unittest
 import os
 import shutil
@@ -288,6 +292,9 @@ class TestSelection(unittest.TestCase):
         self.assertSetEqual(msk_set, true_set)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 1658920 (Fix binary mask loading and add mask category test cases)
     def test_data_selector_produces_expected_images(self):
         for selected_path in self.selected_paths:
             all_files_new = glob.glob(
@@ -304,8 +311,11 @@ class TestSelection(unittest.TestCase):
         for i in range(len(all_files_new)):
             self.assertTrue(filecmp.cmp(all_files_new[i], all_files_known[i]))
 
+<<<<<<< HEAD
 =======
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+>>>>>>> 1658920 (Fix binary mask loading and add mask category test cases)
 
 if __name__ == "__main__":
     unittest.main()
