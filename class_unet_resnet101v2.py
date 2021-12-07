@@ -4,20 +4,25 @@ from typing import List, Tuple
 
 
 class Unet(tensorflow.keras.Model):
-    """Define the unet model with a pretrained Resnet in the bottom. The Resnet is trained on imagenet, the top layer is removed by default."""
+    """Define the unet model with a pretrained Resnet in the bottom.\
+         The Resnet is trained on imagenet, the top layer is removed by default."""
 
     def __init__(
         self,
         output_classes: int = 1,
         drop_out: bool = False,
         drop_out_rate: dict = {"512": 0, "256": 0, "128": 0, "64": 0},
+        fine_tune_at: int = 0,
+        upstack_trainable: bool = True,
     ):
         """Class initialisation:
         Args:
             output_classes: number of categorical classes. Default to one.
             drop_out: boolean, wether the dropout in the upstack of the model is activated; Default to False.
             drop_out_rate: If drop_out, defines the dropout rate in the up stacks. Defaults to {"512": 0, "256": 0, "128": 0, "64": 0}
-            fine_tune_at: if non zero, freeze the upstacks, and unfreeze the corresponding number of layers in bottom of the pretrained network.
+            fine_tune_at: if non zero, freeze the upstacks, and unfreeze the corresponding number of layers\
+                 in bottom of the pretrained network. Default to 0. 
+            upstack_trainable: Boolean, if True, the upstack is trainable. Default to True. 
         """
         super(Unet, self).__init__()
 
@@ -25,6 +30,8 @@ class Unet(tensorflow.keras.Model):
         self._output_classes = output_classes
         self._drop_out = drop_out
         self._drop_out_rate = drop_out_rate
+        self._fine_tune_at = fine_tune_at
+        self._upstack_trainable = upstack_trainable
 
         # Define the layers for the skip connections.
         # Define first the layers for skip conenctions within the down stacl/pretrained networks
@@ -38,9 +45,7 @@ class Unet(tensorflow.keras.Model):
 
         # Define the Unet downstacks.
 
-        self._down_stack = Downsample(self._layers)
-
-        self._down_stack.trainable = False
+        self._down_stack = Downsample(self._layers, self._fine_tune_at)
 
         # Parameters of the up-stacks.
         FILTERS = [512, 256, 128, 64]
@@ -55,6 +60,7 @@ class Unet(tensorflow.keras.Model):
                 apply_drop_out=self._drop_out,
                 drop_out_rate=self._drop_out_rate[f"{filter}"],
             )
+            upsample.trainable = self._upstack_trainable
             self._up_stack.append(upsample)
 
         # Concatenate layer
@@ -68,24 +74,7 @@ class Unet(tensorflow.keras.Model):
             padding="same",
             activation="sigmoid",
         )
-
-    def freezing_layers(self, fine_tune_at: int = 0) -> None:
-        """
-        When called, freeze the up-stacks, and unfreeze some of the top layers of the pretrained model.
-        Args:
-            fine_tune_at: number of layers of the pretrained model which are unfrozen.Default to 0.
-
-        """
-        self._down_stack.trainable = True
-
-        for i, layer in enumerate(self._down_stack.layers[0:-fine_tune_at]):
-            layer.trainable = False
-
-        for i, layer in enumerate(self._down_stack.layers[-fine_tune_at:]):
-            layer.trainable = True
-
-        for stack in self._up_stack:
-            stack.trainable = False
+        self._last_conv.trainable = self._upstack_trainable
 
     @tensorflow.function
     def call(self, input):
@@ -119,6 +108,8 @@ class Unet(tensorflow.keras.Model):
             "output_classes": self._output_classes,
             "drop_out": self._drop_out,
             "drop_out_rate": self._drop_out_rate,
+            "fine_tune_at": self._fine_tune_at,
+            "upstack_trainable": self._upstack_trainable,
         }
 
     @classmethod
@@ -145,9 +136,6 @@ class Upsample(tensorflow.keras.Model):
             size: filter size
             apply_dropout: If True, adds the dropout layer
             drop_out_rate: If apply_dropout, defines the droptout rate.
-
-        Returns:
-               Upsample Sequential Model
         """
         super(Upsample, self).__init__()
         self._filter = filter
@@ -205,15 +193,23 @@ class Upsample(tensorflow.keras.Model):
 class Downsample(tensorflow.keras.Model):
     """Define the downstacks of the unet Model."""
 
-    def __init__(self, layer_names: List = []) -> None:
+    def __init__(
+        self,
+        layer_names: List = [],
+        fine_tune_at: int = 0,
+    ) -> None:
         """Class initialisation:
         Args:
-            layer_names: list of strings containing the layer names which defines the skip connections. Defaukt to [].
+            layer_names: list of strings containing the layer names which defines the skip connections.\
+                 Default to [].
+            trainable_layer: number of frozen layer at teh head of the pretrained network. 
+            
         """
         super(Downsample, self).__init__()
         # Saving the layer names.
 
         self._layers = layer_names
+        self._fine_tune_at = fine_tune_at
 
         # Calling the base model.
         self._base_model = tensorflow.keras.applications.resnet_v2.ResNet101V2(
@@ -222,6 +218,15 @@ class Downsample(tensorflow.keras.Model):
             input_tensor=None,
             pooling=max,
         )
+        # setting which layers of the downstack are trainable.
+        if fine_tune_at > 0:
+            self._base_model.trainable = True
+            for i, layer in enumerate(self._base_model.layers[0 : -2 * fine_tune_at]):
+                layer.trainable = False
+            for i, layer in enumerate(self._base_model.layers[-2 * fine_tune_at :]):
+                layer.trainable = True
+        else:
+            self._base_model.trainable = False
 
         # Listing the output of the model.
         self._selected_output_layers = [
@@ -232,8 +237,6 @@ class Downsample(tensorflow.keras.Model):
             inputs=self._base_model.input,
             outputs=self._selected_output_layers,
         )
-
-        self._down_stack.trainable = False
 
     @tensorflow.function
     def call(self, input):
@@ -246,9 +249,7 @@ class Downsample(tensorflow.keras.Model):
 
     def get_config(self):
         """Overwrite the get_config() methods to save and load the model."""
-        return {
-            "layer_names": self._layers,
-        }
+        return {"layer_names": self._layers, "fine_tune_at": self._fine_tune_at}
 
     @classmethod
     def from_config(cls, config):
