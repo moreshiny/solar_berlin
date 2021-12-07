@@ -60,6 +60,13 @@ class DataLoader:
         # get image paths
         img_paths, target_paths = self._get_img_paths()
 
+        if self._legacy_mode:
+            for target_path in target_paths:
+                if "msk" in target_path:
+                    raise ValueError(
+                        "Filnames indicate new type data but legacy mode is enabled."
+                    )
+
         # create datasets
         self._dataset_input = tf.data.Dataset.from_tensor_slices(img_paths)
         self._dataset_target = tf.data.Dataset.from_tensor_slices(target_paths)
@@ -104,6 +111,7 @@ class DataLoader:
 
     def _discard_wrong_img_paths(self, all_paths):
         """Discard wrong files; function is temporary."""
+        # TODO remove this function when no longer needed (legacy mode)
         correct_filenames = []
         for path in all_paths:
             if tf.keras.utils.load_img(path).size == self.input_shape[:2]:
