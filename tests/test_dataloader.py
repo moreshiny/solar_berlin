@@ -5,6 +5,9 @@ import numpy as np
 from PIL import Image
 
 from dataloader import DataLoader
+from dataloader import LegacyModeError
+from dataloader import InsuffientDataError
+from dataloader import InvalidPathError
 
 
 class TestDataLoader(unittest.TestCase):
@@ -145,13 +148,13 @@ class TestDataLoader(unittest.TestCase):
             DataLoader(data_path, legacy_mode=True, multiclass=True)
 
     def test_dataloader_raises_error_invalid_path(self):
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(InvalidPathError):
             DataLoader("/invalid/path")
 
     def test_dataloader_raises_error_no_valid_images_found(self):
         tile_size = 600  # non-matching tile size
         for data_path in self.data_paths:
-            with self.assertRaises(FileNotFoundError):
+            with self.assertRaises(InsuffientDataError):
                 DataLoader(
                     data_path,
                     input_shape=(tile_size, tile_size,3)
@@ -159,7 +162,7 @@ class TestDataLoader(unittest.TestCase):
 
     def test_dataloader_raises_error_legacy_mode_new_data(self):
         tile_size = 500
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LegacyModeError):
             DataLoader(
                 self.data_paths[1],  # new type dataset
                 input_shape=(tile_size, tile_size, 3),

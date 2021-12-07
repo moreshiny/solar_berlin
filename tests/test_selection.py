@@ -1,4 +1,3 @@
-# basic unittest structure
 import filecmp
 import unittest
 import os
@@ -9,6 +8,8 @@ from PIL import Image
 
 
 from extraction.selection import DataSelector
+from extraction.selection import InvalidPathError, AbsolutePathError
+from extraction.selection import InvalidTileSizeError, InsuffientDataError
 
 INPUT_PATH = os.path.join("data", "testing", "converted")
 OUTPUT_PATH = os.path.join("data", "testing", "selected")
@@ -23,6 +24,7 @@ class TestSelection(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
+        # remove output from last run
         cls.clean_up()
 
         cls._first_run = True
@@ -93,7 +95,7 @@ class TestSelection(unittest.TestCase):
         test_n = 5
         tile_size = 500
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(InsuffientDataError):
 
             self.selector.select_data(
                 tile_size=tile_size,
@@ -149,38 +151,38 @@ class TestSelection(unittest.TestCase):
                     self.assertEqual(image.shape, (tile_size, tile_size))
 
     def test_data_selector_raises_error_on_invalid_image_size_0(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(InvalidTileSizeError):
             self.selector.select_data(0, 10, 5, OUTPUT_PATH, 42)
 
     def test_data_selector_raises_error_on_invalid_image_size_11k(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(InvalidTileSizeError):
             self.selector.select_data(11_000, 10, 5, OUTPUT_PATH, 42)
 
     def test_data_selector_raises_error_on_invalid_image_size_224(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(InvalidTileSizeError):
             # lossy is False by default, so this should fail
             self.selector.select_data(224, 10, 5, OUTPUT_PATH, 42)
 
     def test_data_selector_raises_error_on_invalid_input_path(self):
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(InvalidPathError):
             DataSelector(
                 input_path="invalid_path",
             )
 
     def test_data_selector_raises_error_on_absolute_path(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AbsolutePathError):
             DataSelector(
                 input_path=os.path.abspath(INPUT_PATH),
             )
 
     def test_data_selector_raises_error_on_empty_input_path(self):
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(InvalidPathError):
             DataSelector(
                 input_path="",
             )
 
     def test_data_selector_raises_error_on_absolute_output_path(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AbsolutePathError):
             self.selector.select_data(
                 500, 10, 5, output_path=os.path.abspath(OUTPUT_PATH),)
 
@@ -232,6 +234,7 @@ class TestSelection(unittest.TestCase):
             recursive=True,
         )
         self.assertEqual(len(images_selected), (10 + 5) * 2)
+
 
 if __name__ == "__main__":
     unittest.main()
