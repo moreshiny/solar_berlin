@@ -18,6 +18,7 @@ import numpy as np
 from PIL import Image
 
 
+<<<<<<< HEAD
 from extraction.selection import DataSelector
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -29,6 +30,11 @@ from extraction.selection import InvalidTileSizeError, InsuffientDataError
 from extraction.selection import InvalidPathError, AbsolutePathError
 from extraction.selection import InvalidTileSizeError, InsuffientDataError
 >>>>>>> b0c8908 (Use custom exception names)
+=======
+from selection.selection import DataSelector
+from selection.errors import InvalidPathError, AbsolutePathError
+from selection.errors import InvalidTileSizeError, InsuffientDataError
+>>>>>>> 3db5d22 (Separate selection from extraction)
 
 INPUT_PATH = os.path.join("data", "testing", "converted")
 OUTPUT_PATH = os.path.join("data", "testing", "selected")
@@ -353,6 +359,7 @@ class TestSelection(unittest.TestCase):
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 4241abc (First working version of data selector with multiclass)
 =======
@@ -360,6 +367,8 @@ class TestSelection(unittest.TestCase):
 =======
     # TODO add test to verify binary and multiclass output are correct and predictable
 
+=======
+>>>>>>> 3db5d22 (Separate selection from extraction)
     def test_data_selector_can_select_images_of_size_512(self):
         selected_path = os.path.join(OUTPUT_PATH, "selected_tiles_512_10_5_42")
         if os.path.exists(selected_path):
