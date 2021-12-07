@@ -20,6 +20,7 @@ RASTER_TILE_SIZE = 10_000
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 class DataHandler():
     def __init__(self):
         pass
@@ -53,29 +54,63 @@ class DataSelector(DataHandler):
         #     raise AbsolutePathError(f"Output path {output_path} is absolute")
 =======
 class DataSelector():
+=======
+class InvalidPathError(Exception):
+    """Raised when the output path exists."""
+>>>>>>> 039bb99 (Use custom exception names)
 
+    pass
+
+
+class AbsolutePathError(Exception):
+    """Raised when the output path is absolute."""
+
+    pass
+
+
+class InvalidTileSizeError(Exception):
+    """Raised when the tile size is invalid."""
+
+    pass
+
+
+class InsuffientDataError(Exception):
+    """Raised when more data than available is requested."""
+
+    pass
+
+
+class DataSelector:
     def __init__(self, input_path, testing: bool = False):
 
         if not os.path.exists(input_path):
-            raise FileNotFoundError(f"Input path {input_path} does not exist")
+            raise InvalidPathError(f"Input path {input_path} does not exist")
 
         if os.path.isabs(input_path):
-            raise ValueError(f"Input path {input_path} is absolute")
+            raise AbsolutePathError(f"Input path {input_path} is absolute")
 
         self.input_path = input_path
         self.output_path = None
         self._testing = testing
 
-    def select_data(self, tile_size, train_n, test_n, output_path, random_seed=0, multiclass=True):
+    def select_data(
+        self, tile_size, train_n, test_n, output_path, random_seed=0, multiclass=True
+    ):
 
         if os.path.isabs(output_path):
+<<<<<<< HEAD
             raise ValueError(f"Output path {output_path} is absolute")
 >>>>>>> 4c82acd (First working version of data selector with multiclass)
+=======
+            raise AbsolutePathError(f"Output path {output_path} is absolute")
+>>>>>>> 039bb99 (Use custom exception names)
 
         self.output_path = os.path.join(
-            output_path, f"selected_tiles_{tile_size}_{train_n}_{test_n}_{random_seed}")
+            output_path, f"selected_tiles_{tile_size}_{train_n}_{test_n}_{random_seed}"
+        )
 
         if not type(tile_size) is int or tile_size < 1:
+<<<<<<< HEAD
 <<<<<<< HEAD
             raise InvalidTileSizeError(
                 f"Tile size {tile_size} is not an integer or less than 1")
@@ -96,21 +131,33 @@ class DataSelector():
             raise ValueError(
                 f"tile_size must be a factor of {RASTER_TILE_SIZE}")
 >>>>>>> 4c82acd (First working version of data selector with multiclass)
+=======
+            raise InvalidTileSizeError(
+                f"Tile size {tile_size} is not an integer or less than 1"
+            )
 
-        current_tile_path = os.path.join(
-            self.input_path, "tiled_" + str(tile_size))
+        if RASTER_TILE_SIZE % tile_size != 0:
+            raise ValueError(f"tile_size must be a factor of {RASTER_TILE_SIZE}")
+>>>>>>> 039bb99 (Use custom exception names)
+
+        current_tile_path = os.path.join(self.input_path, "tiled_" + str(tile_size))
 
         if self._request_size_too_large(tile_size, train_n, test_n):
+<<<<<<< HEAD
 <<<<<<< HEAD
             raise InsuffientDataError(
 =======
             raise ValueError(
 >>>>>>> 4c82acd (First working version of data selector with multiclass)
                 f"Not enough tiles to extract {train_n} training and {test_n} testing tiles")
+=======
+            raise InsuffientDataError(
+                f"Not enough tiles to extract {train_n} training and {test_n} testing tiles"
+            )
+>>>>>>> 039bb99 (Use custom exception names)
 
         if os.path.exists(current_tile_path):
-            print(
-                f"Tile size {tile_size} already extracted, proceeding to selection")
+            print(f"Tile size {tile_size} already extracted, proceeding to selection")
         else:
             self._extract_data(tile_size, current_tile_path, train_n, test_n)
 
@@ -146,16 +193,15 @@ class DataSelector():
 
         if self._testing:
             # limit input to 32 tiles for faster testing
-            raster_tile_size = min(RASTER_TILE_SIZE, tile_size*4)
+            raster_tile_size = min(RASTER_TILE_SIZE, tile_size * 4)
         else:
             raster_tile_size = RASTER_TILE_SIZE
 >>>>>>> 4c82acd (First working version of data selector with multiclass)
 
-        raster_map_fns = glob.glob(os.path.join(
-            self.input_path, "raster", "*.tif"))
+        raster_map_fns = glob.glob(os.path.join(self.input_path, "raster", "*.tif"))
 
-        total_no_of_pixels = len(raster_map_fns) * raster_tile_size**2
-        requested_no_of_pixels = (train_n + test_n) * tile_size**2
+        total_no_of_pixels = len(raster_map_fns) * raster_tile_size ** 2
+        requested_no_of_pixels = (train_n + test_n) * tile_size ** 2
 
         return total_no_of_pixels < requested_no_of_pixels
 
@@ -250,12 +296,11 @@ class DataSelector():
 
 >>>>>>> 4c82acd (First working version of data selector with multiclass)
         if self._testing:
-            raster_tile_size = min(RASTER_TILE_SIZE, tile_size*4)
+            raster_tile_size = min(RASTER_TILE_SIZE, tile_size * 4)
         else:
             raster_tile_size = RASTER_TILE_SIZE
 
-        raster_map_fns = glob.glob(os.path.join(
-            self.input_path, "raster", "*.tif"))
+        raster_map_fns = glob.glob(os.path.join(self.input_path, "raster", "*.tif"))
 
         if not os.path.exists(current_tile_path):
             os.makedirs(current_tile_path)
@@ -263,29 +308,31 @@ class DataSelector():
         for raster_map_fn in raster_map_fns:
             map_tile_name = os.path.basename(raster_map_fn)[0:-4]
             vector_fn = os.path.join(
-                self.input_path, "vector", map_tile_name, map_tile_name + ".shp")
+                self.input_path, "vector", map_tile_name, map_tile_name + ".shp"
+            )
 
             vector_file = ogr.Open(vector_fn)
             vector_layer = vector_file.GetLayer()
             x_min, x_max, y_min, y_max = vector_layer.GetExtent()
 
-            pixel_size = .2
+            pixel_size = 0.2
 
             temp_path = os.path.join(current_tile_path, "temp")
 
             if not os.path.exists(temp_path):
                 os.makedirs(temp_path)
 
-            raster_msk_fn = os.path.join(
-                temp_path, map_tile_name + "_msk.tif")
+            raster_msk_fn = os.path.join(temp_path, map_tile_name + "_msk.tif")
 
             x_res = int((x_max - x_min) / pixel_size)
             y_res = int((y_max - y_min) / pixel_size)
-            raster_msk_file = gdal.GetDriverByName('GTiff').Create(
-                raster_msk_fn, x_res, y_res, 1, gdal.GDT_Int16)
+            raster_msk_file = gdal.GetDriverByName("GTiff").Create(
+                raster_msk_fn, x_res, y_res, 1, gdal.GDT_Int16
+            )
 
             raster_msk_file.SetGeoTransform(
-                (x_min, pixel_size, 0, y_max, 0, -pixel_size))
+                (x_min, pixel_size, 0, y_max, 0, -pixel_size)
+            )
 
             # get the first raster band fill the raster band with -1s
             raster_msk_band = raster_msk_file.GetRasterBand(1)
@@ -293,8 +340,9 @@ class DataSelector():
 
             # overwrite the band with each polygon's 'eig_kl_pv' (0, 1, 2 or 3)
             # any area not covered by a vector object remains at -1 ("no roof")
-            gdal.RasterizeLayer(raster_msk_file, [1], vector_layer,
-                                options=["ATTRIBUTE=eig_kl_pv"])
+            gdal.RasterizeLayer(
+                raster_msk_file, [1], vector_layer, options=["ATTRIBUTE=eig_kl_pv"]
+            )
 
             raster_map_file = gdal.Open(raster_map_fn)
 
@@ -316,15 +364,20 @@ class DataSelector():
             raster_msk_file = None
 
             raster_msk_clip_fn = os.path.join(
-                temp_path, map_tile_name + "_msk_clip.tif")
+                temp_path, map_tile_name + "_msk_clip.tif"
+            )
 
             # crop the raster to the extent of the vector
-            gdal.Translate(raster_msk_clip_fn, raster_msk_fn, srcWin=[
-                x_min_p,
-                y_min_p,
-                raster_tile_size,
-                raster_tile_size,
-            ])
+            gdal.Translate(
+                raster_msk_clip_fn,
+                raster_msk_fn,
+                srcWin=[
+                    x_min_p,
+                    y_min_p,
+                    raster_tile_size,
+                    raster_tile_size,
+                ],
+            )
 
             raster_map_file = gdal.Open(raster_map_fn)
             raster_map_array = raster_map_file.ReadAsArray()
@@ -342,28 +395,34 @@ class DataSelector():
             for x_coord in range(0, raster_tile_size, tile_size):
                 for y_coord in range(0, raster_tile_size, tile_size):
                     sub_array_mask = raster_mask_array[
-                        x_coord: (x_coord + tile_size),
-                        y_coord: (y_coord + tile_size),
+                        x_coord : (x_coord + tile_size),
+                        y_coord : (y_coord + tile_size),
                     ]
 
                     im = Image.fromarray(sub_array_mask).convert("L")
 
-                    im.save(os.path.join(
-                        current_tile_path, f"{map_tile_name}_{x_coord}_{y_coord}_msk.png"
-                    ))
+                    im.save(
+                        os.path.join(
+                            current_tile_path,
+                            f"{map_tile_name}_{x_coord}_{y_coord}_msk.png",
+                        )
+                    )
 
                     sub_array_map = raster_map_array[
                         :,
-                        x_coord:x_coord + tile_size,
-                        y_coord:y_coord + tile_size,
+                        x_coord : x_coord + tile_size,
+                        y_coord : y_coord + tile_size,
                     ]
 
                     sub_array_map = sub_array_map.transpose(1, 2, 0)
 
                     im = Image.fromarray(sub_array_map).convert("RGB")
-                    im.save(os.path.join(
-                        current_tile_path, f"{map_tile_name}_{x_coord}_{y_coord}_map.png"
-                    ))
+                    im.save(
+                        os.path.join(
+                            current_tile_path,
+                            f"{map_tile_name}_{x_coord}_{y_coord}_map.png",
+                        )
+                    )
 
             raster_map_fn = None
             raster_msk_fn = None
