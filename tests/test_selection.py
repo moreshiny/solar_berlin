@@ -1,10 +1,13 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import filecmp
 =======
 # basic unittest structure
 <<<<<<< HEAD
 >>>>>>> 4241abc (First working version of data selector with multiclass)
 =======
+=======
+>>>>>>> b0c8908 (Use custom exception names)
 import filecmp
 >>>>>>> 1658920 (Fix binary mask loading and add mask category test cases)
 import unittest
@@ -17,10 +20,15 @@ from PIL import Image
 
 from extraction.selection import DataSelector
 <<<<<<< HEAD
+<<<<<<< HEAD
 from extraction.selection import InvalidPathError, AbsolutePathError
 from extraction.selection import InvalidTileSizeError, InsuffientDataError
 =======
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+from extraction.selection import InvalidPathError, AbsolutePathError
+from extraction.selection import InvalidTileSizeError, InsuffientDataError
+>>>>>>> b0c8908 (Use custom exception names)
 
 INPUT_PATH = os.path.join("data", "testing", "converted")
 OUTPUT_PATH = os.path.join("data", "testing", "selected")
@@ -45,7 +53,11 @@ class TestSelection(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
+<<<<<<< HEAD
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+        # remove output from last run
+>>>>>>> b0c8908 (Use custom exception names)
         cls.clean_up()
 
         cls._first_run = True
@@ -148,10 +160,14 @@ class TestSelection(unittest.TestCase):
         tile_size = 500
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         with self.assertRaises(InsuffientDataError):
 =======
         with self.assertRaises(ValueError):
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+        with self.assertRaises(InsuffientDataError):
+>>>>>>> b0c8908 (Use custom exception names)
 
             self.selector.select_data(
                 tile_size=tile_size,
@@ -208,6 +224,7 @@ class TestSelection(unittest.TestCase):
 
     def test_data_selector_raises_error_on_invalid_image_size_0(self):
 <<<<<<< HEAD
+<<<<<<< HEAD
         with self.assertRaises(InvalidTileSizeError):
             self.selector.select_data(0, 10, 5, OUTPUT_PATH, 42)
 
@@ -220,44 +237,64 @@ class TestSelection(unittest.TestCase):
     def test_data_selector_raises_error_on_invalid_image_size_11k(self):
         with self.assertRaises(ValueError):
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+        with self.assertRaises(InvalidTileSizeError):
+            self.selector.select_data(0, 10, 5, OUTPUT_PATH, 42)
+
+    def test_data_selector_raises_error_on_invalid_image_size_11k(self):
+        with self.assertRaises(InvalidTileSizeError):
+>>>>>>> b0c8908 (Use custom exception names)
             self.selector.select_data(11_000, 10, 5, OUTPUT_PATH, 42)
 
     def test_data_selector_raises_error_on_invalid_image_size_224(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(InvalidTileSizeError):
             # lossy is False by default, so this should fail
             self.selector.select_data(224, 10, 5, OUTPUT_PATH, 42)
 
     def test_data_selector_raises_error_on_invalid_input_path(self):
 <<<<<<< HEAD
+<<<<<<< HEAD
         with self.assertRaises(InvalidPathError):
 =======
         with self.assertRaises(FileNotFoundError):
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+        with self.assertRaises(InvalidPathError):
+>>>>>>> b0c8908 (Use custom exception names)
             DataSelector(
                 input_path="invalid_path",
             )
 
     def test_data_selector_raises_error_on_absolute_path(self):
 <<<<<<< HEAD
+<<<<<<< HEAD
         with self.assertRaises(AbsolutePathError):
 =======
         with self.assertRaises(ValueError):
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+        with self.assertRaises(AbsolutePathError):
+>>>>>>> b0c8908 (Use custom exception names)
             DataSelector(
                 input_path=os.path.abspath(INPUT_PATH),
             )
 
     def test_data_selector_raises_error_on_empty_input_path(self):
 <<<<<<< HEAD
+<<<<<<< HEAD
         with self.assertRaises(InvalidPathError):
 =======
         with self.assertRaises(FileNotFoundError):
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+        with self.assertRaises(InvalidPathError):
+>>>>>>> b0c8908 (Use custom exception names)
             DataSelector(
                 input_path="",
             )
 
     def test_data_selector_raises_error_on_absolute_output_path(self):
+<<<<<<< HEAD
 <<<<<<< HEAD
         with self.assertRaises(AbsolutePathError):
             self.selector.select_data(
@@ -268,6 +305,9 @@ class TestSelection(unittest.TestCase):
             )
 =======
         with self.assertRaises(ValueError):
+=======
+        with self.assertRaises(AbsolutePathError):
+>>>>>>> b0c8908 (Use custom exception names)
             self.selector.select_data(
                 500, 10, 5, output_path=os.path.abspath(OUTPUT_PATH),)
 >>>>>>> 4241abc (First working version of data selector with multiclass)
@@ -338,6 +378,7 @@ class TestSelection(unittest.TestCase):
         )
         self.assertEqual(len(images_selected), (10 + 5) * 2)
 >>>>>>> c3118cb (Allow lossy selection of arbitrary image sizes)
+
 
 if __name__ == "__main__":
     unittest.main()

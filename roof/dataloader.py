@@ -5,6 +5,20 @@ import tensorflow as tf
 from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
 
 
+class LegacyModeError(Exception):
+    """ Raised when legacy modes is used on incompatible data """
+    pass
+
+
+class InvalidPathError(Exception):
+    """ Raised when an invalid path is given """
+    pass
+
+
+class InsuffientDataError(Exception):
+    """ Raised when a path does not contain sufficient images of the right size """
+    pass
+
 class DataLoader:
     """Class for creating tensorflow dataset."""
 
@@ -45,10 +59,14 @@ class DataLoader:
         # initialize attributes
         if not os.path.exists(path):
 <<<<<<< HEAD:roof/dataloader.py
+<<<<<<< HEAD:roof/dataloader.py
             raise InvalidPathError(f"Path {path} does not exist.")
 =======
             raise FileNotFoundError(f"Path {path} does not exist.")
 >>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
+=======
+            raise InvalidPathError(f"Path {path} does not exist.")
+>>>>>>> b0c8908 (Use custom exception names):dataloader.py
         self.path = path
         self.batch_size = batch_size
         self._dataset_input = None
@@ -83,10 +101,14 @@ class DataLoader:
             for target_path in target_paths:
                 if "msk" in target_path:
 <<<<<<< HEAD:roof/dataloader.py
+<<<<<<< HEAD:roof/dataloader.py
                     raise LegacyModeError(
 =======
                     raise ValueError(
 >>>>>>> a887e5d (Add legacy mode sanity check (by filename)):dataloader.py
+=======
+                    raise LegacyModeError(
+>>>>>>> b0c8908 (Use custom exception names):dataloader.py
                         "Filnames indicate new type data but legacy mode is enabled."
                     )
 
@@ -113,11 +135,15 @@ class DataLoader:
 
         if len(useable_paths) == 0:
 <<<<<<< HEAD:roof/dataloader.py
+<<<<<<< HEAD:roof/dataloader.py
             raise InsuffientDataError(
                 f"No images found in {self.path} with the correct size."
             )
 =======
             raise FileNotFoundError(
+=======
+            raise InsuffientDataError(
+>>>>>>> b0c8908 (Use custom exception names):dataloader.py
                 f"No images found in {self.path} with the correct size."
                 )
 >>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py

@@ -10,15 +10,33 @@ from extraction.extraction import select_random_map_images, copy_image_files
 RASTER_TILE_SIZE = 10_000
 
 
+class InvalidPathError(Exception):
+    """Raised when the output path exists."""
+    pass
+
+
+class AbsolutePathError(Exception):
+    """Raised when the output path is absolute."""
+    pass
+
+
+class InvalidTileSizeError(Exception):
+    """Raised when the tile size is invalid."""
+    pass
+
+
+class InsuffientDataError(Exception):
+    """Raised when more data than available is requested."""
+    pass
 class DataSelector():
 
     def __init__(self, input_path, testing: bool = False):
 
         if not os.path.exists(input_path):
-            raise FileNotFoundError(f"Input path {input_path} does not exist")
+            raise InvalidPathError(f"Input path {input_path} does not exist")
 
         if os.path.isabs(input_path):
-            raise ValueError(f"Input path {input_path} is absolute")
+            raise AbsolutePathError(f"Input path {input_path} is absolute")
 
         self.input_path = input_path
         self.output_path = None
@@ -27,20 +45,20 @@ class DataSelector():
     def select_data(self, tile_size, train_n, test_n, output_path, random_seed=0, lossy=False):
 
         if os.path.isabs(output_path):
-            raise ValueError(f"Output path {output_path} is absolute")
+            raise AbsolutePathError(f"Output path {output_path} is absolute")
 
         self.output_path = os.path.join(
             output_path, f"selected_tiles_{tile_size}_{train_n}_{test_n}_{random_seed}")
 
         if not type(tile_size) is int or tile_size < 1:
-            raise ValueError(
+            raise InvalidTileSizeError(
                 f"Tile size {tile_size} is not an integer or less than 1")
 
         if RASTER_TILE_SIZE % tile_size != 0:
             if lossy:
                 self.raster_tile_size = RASTER_TILE_SIZE // tile_size * tile_size
             else:
-                raise ValueError(
+                raise InvalidTileSizeError(
                     f"tile_size must be a factor of {RASTER_TILE_SIZE} or raster edges will be discarded. Set lossy=True to allow this.")
         else:
             self.raster_tile_size = RASTER_TILE_SIZE
@@ -49,7 +67,7 @@ class DataSelector():
             self.input_path, "tiled_" + str(tile_size))
 
         if self._request_size_too_large(tile_size, train_n, test_n):
-            raise ValueError(
+            raise InsuffientDataError(
                 f"Not enough tiles to extract {train_n} training and {test_n} testing tiles")
 
         if os.path.exists(current_tile_path):
