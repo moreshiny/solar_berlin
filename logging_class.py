@@ -333,7 +333,7 @@ class Logs:
             type(display_list[i])
             plt.imshow(tensorflow.keras.utils.array_to_img(display_list[i]))
             plt.axis("off")
-        path_snapshot = self._path_log + self._current_time + "/snapshots"
+        path_snapshot = self._local_path + "/snapshots"
         if not os.path.exists(path_snapshot):
             os.mkdir(path_snapshot)
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
