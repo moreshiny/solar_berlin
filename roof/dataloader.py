@@ -27,6 +27,11 @@ class DataLoader:
                 coded as 63 (worst), 127, 191, and 255 (best).
             batch_size (int, optional): Batch size for model training.
                 Defaults to 32.
+<<<<<<< HEAD:roof/dataloader.py
+=======
+            n_samples(int, optional): Number of input-target pairs to load.
+                Returns all available pairs if set to None. Defaults to None.
+>>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
             input_shape (tuple, optional): Shape of input images.
                 Defaults to (224, 224, 3).
             multiclass (bool, optional): Whether to use multiclass or binary
@@ -47,9 +52,13 @@ class DataLoader:
 
         # TODO remove legacy mode when no longer needed
         if legacy_mode:
+<<<<<<< HEAD:roof/dataloader.py
             assert (
                 multiclass == False
             ), "Legacy mode is not compatible with multiclass mode."
+=======
+            assert multiclass == False, "Legacy mode is not compatible with multiclass mode."
+>>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
         self._legacy_mode = legacy_mode
         self._multiclass = multiclass
 
@@ -101,11 +110,15 @@ class DataLoader:
         # split input and target
         input_paths = [filename for filename in useable_paths if "map" in filename]
         # TODO "mask" is needed only for legacy mode, remove when no longer needed
+<<<<<<< HEAD:roof/dataloader.py
         target_paths = [
             filename
             for filename in useable_paths
             if "mask" in filename or "msk" in filename
         ]
+=======
+        target_paths = [filename for filename in useable_paths if "mask" in filename or "msk" in filename]
+>>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
 
         assert len(input_paths) == len(
             target_paths
@@ -134,7 +147,11 @@ class DataLoader:
             channels (str): The color channels of the image that is desired.
                 Either "RGB", "A" (alpha), or "L" (greyscale). All channels are
                 normalized such that 255 -> 1.0 (in "RGB" and "A") or 255 ->
+<<<<<<< HEAD:roof/dataloader.py
                 4.0 (in "L").
+=======
+                4.0 (in "L"). 
+>>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
 
         Returns:
             tf.image: An image tensor of type float32. In "RGB" and "A"
