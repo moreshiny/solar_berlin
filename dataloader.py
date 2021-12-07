@@ -171,9 +171,9 @@ class DataLoader:
                 img = tf.math.ceil(img)
                 img = tf.reshape(img, self.input_shape[:2] + tuple([1]))
             else:
-                # floor and invert image so "no roof" is 1 and "roof" is 0
-                img = tf.math.floor(image)
-                img = tf.math.subtract(1.0, img)
+                # normalise image to 0-1 (0 = no roof, 1 = roof)
+                # all values >0 are considered "roof", 0 is "no roof"
+                img = tf.math.ceil(image)
                 img = tf.reshape(img, self.input_shape[:2] + tuple([1]))
         else:
             raise ValueError("Unkown channels specified. Use 'RGB' or 'A'.")
