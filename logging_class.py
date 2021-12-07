@@ -147,7 +147,7 @@ class Logs:
             type(display_list[i])
             plt.imshow(tensorflow.keras.utils.array_to_img(display_list[i]))
             plt.axis("off")
-        path_snapshot = self._path_log + self._current_time + "/snapshots"
+        path_snapshot = self._local_path + "/snapshots"
         if not os.path.exists(path_snapshot):
             os.mkdir(path_snapshot)
         path_fig = path_snapshot + f"/output{np.random.rand()}.pdf"
