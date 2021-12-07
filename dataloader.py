@@ -11,7 +11,6 @@ class DataLoader:
         self,
         path: str,
         batch_size: int = 32,
-        n_samples: int = None,
         input_shape: tuple = (224, 224, 3),
         multiclass: bool = False,
         legacy_mode: bool = True,
@@ -27,8 +26,6 @@ class DataLoader:
                 coded as 63 (worst), 127, 191, and 255 (best).
             batch_size (int, optional): Batch size for model training.
                 Defaults to 32.
-            n_samples(int, optional): Number of input-target pairs to load.
-                Returns all available pairs if set to None. Defaults to None.
             input_shape (tuple, optional): Shape of input images.
                 Defaults to (224, 224, 3).
             multiclass (bool, optional): Whether to use multiclass or binary
@@ -37,13 +34,15 @@ class DataLoader:
                 Defaults to True.
         """
         # initialize attributes
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Path {path} does not exist.")
         self.path = path
         self.batch_size = batch_size
-        self.n_samples = n_samples
         self._dataset_input = None
         self._dataset_target = None
         self.dataset = None
         self.input_shape = input_shape
+        self.n_samples = None
 
         # TODO remove legacy mode when no longer needed
         if legacy_mode:
@@ -81,22 +80,13 @@ class DataLoader:
 
         # data has not been curated and wrongly sized images are discarded
         useable_paths = self._discard_wrong_img_paths(all_paths)
+
+        if len(useable_paths) == 0:
+            raise FileNotFoundError(
+                f"No images found in {self.path} with the correct size."
+                )
+
         useable_paths.sort()
-
-        # keep only part of image paths if n_samples was specified
-        if self.n_samples is None:
-            self.n_samples = len(useable_paths) // 2
-
-        # we need to get twice as many paths as requested samples (map and mask)
-        n_paths = self.n_samples * 2
-
-        assert n_paths <= len(
-            useable_paths
-        ), f"""n_samples ({self.n_samples}) is greater than number of
-                available/useable images {len(useable_paths) // 2}."""
-
-        # keep only the first n_paths paths
-        useable_paths = useable_paths[:n_paths]
 
         # split input and target
         input_paths = [filename for filename in useable_paths if "map" in filename]
@@ -107,6 +97,8 @@ class DataLoader:
             target_paths
         ), f"""Number of input images ({len(input_paths)}) does not match
                 number of target images ({len(target_paths)})."""
+
+        self.n_samples = len(input_paths)
 
         return input_paths, target_paths
 
@@ -127,7 +119,7 @@ class DataLoader:
             channels (str): The color channels of the image that is desired.
                 Either "RGB", "A" (alpha), or "L" (greyscale). All channels are
                 normalized such that 255 -> 1.0 (in "RGB" and "A") or 255 ->
-                4.0 (in "L"). 
+                4.0 (in "L").
 
         Returns:
             tensorflow.image: An image tensor of type float32. In "RGB" and "A"
