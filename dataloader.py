@@ -1,7 +1,7 @@
 import numpy as np
 import glob
 import os
-import tensorflow
+import tensorflow as tf
 
 
 class DataLoader:
@@ -43,8 +43,8 @@ class DataLoader:
         img_paths, target_paths = self._get_img_paths()
 
         # create datasets
-        self._dataset_input = tensorflow.data.Dataset.from_tensor_slices(img_paths)
-        self._dataset_target = tensorflow.data.Dataset.from_tensor_slices(target_paths)
+        self._dataset_input = tf.data.Dataset.from_tensor_slices(img_paths)
+        self._dataset_target = tf.data.Dataset.from_tensor_slices(target_paths)
 
     def _get_img_paths(self) -> tuple:
         """Retrieves all image paths for input and targets present in
@@ -93,43 +93,43 @@ class DataLoader:
         """Discard wrong files; function is temporary."""
         correct_filenames = []
         for path in all_paths:
-            if tensorflow.keras.utils.load_img(path).size == self.input_shape[:2]:
+            if tf.keras.utils.load_img(path).size == self.input_shape[:2]:
                 correct_filenames.append(path)
         return correct_filenames
 
-    def _load_image(self, tensor: tensorflow.Tensor, channels: str) -> tensorflow.image:
+    def _load_image(self, tensor: tf.Tensor, channels: str) -> tf.image:
         """Load .tif image as tensor and perform normalization.
 
         Args:
-            tensor (tensorflow.Tensor): Tensor with file name path of .tif
+            tensor (tf.Tensor): Tensor with file name path of .tif
                 image to be loaded.
             channels (str): The color channels of the image that is desired.
                 Either "RGB" or "A" (alpha). All channels are normalized such
                 that 255 = 1.0.
 
         Returns:
-            tensorflow.image: An image tensor of type float32 normalized from
+            tf.image: An image tensor of type float32 normalized from
                 0-255 to 0.0-1.0.
         """
         # decode tensor and read image using helper function
         def _decode_tensor_load_image(tensor, color_mode):
-            img = tensorflow.keras.utils.load_img(
+            img = tf.keras.utils.load_img(
                 tensor.numpy().decode("utf-8"),
                 color_mode=color_mode,
             )
             return img
 
-        [img_rgba,] = tensorflow.py_function(
-            _decode_tensor_load_image, [tensor, "rgba"], [tensorflow.float32]
+        [img_rgba, ] = tf.py_function(
+            _decode_tensor_load_image, [tensor, "rgba"], [tf.float32]
         )
 
         # normalize and keep queried channels
-        img_rgba = tensorflow.math.divide(img_rgba, 255.0)
+        img_rgba = tf.math.divide(img_rgba, 255.0)
         if channels == "RGB":
             img = img_rgba[:, :, :3]
         elif channels == "A":
-            img = tensorflow.math.ceil(img_rgba[:, :, 3])
-            img = tensorflow.reshape(img, self.input_shape[:2] + tuple([1]))
+            img = tf.math.ceil(img_rgba[:, :, 3])
+            img = tf.reshape(img, self.input_shape[:2] + tuple([1]))
         # TODO: Double check the line above is correct. Why are there
         #       non-zero-one values in the alpha channel?
         else:
@@ -158,15 +158,15 @@ class DataLoader:
         # load images for inputs and targets
         inputs = self._dataset_input.map(
             lambda t: self._load_image(tensor=t, channels="RGB"),
-            num_parallel_calls=tensorflow.data.experimental.AUTOTUNE,
+            num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )
         targets = self._dataset_target.map(
             lambda t: self._load_image(tensor=t, channels="A"),
-            num_parallel_calls=tensorflow.data.experimental.AUTOTUNE,
+            num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )
 
         # store in attribute
-        self.dataset = tensorflow.data.Dataset.zip((inputs, targets))
+        self.dataset = tf.data.Dataset.zip((inputs, targets))
 
         # caching
         self.dataset = self.dataset.cache()
@@ -178,5 +178,5 @@ class DataLoader:
 
         # fetch batches in background during model training
         self.dataset = self.dataset.prefetch(
-            buffer_size=tensorflow.data.experimental.AUTOTUNE
+            buffer_size=tf.data.experimental.AUTOTUNE
         )

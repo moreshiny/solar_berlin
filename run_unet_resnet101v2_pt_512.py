@@ -1,7 +1,7 @@
 """ This test file check the loading of the dataloader and the model.
 """
 import numpy as np
-import tensorflow
+import tensorflow as tf
 from models.unet_resnet101v2_pt import Model
 
 PATH_TRAIN = "data/small_large/train"
@@ -20,7 +20,7 @@ layer_names = [
 model_name = "Resnet101v2"
 
 
-tensorflow.keras.backend.clear_session()
+tf.keras.backend.clear_session()
 
 alpha = 1.0
 epochs = 3
@@ -57,4 +57,4 @@ model_history = model.model_history(comment)
 print("Done")
 
 
-tensorflow.keras.backend.clear_session()
+tf.keras.backend.clear_session()

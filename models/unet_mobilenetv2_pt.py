@@ -1,5 +1,5 @@
 """Define the UNET model. BAsed in part on the image segmentation notebook
-https://www.tensorflow.org/tutorials/images/segmentation
+https://www.tf.org/tutorials/images/segmentation
 """
 import os
 import glob
@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow
+import tensorflow as tf
 from dataloader import DataLoader
 
 
@@ -36,8 +36,8 @@ class Model:
     ) -> None:
         """Instantiate the class.
         Args:
-            dataset_train (tensorflow.dataset): batched training data
-            dataset_train (tensorflow.dataset): batched validation data
+            dataset_train (tf.dataset): batched training data
+            dataset_train (tf.dataset): batched validation data
             layer_names (list of strings): defining the MobilenetV2 NN.
             output_classes (int): number of classes for the classification.
                 Defaults to 1.
@@ -117,7 +117,7 @@ class Model:
         self.logging(comment)
         # prepare model pickeling
         checkpoint_filepath = self._path_log + self._current_time + "/checkpoint"
-        model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
             save_weights_only=True,
             monitor="val_accuracy",
@@ -126,7 +126,7 @@ class Model:
         )
         # Prepare the tesorboard
         log_dir = "logs/tensorboard/" + self._current_time
-        tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(
             log_dir=log_dir, histogram_freq=1
         )
         # fit the model
@@ -177,7 +177,7 @@ class Model:
 
         return self._model_history
 
-    def _compile_model(self) -> tensorflow.keras.Model:
+    def _compile_model(self) -> tf.keras.Model:
         """
         Takes the Unet models, and compile the model. Return the model.
 
@@ -190,7 +190,7 @@ class Model:
         )
         model.compile(
             optimizer="adam",
-            loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=True),
+            loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
             metrics=["accuracy"],
         )
         return model
@@ -198,9 +198,9 @@ class Model:
     def _setup_unet_model(
         self,
         output_channels: int,
-    ) -> tensorflow.keras.Model:
+    ) -> tf.keras.Model:
         """
-        Unet model from the segmentation notebook by tensorflow. Define the model.
+        Unet model from the segmentation notebook by tf. Define the model.
 
         Args:
         output_channels (int): number of categories in the classification.
@@ -222,11 +222,11 @@ class Model:
         ]
 
         # define the input layer
-        inputs = tensorflow.keras.layers.Input(tensorflow.TensorShape(self.input_shape))
+        inputs = tf.keras.layers.Input(tf.TensorShape(self.input_shape))
 
         # downsampling through the model
         # needs to have base model defined.
-        down_stack = tensorflow.keras.Model(
+        down_stack = tf.keras.Model(
             inputs=base_model.input,
             outputs=selected_output_layers,
         )
@@ -247,11 +247,11 @@ class Model:
 
         for up, skip in zip(up_stack, skips):
             layer = up(layer)
-            concat = tensorflow.keras.layers.Concatenate()
+            concat = tf.keras.layers.Concatenate()
             layer = concat([layer, skip])
 
         # this is the last layer of the model
-        last = tensorflow.keras.layers.Conv2DTranspose(
+        last = tf.keras.layers.Conv2DTranspose(
             filters=output_channels,
             kernel_size=3,
             strides=2,
@@ -260,7 +260,7 @@ class Model:
 
         layer = last(layer)
 
-        return tensorflow.keras.Model(inputs=inputs, outputs=layer)
+        return tf.keras.Model(inputs=inputs, outputs=layer)
 
     def freezing_layers(self) -> None:
         """
@@ -294,7 +294,7 @@ class Model:
 
         layer_log.close()
 
-    def _get_base_model(self) -> tensorflow.keras.Model:
+    def _get_base_model(self) -> tf.keras.Model:
         """
         Define the base of the model, MobileNetV2. Note that a discussion on
         the shape is necessary: if the shape of the pictures is the default
@@ -306,14 +306,14 @@ class Model:
         """
 
         if self._include_top:
-            base_model = tensorflow.keras.applications.MobileNetV2(
+            base_model = tf.keras.applications.MobileNetV2(
                 include_top=True,
                 weights="imagenet",
             )
             self.input_shape = (224, 224, 3)
 
         else:
-            base_model = tensorflow.keras.applications.MobileNetV2(
+            base_model = tf.keras.applications.MobileNetV2(
                 include_top=False,
                 weights="imagenet",
                 alpha=self._alpha,
@@ -326,7 +326,7 @@ class Model:
     def _upsample(self, filters, size, apply_dropout: bool = True):
         """Define the upsampling stack. Introduced as an alternative to the
             pix2pix implementation of the tensoflow notebook.
-           Credit: https://www.tensorflow.org/tutorials/generative/pix2pix
+           Credit: https://www.tf.org/tutorials/generative/pix2pix
            Conv2DTranspose => Dropout => Relu
         Args:
             filters: number of filters
@@ -335,10 +335,10 @@ class Model:
         Returns:
                Upsample Sequential Model
         """
-        initializer = tensorflow.random_normal_initializer(0.0, 0.02)
-        result = tensorflow.keras.Sequential()
+        initializer = tf.random_normal_initializer(0.0, 0.02)
+        result = tf.keras.Sequential()
         result.add(
-            tensorflow.keras.layers.Conv2DTranspose(
+            tf.keras.layers.Conv2DTranspose(
                 filters,
                 size,
                 strides=2,
@@ -348,12 +348,12 @@ class Model:
             )
         )
 
-        result.add(tensorflow.keras.layers.BatchNormalization())
+        result.add(tf.keras.layers.BatchNormalization())
 
         if apply_dropout:
-            result.add(tensorflow.keras.layers.Dropout(0.5))
+            result.add(tf.keras.layers.Dropout(0.5))
 
-        result.add(tensorflow.keras.layers.ReLU())
+        result.add(tf.keras.layers.ReLU())
 
         return result
 
@@ -372,7 +372,7 @@ class Model:
             plt.subplot(1, len(display_list), i + 1)
             plt.title(title[i])
             type(display_list[i])
-            plt.imshow(tensorflow.keras.utils.array_to_img(display_list[i]))
+            plt.imshow(tf.keras.utils.array_to_img(display_list[i]))
             plt.axis("off")
         path_snapshot = self._path_log + self._current_time + "/snapshots"
         if not os.path.exists(path_snapshot):
@@ -396,7 +396,7 @@ class Model:
         return pred_mask
 
     def show_predictions(
-        self, dataset: tensorflow.data.Dataset = None, num_batches: int = 1
+        self, dataset: tf.data.Dataset = None, num_batches: int = 1
     ) -> None:
         """Display side by side an earial photography, its true mask, and the
             predicted mask.
