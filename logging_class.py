@@ -351,6 +351,7 @@ class Logs:
         plt.axis("off")
         plt.subplot(1, 3, 2)
 <<<<<<< HEAD
+<<<<<<< HEAD
         plt.title("True Mask")
         type(display_list[1])
         plt.imshow(tensorflow.keras.utils.array_to_img(display_list[1]), cmap="plasma")
@@ -370,13 +371,21 @@ class Logs:
             plt.axis("off")
 =======
         plt.title("Predicted Mask")
+=======
+        plt.title("True Mask")
+>>>>>>> 3320795 (multiclass supported everywhere in the training class and looging class)
         type(display_list[1])
-        plt.imshow(tensorflow.keras.utils.array_to_img(display_list[1]), cmap="gray")
+        plt.imshow(tensorflow.keras.utils.array_to_img(display_list[1]), cmap="plasma")
         plt.axis("off")
         plt.subplot(1, 3, 3)
         plt.title("Predicted Mask")
+<<<<<<< HEAD
         plt.imshow(display_list[2], cmap="gray")
 >>>>>>> 9606e0c (multiclass support for the UNET-Resnest 101)
+=======
+        plt.imshow(display_list[2], cmap="plasma")
+        plt.axis("off")
+>>>>>>> 3320795 (multiclass supported everywhere in the training class and looging class)
         path_snapshot = self._local_path + "/snapshots"
         if not os.path.exists(path_snapshot):
             os.mkdir(path_snapshot)
