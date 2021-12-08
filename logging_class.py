@@ -73,9 +73,9 @@ class Logs:
 
     def local_log(
         self,
-        comment: str = "test run",
         train_data_config: dict = {},
         val_data_config: dict = {},
+        metrics: dict = [],
     ) -> None:
         """Write the local with the characteristics of the model and the used data for the training and validation
         Args:
@@ -92,11 +92,38 @@ class Logs:
             local_log.write("\n")
             local_log.write(self._comment)
             local_log.write("\n")
-            local_log.write(f"Configuration dictionary: {self._model_config}")
+            local_log.write(f"Model configuration: {self._model_config}")
             local_log.write("\n")
             local_log.write(f"Train configuration: {train_data_config}")
             local_log.write("\n")
-            local_log.write(f"Val configuration: {val_data_config}")
+            local_log.write(f"Training Accuracy: {metrics[0]}")
+            local_log.write("\n")
+            local_log.write(f"Validation Accuracy: {metrics[1]}")
+            local_log.write("\n")
+            local_log.write(f"Loss: {metrics[2]}")
+            local_log.write("\n")
+            local_log.write(f"Val loss: {metrics[3]}")
+            local_log.write("\n")
+
+        plt.figure(figsize=(8, 16))
+        plt.subplot(2, 1, 1)
+        plt.plot(metrics[0], label="Training Accuracy")
+        plt.plot(metrics[1], label="Validation Accuracy")
+        plt.ylim([0.6, 1])
+        plt.legend(loc="upper left")
+        plt.title("Training and Validation Accuracy")
+
+        plt.subplot(2, 1, 2)
+        plt.plot(metrics[2], label="Training Loss")
+        plt.plot(metrics[3], label="Validation Loss")
+        plt.ylim([0, 1.0])
+        plt.legend(loc="upper right")
+        plt.title("Training and Validation Loss")
+        plt.xlabel("epoch")
+
+        path_graph = self._path_log + self._current_time + "/losses.pdf"
+        plt.savefig(path_graph)
+        plt.close()
 
     def show_predictions(
         self,
