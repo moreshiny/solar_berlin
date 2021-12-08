@@ -2,6 +2,7 @@
 # https://www.tensorflow.org/guide/keras/save_and_serialize
 import tensorflow
 
+# import tensorflow_addons as tfa
 from dataloader import DataLoader
 from class_unet_resnet101v2 import Unet
 from logging_class import Logs
@@ -9,13 +10,14 @@ from logging_class import Logs
 tensorflow.keras.backend.clear_session()
 
 # parameters of the model.
-output_classes = 1  # number of categorical classes.
+output_classes = 5  # number of categorical classes.
 input_shape = (512, 512, 3)  # input size
+epochs = 100
 
-batch_size = 4  # batchsize
+batch_size = 8  # batchsize
 # Path to the data
-path_train = "data/small_large/train"
-path_test = "data/small_large/test"
+path_train = "data/selected_512_multiclass/selected_tiles_512_100_20_42/train"
+path_test = "data/selected_512_multiclass/selected_tiles_512_100_20_42/test"
 
 
 # calling the model.
@@ -25,31 +27,6 @@ model = Unet(
     drop_out=True,
     drop_out_rate={"512": 0.275, "256": 0.3, "128": 0.325, "64": 0.35},
 )
-
-
-# Loading the data
-dl_train = DataLoader(
-    path_train,
-    batch_size=batch_size,
-    input_shape=input_shape,
-    legacy_mode=False,
-)
-
-dl_test = DataLoader(
-    path_test,
-    batch_size=batch_size,
-    input_shape=input_shape,
-    legacy_mode=False,
-)
-
-
-dl_train.load()
-dl_test.load()
-
-train_batches = dl_train.dataset
-test_batches = dl_test.dataset
-
-print("data loaded")
 
 # Starting the logs
 
@@ -61,22 +38,78 @@ log.main_log(
     model_config=model.get_config(),
 )
 
+
+print("log created")
+
+
+if output_classes > 1:
+    multiclass = True
+    loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+    metrics = [
+        tensorflow.keras.metrics.SparseCategoricalAccuracy(
+            name="sparse_categorical_accuracy", dtype=None
+        ),
+        # tensorflow.compat.v1.metrics.average_precision_at_k(k=output_classes),
+    ]
+    model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
+        filepath=log.checkpoint_filepath,
+        save_weights_only=False,
+        monitor="sparse_categorical_accuracy",
+        mode="max",
+        save_best_only=True,
+        verbose=1,
+    )
+else:
+    multiclass = False
+    loss = tensorflow.keras.losses.BinaryCrossentropy(from_logits=False)
+    metrics = [
+        "accuracy",
+        tensorflow.keras.metrics.Recall(name="recall"),
+        tensorflow.keras.metrics.Precision(name="precision"),
+    ]
+    model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
+        filepath=log.checkpoint_filepath,
+        save_weights_only=False,
+        monitor="accuracy",
+        mode="max",
+        save_best_only=True,
+        verbose=1,
+    )
+
+dl_train = DataLoader(
+    path_train,
+    batch_size=batch_size,
+    input_shape=input_shape,
+    legacy_mode=False,
+    multiclass=multiclass,
+)
+
+
+dl_test = DataLoader(
+    path_test,
+    batch_size=batch_size,
+    input_shape=input_shape,
+    legacy_mode=False,
+    multiclass=multiclass,
+)
+
+
+dl_train.load()
+dl_test.load()
+
+train_batches = dl_train.dataset
+test_batches = dl_test.dataset
+
 log.local_log(
     train_data_config=dl_train.get_config(),
     val_data_config=dl_test.get_config(),
 )
 
-print("log created")
+print("data loaded")
+
+
 # Preparing the model to be saved using a checkpoint
 
-model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
-    filepath=log.checkpoint_filepath,
-    save_weights_only=False,
-    monitor="val_accuracy",
-    mode="max",
-    save_best_only=True,
-    verbose=1,
-)
 
 # Prepare the tensorboard
 
@@ -99,29 +132,17 @@ print("callbacks defined")
 # compiling the model
 learning_rate = 0.0005
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
-# loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(
-#     from_logits=False,
-#     name="sparse_categorical_crossentropy",
-# )
 
-loss = tensorflow.keras.losses.BinaryCrossentropy(from_logits=True)
 
-model.compile(
-    optimizer=opt,
-    loss=loss,
-    metrics=[
-        "accuracy",
-        tensorflow.keras.metrics.Recall(name="recall"),
-        tensorflow.keras.metrics.Precision(name="precision"),
-    ],
-)
+model.compile(optimizer=opt, loss=loss, metrics=metrics)
 
 
 print("compiling done")
 # training the model.
-epochs = 1
+
 steps_per_epoch = dl_train.n_samples / batch_size
 validation_steps = max(dl_test.n_samples // batch_size, 1)
+
 
 history = model.fit(
     train_batches,
@@ -136,6 +157,13 @@ history = model.fit(
     ],
 )
 
+num_batches = 3
+log.show_predictions(
+    dataset=dl_test.dataset,
+    model=model,
+    num_batches=num_batches,
+    multiclass=multiclass,
+)
 
 # print("first fitting round")
 # tensorflow.keras.backend.clear_session()
@@ -188,13 +216,7 @@ history = model.fit(
 
 
 # # logging examples of prediction on the test data sets.
-num_batches = 20  # number of batches used to display sample predictions.
-
-log.show_predictions(
-    dataset=dl_test.dataset,
-    model=model,
-    num_batches=num_batches,
-)
+# number of batches used to display sample predictions.
 
 
 tensorflow.keras.backend.clear_session()

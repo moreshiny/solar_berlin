@@ -3,7 +3,7 @@ import os
 from typing import List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
-import pprint
+
 import tensorflow
 from datetime import datetime
 
@@ -103,6 +103,7 @@ class Logs:
         dataset: tensorflow.data.Dataset = None,
         model: tensorflow.keras.Model = None,
         num_batches: int = 1,
+        multiclass: bool = False,
     ) -> None:
         """Display side by side an earial photography, its true mask, and the
             predicted mask.
@@ -111,24 +112,35 @@ class Logs:
             A dataset in the form provided by the dataloader.
             A tensorflow keras model.
             num_batches (int): number of batches to display.
+            multiclass (bool): if True, activate the calculation of the mask\
+                 prediction for multiclass problems.
 
         """
         for image_batch, mask_batch in dataset.take(num_batches):
             pred_mask_batch = model.predict(image_batch)
             for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
-                self._display([image, mask, self._create_mask(pred_mask)])
+                self._display(
+                    [image, mask, self._create_mask(pred_mask, multiclass=multiclass)]
+                )
 
-    def _create_mask(self, pred_mask):
+    def _create_mask(self, pred_mask, multiclass: bool = False):
         """Create a mask from the predicted array.
 
         Args:
-            a predicted image, through the predict method.
+            pred_mask: a predicted mask, through the predict method.
+            multiclass: A boolean. If true, activate the multiclass calculation of for the calculation of the mask
+
 
         Returns:
             a mask.
 
         """
-        pred_mask = (pred_mask > 0.5).astype(int) * 255
+        if multiclass:
+            pred_mask = np.argmax(pred_mask, axis=-1)
+            pred_mask = np.expand_dims(pred_mask, axis=-1)
+        else:
+            pred_mask = (pred_mask > 0.5).astype(int) * 255
+
         return pred_mask
 
     def _display(self, display_list: List) -> None:
@@ -139,14 +151,20 @@ class Logs:
                                 and predicted mask in that order.
 
         """
-        plt.figure(figsize=(15, 8))
-        title = ["Input Image", "True Mask", "Predicted Mask"]
-        for i in range(len(display_list)):
-            plt.subplot(1, len(display_list), i + 1)
-            plt.title(title[i])
-            type(display_list[i])
-            plt.imshow(tensorflow.keras.utils.array_to_img(display_list[i]))
-            plt.axis("off")
+        plt.figure(figsize=(18, 6))
+        plt.subplot(1, 3, 1)
+        plt.title("Input Image")
+        type(display_list[0])
+        plt.imshow(tensorflow.keras.utils.array_to_img(display_list[0]))
+        plt.axis("off")
+        plt.subplot(1, 3, 2)
+        plt.title("Predicted Mask")
+        type(display_list[1])
+        plt.imshow(tensorflow.keras.utils.array_to_img(display_list[1]), cmap="gray")
+        plt.axis("off")
+        plt.subplot(1, 3, 3)
+        plt.title("Predicted Mask")
+        plt.imshow(display_list[2], cmap="gray")
         path_snapshot = self._local_path + "/snapshots"
         if not os.path.exists(path_snapshot):
             os.mkdir(path_snapshot)
