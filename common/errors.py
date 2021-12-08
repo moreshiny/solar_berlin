@@ -1,10 +1,15 @@
-class InvalidPathError(Exception):
-    """Raised when the output path exists."""
+class AbsolutePathError(Exception):
+    """Raised when the output path is absolute."""
     pass
 
 
-class AbsolutePathError(Exception):
-    """Raised when the output path is absolute."""
+class InsuffientDataError(Exception):
+    """Raised when more data than available is requested."""
+    pass
+
+
+class InvalidPathError(Exception):
+    """ Raised when an invalid path is given """
     pass
 
 
@@ -13,8 +18,8 @@ class InvalidTileSizeError(Exception):
     pass
 
 
-class InsuffientDataError(Exception):
-    """Raised when more data than available is requested."""
+class LegacyModeError(Exception):
+    """ Raised when legacy modes is used on incompatible data """
     pass
 
 
