@@ -5,32 +5,67 @@ import glob
 from PIL import Image
 from osgeo import gdal
 from osgeo import ogr
+from abc import ABC
 
-from common.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
-from common.errors import InvalidTileSizeError, InsuffientDataError
+from common.errors import (
+    AbsolutePathError,
+    InsuffientDataError,
+    InvalidPathError,
+    InvalidTileSizeError,
+    OutputPathExistsError,
+)
 
+# input raster tiles are all 10k x 10k pixels
 RASTER_TILE_SIZE = 10_000
 
 
-class DataHandler():
-    def __init__(self):
-        pass
+class DataHandler(ABC):
+    """
+    Abstract class as parent for data handling classes.
+    """
 
     @classmethod
-    def _verify_input_path(cls, path_str):
+    def _verify_input_path(cls, path_str: str) -> None:
+        """ Standard verification of input paths.
+
+        Args:
+            path_str (str): A path-like to be checked.
+
+        Raises:
+            InvalidPathError: If path does not exist.
+        """
         cls._verify_any_path(path_str, pathname="Input path")
         if not os.path.exists(path_str):
             raise InvalidPathError(f"Input path {path_str} does not exist")
 
     @classmethod
-    def _verify_output_path(cls, path_str):
+    def _verify_output_path(cls, path_str: str) -> None:
+        """ Standard verification of output paths.
+
+        Args:
+            path_str (str): A path-like to be checked.
+
+        Raises:
+            OutputPathExistsError: If path already exists.
+        """
         cls._verify_any_path(path_str, pathname="Output path")
         if os.path.exists(path_str):
             raise OutputPathExistsError(
                 f"Output path {path_str} already exists")
 
     @staticmethod
-    def _verify_any_path(path_str, pathname="Path"):
+    def _verify_any_path(path_str: str, pathname: str = "Path"):
+        """ Standard verification applicable to any path.
+
+        Args:
+            path_str (str): A path-like to be checked.
+            pathname (str, optional): Description of path (used in error
+                messages). Defaults to "Path".
+
+        Raises:
+            AbsolutePathError: If path is absolute.
+            InvalidPathError: If path is empty or otherwise invalid.
+        """
         if os.path.isabs(path_str):
             raise AbsolutePathError(f"{pathname} {path_str} is absolute")
         if path_str == "":
@@ -38,7 +73,35 @@ class DataHandler():
 
 
 class DataExtractor(DataHandler):
-    def __init__(self, input_path, output_path, tile_size, lossy=False, testing=False):
+    """
+    DataExtractor takes matching raster and vector tiles and extracts them into
+    usable map-mask pairs for furhter processing.
+    """
+
+    def __init__(self, input_path: str, output_path: str, tile_size: int, lossy=False, testing=False):
+        """ Initialize DataExtractor.
+
+        Args:
+            input_path (str): A path-like to the input data, which should be a
+                directory containing rater tiles in a "raster" subdirectory and
+                matching vector tiles in a "vector" subdirectory. Raster tiles
+                are assumed to be 10k x 10k pixels.
+            output_path (str): A path-like to the output directory. A subdirectory
+                will be created for the output tiles within this directory.
+            tile_size (int): The size of the output tiles in pixels. Extracted
+                tiles are always square of tile_size x tile_size pixels.
+            lossy (bool, optional): Whether to permit tile_size values that
+                result in data loss at the edge of a raster. When False, only
+                factors of 10k are permitted as tile_size. Defaults to False.
+            testing (bool, optional): When true, only a small sub-portion of
+                the first raster encountered will be extracted. Defaults to False.
+
+        Raises:
+            InvalidTileSizeError: If tile_size is not a valid integer (or a
+                factor of 10k when Lossy is False).
+            OutputPathExistsError: If the output path already exists and does
+                not already contain matching extracted tiles.
+        """
         self._testing = testing
         self.tile_size = tile_size
 
@@ -54,16 +117,19 @@ class DataExtractor(DataHandler):
 
         if RASTER_TILE_SIZE % self.tile_size != 0:
             if lossy:
-                self.raster_tile_size = RASTER_TILE_SIZE // self.tile_size * self.tile_size
+                self.raster_tile_size =\
+                    RASTER_TILE_SIZE // self.tile_size * self.tile_size
             else:
                 raise InvalidTileSizeError(
-                    f"tile_size must be a factor of {RASTER_TILE_SIZE} or raster edges will be discarded. Set lossy=True to allow this.")
+                    f"""tile_size must be a factor of {RASTER_TILE_SIZE} or raster
+                        edges will be discarded. Set lossy=True to allow this."""
+                )
         else:
             self.raster_tile_size = RASTER_TILE_SIZE
 
         if self._testing:
             print(f"Testing mode: {self._testing}")
-            # limit to 16 (4*4) tiles for testing
+            # limit to 16 (4*4) tiles for faster testing
             self.raster_tile_size = min(
                 self.raster_tile_size, self.tile_size*4)
         else:
@@ -81,16 +147,28 @@ class DataExtractor(DataHandler):
             expected_tile_nos = len(self._input_raster_fns) * \
                 (self.raster_tile_size**2 // self.tile_size**2)
 
-            if len(output_map_tile_fns) != expected_tile_nos or len(output_msk_tile_fns) != expected_tile_nos:
+            if len(output_map_tile_fns) != expected_tile_nos\
+                    or len(output_msk_tile_fns) != expected_tile_nos:
                 raise OutputPathExistsError(
-                    f"Output path {self.tile_path} exists and does not contain the expected number of tiles")
+                    f"""Output path {self.tile_path} exists and does not contain
+                        the expected number of tiles"""
+                )
             else:
                 self.total_tiles = len(output_map_tile_fns)
         else:
             self.total_tiles = 0
             self._extract_data(self.tile_size, self.tile_path)
 
-    def _extract_data(self, tile_size, tile_path):
+    def _extract_data(self, tile_size: int, tile_path: str):
+        """ Main method for extracting data. For each raster tile encountered,
+            the corresponding vector file is rasterised, clipped to the size of
+            the raster and converted to a mask image. Creates a temporary
+            directory in the output path to hold intermediate states.
+
+        Args:
+            tile_size (int): Size of the tiles to be extracted.
+            tile_path (str): The subdirectory in which to save the tiles.
+        """
         if not os.path.exists(tile_path):
             os.makedirs(tile_path)
 
@@ -241,23 +319,29 @@ class DataExtractor(DataHandler):
 
 
 class DataSelector(DataHandler):
+    """
+    DataSelector handles the selection of data from a folder containing map
+    and mask tiles as produced by DataExtractor.
+    """
 
-    def __init__(
-            self,
-            extractor,
-            output_path,
-            train_n,
-            test_n,
-            random_seed=0,
-            testing: bool = False):
+    def __init__(self, extractor: DataExtractor, output_path: str,
+                 train_n: int, test_n: int, random_seed=0):
+        """Initialize the DataSelector.
 
-        self._testing = testing
+        Args:
+            extractor (DataExtractor): An extractor pointing to the input data.
+            output_path (str): A path-like in which to store the selected tiles.
+                A subdirectory is created within this folder.
+            train_n (int): Number of train tiles to select.
+            test_n (int): Number of test tiles to select.
+            random_seed (int, optional): Seed for shuffling the data. Defaults to 0.
 
+        """
         self.extractor = extractor
 
-        self._verify_request_size(train_n, test_n)
         self.train_n = train_n
         self.test_n = test_n
+        self._verify_request_size()
 
         self._verify_superdirectory_path(output_path)
         output_subdir = self._subdir_name(
@@ -283,13 +367,25 @@ class DataSelector(DataHandler):
             output_path=self.output_path,
         )
 
-    def _verify_request_size(self, train_n, test_n):
-        if train_n + test_n > self.extractor.total_tiles:
+    def _verify_request_size(self) -> None:
+        """Verify that the requested number of tiles can be met.
+
+        Raises:
+            InsuffientDataError: If the requested number of tiles cannot be met.
+        """
+        if self.train_n + self.test_n > self.extractor.total_tiles:
             raise InsuffientDataError(
-                f"Requested {train_n} training tiles and {test_n} testing tiles, but only {self.extractor.total_tiles} tiles available.")
+                f"""Requested {self.train_n} training tiles and {self.test_n} testing tiles,
+                but only {self.extractor.total_tiles} tiles available."""
+            )
 
     @classmethod
-    def _verify_superdirectory_path(cls, output_path):
+    def _verify_superdirectory_path(cls, output_path: str) -> None:
+        """Verify that the output path exists and is a directory.
+
+        Args:
+            output_path (str): A path-like to be checked.
+        """
         try:
             cls._verify_output_path(output_path)
         except OutputPathExistsError:
@@ -297,9 +393,14 @@ class DataSelector(DataHandler):
         # instead ensure that the output path exists so that we can create subfolders
         if not os.path.exists(output_path):
             os.makedirs(output_path)
+        elif not os.path.isdir(output_path):
+            raise OutputPathExistsError(
+                f"{output_path} exists but is not a directory."
+            )
 
     @staticmethod
-    def _subdir_name(tile_size, train_n, test_n, random_seed):
+    def _subdir_name(tile_size: int, train_n: int, test_n: int, random_seed: int):
+        """Create a subdirectory name for the output path."""
         return f"selected_tiles_{tile_size}_{train_n}_{test_n}_{random_seed}"
 
     @staticmethod
@@ -313,6 +414,7 @@ class DataSelector(DataHandler):
             train_size (int): number of training images to select
             test_size (int): number of test images to select
             input_path (str): location of input files
+            random_seed (int): seed for random number generator. Default is 0.
 
         Returns:
             list: List of lists of tuples pairs of map and mask images
@@ -320,6 +422,7 @@ class DataSelector(DataHandler):
         # get all files in input directory
         files = os.listdir(input_path)
         files_map = [file for file in files if "map" in file]
+        # TODO "mask" is only needed for legacy mode, remove when no longer needed
         files_mask = [
             file for file in files if "msk" in file or "mask" in file]
 

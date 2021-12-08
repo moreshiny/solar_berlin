@@ -508,6 +508,7 @@ class TestDataSelector(unittest.TestCase):
             for test_file in test_fns:
                 self.assertNotIn(test_file, train_fns)
 
+    # TODO add test for file specified as output path
 
 if __name__ == "__main__":
     unittest.main()
