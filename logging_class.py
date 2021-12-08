@@ -5,12 +5,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
 =======
 import pprint
 >>>>>>> 03cf8a4 (updated class, model and logs files.)
+=======
+
+>>>>>>> 9606e0c (multiclass support for the UNET-Resnest 101)
 import tensorflow
 from datetime import datetime
 
@@ -238,9 +242,13 @@ class Logs:
         model: tensorflow.keras.Model = None,
         num_batches: int = 1,
 <<<<<<< HEAD
+<<<<<<< HEAD
         multiclass: bool = False,
 =======
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
+=======
+        multiclass: bool = False,
+>>>>>>> 9606e0c (multiclass support for the UNET-Resnest 101)
     ) -> None:
         """Display side by side an earial photography, its true mask, and the
             predicted mask.
@@ -250,15 +258,21 @@ class Logs:
             A tensorflow keras model.
             num_batches (int): number of batches to display.
 <<<<<<< HEAD
+<<<<<<< HEAD
             multiclass (bool): if True, activate the calculation of the mask\
                  prediction for multiclass problems.
 =======
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
+=======
+            multiclass (bool): if True, activate the calculation of the mask\
+                 prediction for multiclass problems.
+>>>>>>> 9606e0c (multiclass support for the UNET-Resnest 101)
 
         """
         for image_batch, mask_batch in dataset.take(num_batches):
             pred_mask_batch = model.predict(image_batch)
             for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
+<<<<<<< HEAD
 <<<<<<< HEAD
                 self._display(
                     [image, mask, self._create_mask(pred_mask, multiclass=multiclass)]
@@ -273,28 +287,45 @@ class Logs:
 
 =======
                 self._display([image, mask, self._create_mask(pred_mask)])
+=======
+                self._display(
+                    [image, mask, self._create_mask(pred_mask, multiclass=multiclass)]
+                )
+>>>>>>> 9606e0c (multiclass support for the UNET-Resnest 101)
 
-    def _create_mask(self, pred_mask):
+    def _create_mask(self, pred_mask, multiclass: bool = False):
         """Create a mask from the predicted array.
 
         Args:
+<<<<<<< HEAD
             a predicted image, through the predict method.
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
+=======
+            pred_mask: a predicted mask, through the predict method.
+            multiclass: A boolean. If true, activate the multiclass calculation of for the calculation of the mask
+
+>>>>>>> 9606e0c (multiclass support for the UNET-Resnest 101)
 
         Returns:
             a mask.
 
         """
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 9606e0c (multiclass support for the UNET-Resnest 101)
         if multiclass:
             pred_mask = np.argmax(pred_mask, axis=-1)
             pred_mask = np.expand_dims(pred_mask, axis=-1)
         else:
             pred_mask = (pred_mask > 0.5).astype(int) * 255
 
+<<<<<<< HEAD
 =======
         pred_mask = (pred_mask > 0.5).astype(int) * 255
 >>>>>>> bd0fe62 (updated model class (layer included), added logging class, updated the training. Explanation on how to use pickle model is added)
+=======
+>>>>>>> 9606e0c (multiclass support for the UNET-Resnest 101)
         return pred_mask
 
     def _display(self, display_list: List) -> None:
@@ -306,9 +337,12 @@ class Logs:
 
         """
 <<<<<<< HEAD
+<<<<<<< HEAD
         path_snapshot = self._local_path + "/snapshots"
         if not os.path.exists(path_snapshot):
             os.mkdir(path_snapshot)
+=======
+>>>>>>> 9606e0c (multiclass support for the UNET-Resnest 101)
         plt.figure(figsize=(18, 6))
         plt.subplot(1, 3, 1)
         plt.title("Input Image")
@@ -316,6 +350,7 @@ class Logs:
         plt.imshow(tensorflow.keras.utils.array_to_img(display_list[0]))
         plt.axis("off")
         plt.subplot(1, 3, 2)
+<<<<<<< HEAD
         plt.title("True Mask")
         type(display_list[1])
         plt.imshow(tensorflow.keras.utils.array_to_img(display_list[1]), cmap="plasma")
@@ -333,6 +368,15 @@ class Logs:
             type(display_list[i])
             plt.imshow(tensorflow.keras.utils.array_to_img(display_list[i]))
             plt.axis("off")
+=======
+        plt.title("Predicted Mask")
+        type(display_list[1])
+        plt.imshow(tensorflow.keras.utils.array_to_img(display_list[1]), cmap="gray")
+        plt.axis("off")
+        plt.subplot(1, 3, 3)
+        plt.title("Predicted Mask")
+        plt.imshow(display_list[2], cmap="gray")
+>>>>>>> 9606e0c (multiclass support for the UNET-Resnest 101)
         path_snapshot = self._local_path + "/snapshots"
         if not os.path.exists(path_snapshot):
             os.mkdir(path_snapshot)
