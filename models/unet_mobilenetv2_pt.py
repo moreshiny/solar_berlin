@@ -8,7 +8,7 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from dataloader import DataLoader
+from loading.dataloader import DataLoader
 
 
 class Model:
