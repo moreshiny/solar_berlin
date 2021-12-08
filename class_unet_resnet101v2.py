@@ -10,6 +10,8 @@ class Unet(tensorflow.keras.Model):
     def __init__(
         self,
         output_classes: int = 1,
+        input_shape: Tuple = (512, 512, 3),
+        resizing_shape: Tuple = (512, 512, 3),
         drop_out: bool = False,
         drop_out_rate: dict = {"512": 0, "256": 0, "128": 0, "64": 0},
         fine_tune_at: int = 0,
@@ -18,6 +20,8 @@ class Unet(tensorflow.keras.Model):
         """Class initialisation:
         Args:
             output_classes: number of categorical classes. Default to one.
+            input_shape: Define the size of the input and output of the model. Defaut to (512,512, 3).
+            resizing_shape: Size of the output resizing layer. 
             drop_out: boolean, wether the dropout in the upstack of the model is activated; Default to False.
             drop_out_rate: If drop_out, defines the dropout rate in the up stacks. Defaults to {"512": 0, "256": 0, "128": 0, "64": 0}
             fine_tune_at: if non zero, freeze the upstacks, and unfreeze the corresponding number of layers\
@@ -28,10 +32,15 @@ class Unet(tensorflow.keras.Model):
 
         # save the passed variable.
         self._output_classes = output_classes
+        self._input_shape = input_shape
         self._drop_out = drop_out
         self._drop_out_rate = drop_out_rate
         self._fine_tune_at = fine_tune_at
         self._upstack_trainable = upstack_trainable
+
+        # Input layer
+
+        self._input_layer = tensorflow.keras.layers.InputLayer(self._input_shape)
 
         # Define the layers for the skip connections.
         # Define first the layers for skip conenctions within the down stacl/pretrained networks
@@ -84,9 +93,12 @@ class Unet(tensorflow.keras.Model):
             Input: A 4D-keras-tensor
 
         """
+
         # building the downstacks
 
-        skips = self._down_stack(input)
+        layer = self._input_layer(input)
+
+        skips = self._down_stack(layer)
         layer = skips[-1]
         skips = reversed(skips[:-1])
 
@@ -94,7 +106,7 @@ class Unet(tensorflow.keras.Model):
         for up, skip in zip(self._up_stack, skips):
             layer = up(layer)
             layer = self.concatenate([layer, skip])
-        # Last layers
+        # Last convolution
         layer = self._last_conv(layer)
 
         return layer
@@ -106,6 +118,7 @@ class Unet(tensorflow.keras.Model):
         """
         return {
             "output_classes": self._output_classes,
+            "input_shape": self._input_shape,
             "drop_out": self._drop_out,
             "drop_out_rate": self._drop_out_rate,
             "fine_tune_at": self._fine_tune_at,
