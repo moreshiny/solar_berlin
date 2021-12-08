@@ -8,8 +8,8 @@ from PIL import Image
 
 
 from selection.selection import DataExtractor, DataSelector
-from selection.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
-from selection.errors import InvalidTileSizeError, InsuffientDataError
+from common.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
+from common.errors import InvalidTileSizeError, InsuffientDataError
 
 
 TILE_SIZES = (250, 500, 512)
