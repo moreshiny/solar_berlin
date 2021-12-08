@@ -1,22 +1,13 @@
-import numpy as np
 import glob
 import os
 import tensorflow as tf
 
+from common.errors import (
+    InvalidPathError,
+    LegacyModeError,
+    InsuffientDataError
+)
 
-class LegacyModeError(Exception):
-    """ Raised when legacy modes is used on incompatible data """
-    pass
-
-
-class InvalidPathError(Exception):
-    """ Raised when an invalid path is given """
-    pass
-
-
-class InsuffientDataError(Exception):
-    """ Raised when a path does not contain sufficient images of the right size """
-    pass
 
 class DataLoader:
     """Class for creating tensorflow dataset."""
@@ -105,7 +96,7 @@ class DataLoader:
         if len(useable_paths) == 0:
             raise InsuffientDataError(
                 f"No images found in {self.path} with the correct size."
-                )
+            )
 
         useable_paths.sort()
 
