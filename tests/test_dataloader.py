@@ -6,6 +6,7 @@ from PIL import Image
 <<<<<<< HEAD
 =======
 
+<<<<<<< HEAD
 from dataloader import DataLoader
 <<<<<<< HEAD
 >>>>>>> 4241abc (First working version of data selector with multiclass)
@@ -14,6 +15,12 @@ from dataloader import LegacyModeError
 from dataloader import InsuffientDataError
 from dataloader import InvalidPathError
 >>>>>>> b0c8908 (Use custom exception names)
+=======
+from loading.dataloader import DataLoader
+from loading.dataloader import LegacyModeError
+from loading.dataloader import InsuffientDataError
+from loading.dataloader import InvalidPathError
+>>>>>>> b8e175c (Rename subfolders)
 
 from roof.dataloader import DataLoader
 from roof.errors import (

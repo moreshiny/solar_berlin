@@ -10,7 +10,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
+<<<<<<< HEAD:unet/unet_resnet101v2_pt.py
 from roof.dataloader import DataLoader
+=======
+from loading.dataloader import DataLoader
+>>>>>>> b8e175c (Rename subfolders):models/unet_resnet101v2_pt.py
 
 
 class Model:

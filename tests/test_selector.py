@@ -396,10 +396,15 @@ from extraction.selection import InvalidTileSizeError, InsuffientDataError
 from selection.selection import DataSelector
 =======
 from selection.selection import DataExtractor, DataSelector
+<<<<<<< HEAD
 >>>>>>> 54fa04d (Refactor: separate extraction and selection)
 from selection.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
 from selection.errors import InvalidTileSizeError, InsuffientDataError
 >>>>>>> 3db5d22 (Separate selection from extraction)
+=======
+from common.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
+from common.errors import InvalidTileSizeError, InsuffientDataError
+>>>>>>> b8e175c (Rename subfolders)
 
 
 <<<<<<< HEAD

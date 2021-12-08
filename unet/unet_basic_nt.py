@@ -10,7 +10,11 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+<<<<<<< HEAD:unet/unet_basic_nt.py
 from roof.dataloader import DataLoader
+=======
+from loading.dataloader import DataLoader
+>>>>>>> b8e175c (Rename subfolders):models/unet_basic_nt.py
 
 
 class Model:

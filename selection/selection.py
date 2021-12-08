@@ -6,8 +6,8 @@ from PIL import Image
 from osgeo import gdal
 from osgeo import ogr
 
-from selection.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
-from selection.errors import InvalidTileSizeError, InsuffientDataError
+from common.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
+from common.errors import InvalidTileSizeError, InsuffientDataError
 
 RASTER_TILE_SIZE = 10_000
 
