@@ -6,7 +6,6 @@ from models.unet_basic_nt import Model
 class TestModel(unittest.TestCase):
 
     def test_model_simple_run_does_not_result_in_error(self):
-
         train_path = "data/test_data_224/train"
         test_path = "data/test_data_224/test"
 
