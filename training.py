@@ -11,15 +11,17 @@ tensorflow.keras.backend.clear_session()
 # parameters of the model.
 output_classes = 1  # number of categorical classes.
 input_shape = (512, 512, 3)  # input size
+
 batch_size = 4  # batchsize
 # Path to the data
-path_train = "data/large/train"
-path_test = "data/large/test"
+path_train = "data/small_large/train"
+path_test = "data/small_large/test"
 
 
 # calling the model.
 model = Unet(
     output_classes=output_classes,
+    input_shape=input_shape,
     drop_out=True,
     drop_out_rate={"512": 0.275, "256": 0.3, "128": 0.325, "64": 0.35},
 )
@@ -30,13 +32,17 @@ dl_train = DataLoader(
     path_train,
     batch_size=batch_size,
     input_shape=input_shape,
+    legacy_mode=False,
 )
 
 dl_test = DataLoader(
     path_test,
     batch_size=batch_size,
     input_shape=input_shape,
+    legacy_mode=False,
 )
+
+
 dl_train.load()
 dl_test.load()
 
@@ -93,10 +99,16 @@ print("callbacks defined")
 # compiling the model
 learning_rate = 0.0005
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
+# loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(
+#     from_logits=False,
+#     name="sparse_categorical_crossentropy",
+# )
+
+loss = tensorflow.keras.losses.BinaryCrossentropy(from_logits=True)
 
 model.compile(
     optimizer=opt,
-    loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
+    loss=loss,
     metrics=[
         "accuracy",
         tensorflow.keras.metrics.Recall(name="recall"),
@@ -107,7 +119,7 @@ model.compile(
 
 print("compiling done")
 # training the model.
-epochs = 100
+epochs = 1
 steps_per_epoch = dl_train.n_samples / batch_size
 validation_steps = max(dl_test.n_samples // batch_size, 1)
 
