@@ -96,11 +96,13 @@ class TestDataLoader(unittest.TestCase):
         tile_size = int(folder.split("_")[2])
         return tile_size
 
+    def _count_batches(self, dataloader):
+        n_elements = dataloader._dataset_input.cardinality().numpy()
+        return math.ceil(n_elements / dataloader.batch_size)
+
     def test_dataloader_returns_tfdataset_of_correct_shape(self):
         for data_path in self.data_paths:
-
             tile_size = self._tile_size_from_path(data_path)
-
             if tile_size == 224:
                 legacy_mode = True
             else:
@@ -113,12 +115,16 @@ class TestDataLoader(unittest.TestCase):
             )
             dataloader.load()
 
+<<<<<<< HEAD
             # find the number of elements in the tensorflow dataset
             n_batches = math.ceil(dataloader._dataset_input.cardinality(
             ).numpy() / dataloader.batch_size)
 
             # length = 2
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+            n_batches = self._count_batches(dataloader)
+>>>>>>> 70307a8 (Clean up tests)
             for inputs, targets in dataloader.dataset.take(n_batches):
                 self.assertEqual(inputs.shape, (32, tile_size, tile_size, 3))
                 self.assertEqual(targets.shape, (32, tile_size, tile_size, 1))
@@ -349,7 +355,6 @@ class TestDataLoader(unittest.TestCase):
     def test_dataloader_returns_matching_pairs_map_mask(self):
         for data_path in self.data_paths:
             tile_size = self._tile_size_from_path(data_path)
-
             if tile_size == 224:
                 legacy_mode = True
             else:
@@ -359,26 +364,20 @@ class TestDataLoader(unittest.TestCase):
                 data_path,
                 input_shape=(tile_size, tile_size, 3),
                 legacy_mode=legacy_mode,
-                )
+            )
 
-            # find the number of elements in the tensorflow dataset
-            n_batches = math.ceil(dataloader._dataset_input
-                                  .cardinality().numpy() / dataloader.batch_size)
-
-            map_paths = list(
-                dataloader._dataset_input.take(n_batches))
-            mask_paths = list(
-                dataloader._dataset_target.take(n_batches))
+            n_batches = self._count_batches(dataloader)
+            map_paths = list(dataloader._dataset_input.take(n_batches))
+            mask_paths = list(dataloader._dataset_target.take(n_batches))
 
             for map_path, mask_path in zip(map_paths, mask_paths):
                 map_name = map_path.numpy().decode("utf-8").split("map")[0]
-                if "mask" in mask_path.numpy().decode(
-                        "utf-8"):
-                    mask_name = mask_path.numpy().decode(
-                        "utf-8").split("mask")[0]
+                if "mask" in mask_path.numpy().decode("utf-8"):
+                    mask_name =\
+                        mask_path.numpy().decode("utf-8").split("mask")[0]
                 else:
-                    mask_name = mask_path.numpy().decode(
-                        "utf-8").split("msk")[0]
+                    mask_name =\
+                        mask_path.numpy().decode("utf-8").split("msk")[0]
 
                 self.assertEqual(map_name, mask_name)
 
@@ -393,12 +392,10 @@ class TestDataLoader(unittest.TestCase):
                 data_path,
                 input_shape=(tile_size, tile_size, 3),
                 legacy_mode=legacy_mode
-                )
+            )
             dataloader.load()
-            # find the number of elements in the tensorflow dataset
-            n_batches = math.ceil(dataloader._dataset_input
-                                  .cardinality().numpy() / dataloader.batch_size)
 
+            n_batches = self._count_batches(dataloader)
             mask_set = set([])
             for _, targets in dataloader.dataset.take(n_batches):
                 for target in targets:
@@ -415,12 +412,10 @@ class TestDataLoader(unittest.TestCase):
                 data_path,
                 input_shape=(tile_size, tile_size, 3),
                 legacy_mode=legacy_mode, multiclass=True
-                )
+            )
             dataloader.load()
-            # find the number of elements in the tensorflow dataset
-            n_batches = math.ceil(dataloader._dataset_input
-                                  .cardinality().numpy() / dataloader.batch_size)
 
+            n_batches = self._count_batches(dataloader)
             mask_set = set([])
             for _, targets in dataloader.dataset.take(n_batches):
                 for target in targets:
@@ -449,7 +444,7 @@ class TestDataLoader(unittest.TestCase):
             with self.assertRaises(InsuffientDataError):
                 DataLoader(
                     data_path,
-                    input_shape=(tile_size, tile_size,3)
+                    input_shape=(tile_size, tile_size, 3)
                 )
 <<<<<<< HEAD
 >>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling)
@@ -492,7 +487,6 @@ class TestDataLoader(unittest.TestCase):
             self.assertEqual(np.sum(roof), true_roof)
 
     def test_dataloader_returns_expected_values_for_binary_mode_less(self):
-
         image_dir = "data/testing/selected_test/selected_tiles_250_10_5_42/less_roof/"
         dataloader = DataLoader(
             image_dir,

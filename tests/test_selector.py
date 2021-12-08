@@ -427,14 +427,24 @@ RANDOM_SEED = 42
 class TestDataExtractor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.input_path = os.path.join("data", "testing", "converted_test")
+        cls.input_path = os.path.join(
+            "data", "testing", "converted_test"
+        )
         cls.input_path_invalid_vector = os.path.join(
-            "data", "testing", "converted_invalid_test")
-        cls.output_path = os.path.join("data", "testing", "extracted")
+            "data", "testing", "converted_invalid_test"
+        )
+        cls.output_path = os.path.join(
+            "data", "testing", "extracted"
+        )
         cls.output_path_invalid_vector = os.path.join(
-            "data", "testing", "extracted_invalid")
+            "data", "testing", "extracted_invalid"
+        )
         cls.tile_sizes = TILE_SIZES
-        cls.clean_up()
+
+        # clean up here so we can leave results in place to inspect at the end
+        cls._clean_up()
+
+        # create one extracter for each tile size for use by tests
         cls.extractors = []
         for tile_size in cls.tile_sizes:
             cls.extractors.append(
@@ -448,14 +458,13 @@ class TestDataExtractor(unittest.TestCase):
             )
 
     @classmethod
-    def clean_up(cls):
+    def _clean_up(cls):
         for tile_size in cls.tile_sizes:
             tile_subdir = cls._tile_subdir(tile_size)
-            if os.path.exists(os.path.join(cls.output_path, tile_subdir)):
-                shutil.rmtree(os.path.join(cls.output_path, tile_subdir))
-            if os.path.exists(os.path.join(cls.output_path_invalid_vector, tile_subdir)):
-                shutil.rmtree(os.path.join(
-                    cls.output_path_invalid_vector, tile_subdir))
+            for base_path in [cls.output_path, cls.output_path_invalid_vector]:
+                tile_path = os.path.join(base_path, tile_subdir)
+                if os.path.exists(tile_path):
+                    shutil.rmtree(tile_path)
 
     @staticmethod
     def _tile_subdir(tile_size):
@@ -516,7 +525,6 @@ class TestDataExtractor(unittest.TestCase):
                     map_count += 1
                 elif "_msk.png" in image_fn:
                     msk_count += 1
-
             self.assertEqual(map_count, msk_count)
 
     def test_data_extractor_produces_expected_image_sizes(self):
@@ -664,6 +672,7 @@ class TestSelection(unittest.TestCase):
         cls.tile_sizes = TILE_SIZES
 
         cls.extractor_input_path = os.path.join(
+<<<<<<< HEAD
             "data", "testing", "converted_test")
         cls.input_path = os.path.join("data", "testing", "extracted_test")
         cls.output_path = os.path.join("data", "testing", "selected")
@@ -672,9 +681,24 @@ class TestSelection(unittest.TestCase):
 >>>>>>> 54fa04d (Refactor: separate extraction and selection)
         cls.clean_up()
 
+=======
+            "data", "testing", "converted_test"
+        )
+        cls.input_path = os.path.join(
+            "data", "testing", "extracted_test"
+        )
+        cls.output_path = os.path.join(
+            "data", "testing", "selected"
+        )
+        cls.verfication_path = os.path.join(
+            "data", "testing", "selected_test"
+        )
+>>>>>>> 70307a8 (Clean up tests)
 
-#        cls._first_run = True
+        # clean up here so we can leave output in place at the end
+        cls._clean_up()
 
+        # test tiles of all sizes exists, so these extractors simply verify that
         cls.extractors = []
         for tile_size in cls.tile_sizes:
             cls.extractors.append(
@@ -691,8 +715,8 @@ class TestSelection(unittest.TestCase):
                 )
             )
 
+        # determine and store the paths to be created separately for testing
         cls.selected_paths = []
-
         selection_sizes = SELECTION_SIZES
         for selection_size in selection_sizes:
             for extractor in cls.extractors:
@@ -754,7 +778,7 @@ class TestSelection(unittest.TestCase):
 =======
                 cls.selected_paths.append(os.path.join(
                     cls.output_path,
-                    cls.selected_subdir(
+                    cls._selected_subdir(
                         tile_size,
                         selection_size[0],
                         selection_size[1],
@@ -764,7 +788,7 @@ class TestSelection(unittest.TestCase):
 >>>>>>> 4241abc (First working version of data selector with multiclass)
 
     @classmethod
-    def selected_subdir(cls, tile_size, train_n, test_n, random_seed):
+    def _selected_subdir(cls, tile_size, train_n, test_n, random_seed):
         return f"selected_tiles"\
             + f"_{tile_size}"\
             + f"_{train_n}"\
@@ -773,9 +797,10 @@ class TestSelection(unittest.TestCase):
 
 
     @classmethod
-    def clean_up(cls):
+    def _clean_up(cls):
         for tile_size in cls.tile_sizes:
             for selection_size in SELECTION_SIZES:
+<<<<<<< HEAD
 <<<<<<< HEAD
                 selection_path = os.path.join(
                     OUTPUT_PATH,
@@ -790,6 +815,9 @@ class TestSelection(unittest.TestCase):
 >>>>>>> 4241abc (First working version of data selector with multiclass)
 =======
                 subdir = cls.selected_subdir(
+=======
+                subdir = cls._selected_subdir(
+>>>>>>> 70307a8 (Clean up tests)
                     tile_size,
                     selection_size[0],
                     selection_size[1],
@@ -973,9 +1001,13 @@ class TestSelection(unittest.TestCase):
             )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             # determine the tile_size from the folder name
 =======
 >>>>>>> 5acb817 (Refactor data selector tests)
+=======
+            # determine the tile_size from the folder name
+>>>>>>> 70307a8 (Clean up tests)
             tile_size = int(selected_path.split("_")[2])
 
             for image_fn in all_files:
@@ -1230,6 +1262,7 @@ class TestSelection(unittest.TestCase):
 
         selected_images = []
 <<<<<<< HEAD
+<<<<<<< HEAD
         for random_seed in random_seeds:
             selected_path = os.path.join(
                 self.output_path,
@@ -1250,13 +1283,17 @@ class TestSelection(unittest.TestCase):
 
 =======
 
+=======
+>>>>>>> 70307a8 (Clean up tests)
         for random_seed in random_seeds:
             selected_path = os.path.join(
                 self.output_path,
                 f"selected_tiles_{tile_size}_{train_n}_{test_n}_{random_seed}"
             )
+
             if os.path.exists(selected_path):
                 shutil.rmtree(selected_path)
+
             DataSelector(
                 # first extractor has tile size 250
                 extractor=self.extractors[0],
@@ -1287,6 +1324,7 @@ class TestSelection(unittest.TestCase):
                 os.path.join(selected_path, "test", "**", "*.png"),
             )
 <<<<<<< HEAD
+<<<<<<< HEAD
             for test_file in test_fns:
                 self.assertNotIn(test_file, train_fns)
 
@@ -1294,6 +1332,8 @@ class TestSelection(unittest.TestCase):
 
 =======
 
+=======
+>>>>>>> 70307a8 (Clean up tests)
             for test_file in test_fns:
                 self.assertNotIn(test_file, train_fns)
 
