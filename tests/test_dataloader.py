@@ -15,16 +15,21 @@ class TestDataLoader(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data_paths = [
-            os.path.join("data", "testing", "selected",
-                         "selected_tiles_224_fixed", "test_curated_1_final"),
-            os.path.join("data", "testing", "selected",
-                         "selected_tiles_500_10_5_42_fixed", "train"),
+            os.path.join("data", "testing", "selected_test",
+                         "selected_tiles_224", "test_curated_1_final"),
+            os.path.join("data", "testing", "selected_test",
+                         "selected_tiles_500_10_5_42", "train"),
         ]
+
+    def _tile_size_from_path(self, data_path):
+        folder = os.path.split(os.path.split(data_path)[0])[-1]
+        tile_size = int(folder.split("_")[2])
+        return tile_size
 
     def test_dataloader_returns_tfdataset_of_correct_shape(self):
         for data_path in self.data_paths:
 
-            tile_size = int(data_path.split("_")[2])
+            tile_size = self._tile_size_from_path(data_path)
 
             if tile_size == 224:
                 legacy_mode = True
@@ -50,7 +55,7 @@ class TestDataLoader(unittest.TestCase):
     def test_dataloader_returns_all_images(self):
         # this test ist done only on the origial curated dataset
         data_path = self.data_paths[0]
-        tile_size = int(data_path.split("_")[2])
+        tile_size = self._tile_size_from_path(data_path)
         true_samples = 256
         dataloader = DataLoader(
             data_path, input_shape=(tile_size, tile_size, 3))
@@ -59,7 +64,7 @@ class TestDataLoader(unittest.TestCase):
 
     def test_dataloader_returns_matching_pairs_map_mask(self):
         for data_path in self.data_paths:
-            tile_size = int(data_path.split("_")[2])
+            tile_size = self._tile_size_from_path(data_path)
 
             if tile_size == 224:
                 legacy_mode = True
@@ -95,7 +100,7 @@ class TestDataLoader(unittest.TestCase):
 
     def test_dataloader_returns_mask_with_expected_range_of_values_binary(self):
         for data_path in self.data_paths:
-            tile_size = int(data_path.split("_")[2])
+            tile_size = self._tile_size_from_path(data_path)
             if tile_size == 224:
                 legacy_mode = True
             else:
@@ -120,7 +125,7 @@ class TestDataLoader(unittest.TestCase):
     def test_dataloader_returns_mask_with_expected_range_of_values_multiclass(self):
         # this test can not be done on the original curated dataset (legacy_mode=True)
         for data_path in self.data_paths[1:]:
-            tile_size = int(data_path.split("_")[2])
+            tile_size = self._tile_size_from_path(data_path)
             legacy_mode = False
             dataloader = DataLoader(
                 data_path,
@@ -170,7 +175,7 @@ class TestDataLoader(unittest.TestCase):
             )
 
     def test_dataloader_returns_expected_values_for_binary_mode_more(self):
-        image_dir = "data/testing/selected/selected_tiles_250_10_5_42_fixed/more_roof/"
+        image_dir = "data/testing/selected_test/selected_tiles_250_10_5_42/more_roof/"
         dataloader = DataLoader(
             image_dir,
             input_shape=(250, 250, 3),
@@ -195,7 +200,7 @@ class TestDataLoader(unittest.TestCase):
 
     def test_dataloader_returns_expected_values_for_binary_mode_less(self):
 
-        image_dir = "data/testing/selected/selected_tiles_250_10_5_42_fixed/less_roof/"
+        image_dir = "data/testing/selected_test/selected_tiles_250_10_5_42/less_roof/"
         dataloader = DataLoader(
             image_dir,
             input_shape=(250, 250, 3),
@@ -220,8 +225,8 @@ class TestDataLoader(unittest.TestCase):
 
     def test_dataloader_returns_expected_values_for_multiclass_mode(self):
         image_dirs = [
-            "data/testing/selected/selected_tiles_250_10_5_42_fixed/pv3/",
-            "data/testing/selected/selected_tiles_250_10_5_42_fixed/pv4/",
+            "data/testing/selected_test/selected_tiles_250_10_5_42/pv3/",
+            "data/testing/selected_test/selected_tiles_250_10_5_42/pv4/",
         ]
 
         for image_dir in image_dirs:
