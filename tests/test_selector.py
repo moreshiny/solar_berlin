@@ -423,7 +423,11 @@ class TestDataExtractor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.input_path = os.path.join("data", "testing", "converted_test")
+        cls.input_path_invalid_vector = os.path.join(
+            "data", "testing", "converted_invalid_test")
         cls.output_path = os.path.join("data", "testing", "extracted")
+        cls.output_path_invalid_vector = os.path.join(
+            "data", "testing", "extracted_invalid")
         cls.tile_sizes = TILE_SIZES
         cls.clean_up()
         cls.extractors = []
@@ -444,6 +448,9 @@ class TestDataExtractor(unittest.TestCase):
             tile_subdir = cls._tile_subdir(tile_size)
             if os.path.exists(os.path.join(cls.output_path, tile_subdir)):
                 shutil.rmtree(os.path.join(cls.output_path, tile_subdir))
+            if os.path.exists(os.path.join(cls.output_path_invalid_vector, tile_subdir)):
+                shutil.rmtree(os.path.join(
+                    cls.output_path_invalid_vector, tile_subdir))
 
     @staticmethod
     def _tile_subdir(tile_size):
@@ -615,6 +622,15 @@ class TestDataExtractor(unittest.TestCase):
         self.assertEqual(len(all_files_new), len(all_files_known))
         for i in range(len(all_files_new)):
             self.assertTrue(filecmp.cmp(all_files_new[i], all_files_known[i]))
+
+    def test_data_extractor_does_not_fail_on_non_existing_vector(self):
+        dataextractor = DataExtractor(
+            input_path=self.input_path_invalid_vector,
+            output_path=self.output_path_invalid_vector,
+            tile_size=250,
+            testing=True,  # limit input to 16 tiles for faster testing
+        )
+        self.assertEqual(dataextractor.total_tiles, 16)
 
 
 >>>>>>> 54fa04d (Refactor: separate extraction and selection)
