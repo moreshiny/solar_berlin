@@ -27,7 +27,8 @@ for raster_file in raster_filenames:
         ds.GetGeoTransform()[0], ds.GetGeoTransform()[0]\
         + ds.RasterXSize * ds.GetGeoTransform()[1], ds.GetGeoTransform()[3]\
         + ds.RasterYSize * ds.GetGeoTransform()[5], ds.GetGeoTransform()[3]
-    ds = None
+    # ensure data is written to disk by closing ds
+    del ds
 
     out_shapefile = shapefile.cx[x_min:x_max, y_min:y_max]
 
