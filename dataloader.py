@@ -64,9 +64,9 @@ class DataLoader:
         self._legacy_mode = legacy_mode
         self._multiclass = multiclass
 
+        # TODO remove legacy mode when no longer needed
         if legacy_mode:
             assert multiclass == False, "Legacy mode is not compatible with multiclass mode."
-
         self._legacy_mode = legacy_mode
         self._multiclass = multiclass
 
@@ -88,10 +88,8 @@ class DataLoader:
                     )
 
         # create datasets
-        self._dataset_input = tensorflow.data.Dataset.from_tensor_slices(
-            img_paths)
-        self._dataset_target = tensorflow.data.Dataset.from_tensor_slices(
-            target_paths)
+        self._dataset_input = tensorflow.data.Dataset.from_tensor_slices(img_paths)
+        self._dataset_target = tensorflow.data.Dataset.from_tensor_slices(target_paths)
 
     def _get_img_paths(self) -> tuple:
         """Retrieves all image paths for input and targets present in
