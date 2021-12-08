@@ -2,22 +2,17 @@ import glob
 import os
 import tensorflow as tf
 
+<<<<<<< HEAD
 from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
 
+=======
+from common.errors import (
+    InvalidPathError,
+    LegacyModeError,
+    InsuffientDataError
+)
+>>>>>>> 3ab6826 (Move dataloader errors to common errors)
 
-class LegacyModeError(Exception):
-    """ Raised when legacy modes is used on incompatible data """
-    pass
-
-
-class InvalidPathError(Exception):
-    """ Raised when an invalid path is given """
-    pass
-
-
-class InsuffientDataError(Exception):
-    """ Raised when a path does not contain sufficient images of the right size """
-    pass
 
 class DataLoader:
     """Class for creating tensorflow dataset."""
@@ -139,6 +134,7 @@ class DataLoader:
             raise InsuffientDataError(
                 f"No images found in {self.path} with the correct size."
             )
+<<<<<<< HEAD
 =======
             raise FileNotFoundError(
 =======
@@ -147,6 +143,8 @@ class DataLoader:
                 f"No images found in {self.path} with the correct size."
                 )
 >>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
+=======
+>>>>>>> 3ab6826 (Move dataloader errors to common errors)
 
         useable_paths.sort()
 
