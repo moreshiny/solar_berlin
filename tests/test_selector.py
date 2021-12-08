@@ -23,6 +23,7 @@ from PIL import Image
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 from roof.selection import DataExtractor, DataSelector
 from roof.errors import (
     AbsolutePathError,
@@ -393,13 +394,15 @@ from extraction.selection import InvalidTileSizeError, InsuffientDataError
 >>>>>>> b0c8908 (Use custom exception names)
 =======
 from selection.selection import DataSelector
+=======
+from selection.selection import DataExtractor, DataSelector
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
 from selection.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
 from selection.errors import InvalidTileSizeError, InsuffientDataError
 >>>>>>> 3db5d22 (Separate selection from extraction)
 
-INPUT_PATH = os.path.join("data", "testing", "converted")
-OUTPUT_PATH = os.path.join("data", "testing", "selected")
 
+<<<<<<< HEAD
 TILE_SIZES = (250, 500)
 <<<<<<< HEAD
 SELECTION_SIZES = ((10, 5),)
@@ -410,6 +413,211 @@ RANDOM_SEED = 42
 
 
 <<<<<<<< HEAD:tests/test_selector.py
+=======
+TILE_SIZES = (250, 500, 512)
+SELECTION_SIZES = [(10, 5)]
+RANDOM_SEED = 42
+
+
+class TestDataExtractor(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.input_path = os.path.join("data", "testing", "converted_test")
+        cls.output_path = os.path.join("data", "testing", "extracted")
+        cls.tile_sizes = TILE_SIZES
+        cls.clean_up()
+        cls.extractors = []
+        for tile_size in cls.tile_sizes:
+            cls.extractors.append(
+                DataExtractor(
+                    input_path=cls.input_path,
+                    output_path=cls.output_path,
+                    tile_size=tile_size,
+                    testing=True,  # limit input to 16 tiles for faster testing
+                    lossy=True,
+                )
+            )
+
+    @classmethod
+    def clean_up(cls):
+        for tile_size in cls.tile_sizes:
+            tile_subdir = cls._tile_subdir(tile_size)
+            if os.path.exists(os.path.join(cls.output_path, tile_subdir)):
+                shutil.rmtree(os.path.join(cls.output_path, tile_subdir))
+
+    @staticmethod
+    def _tile_subdir(tile_size):
+        return f"tiles_{tile_size}"
+
+    def test_data_extractor_creates_output_paths(self):
+        for tile_size in self.tile_sizes:
+            tile_subdir = self._tile_subdir(tile_size)
+            self.assertTrue(
+                os.path.exists(os.path.join(self.output_path, tile_subdir))
+            )
+
+    def test_data_extractor_refuses_to_overwrite_existing_directory(self):
+        existing_path = os.path.join(self.output_path, "existing_path")
+        with self.assertRaises(OutputPathExistsError):
+            DataExtractor(
+                input_path=self.input_path,
+                output_path=existing_path,
+                tile_size=250,  # corresponding directory exists
+                testing=True,  # limit input to 16 tiles for faster testing
+            )
+
+    def test_data_extractor_verifies_existing_input_directory(self):
+        existing_extractor = DataExtractor(
+            input_path=self.input_path,
+            output_path=self.output_path,
+            tile_size=self.tile_sizes[0],
+            testing=True,  # limit input to 16 tiles for faster testing
+        )
+        total_tiles = existing_extractor.total_tiles
+        self.assertEqual(total_tiles, 16)
+
+    def test_data_extractor_produces_expected_filenames(self):
+        for tile_size in self.tile_sizes:
+            tile_subdir = self._tile_subdir(tile_size)
+            tile_fns = glob.glob(
+                os.path.join(self.output_path, tile_subdir, "*.png")
+            )
+            for image_fn in tile_fns:
+                pattern_msk = "^.*-dop20[0-9_]*_msk.png$"
+                pattern_map = "^.*-dop20[0-9_]*_map.png$"
+
+                if "_map.png" in image_fn:
+                    self.assertRegex(image_fn, pattern_map)
+                else:
+                    self.assertRegex(image_fn, pattern_msk)
+
+    def test_data_extractor_produces_expected_map_msk_split(self):
+        for tile_size in self.tile_sizes:
+            tile_subdir = self._tile_subdir(tile_size)
+            tile_fns = glob.glob(
+                os.path.join(self.output_path, tile_subdir, "*.png")
+            )
+            map_count = 0
+            msk_count = 0
+            for image_fn in tile_fns:
+                if "_map.png" in image_fn:
+                    map_count += 1
+                elif "_msk.png" in image_fn:
+                    msk_count += 1
+
+            self.assertEqual(map_count, msk_count)
+
+    def test_data_extractor_produces_expected_image_sizes(self):
+        for tile_size in self.tile_sizes:
+            tile_subdir = self._tile_subdir(tile_size)
+            tile_fns = glob.glob(
+                os.path.join(self.output_path, tile_subdir, "*.png")
+            )
+            for image_fn in tile_fns:
+                image = np.array(Image.open(image_fn))
+                if "map" in image_fn:
+                    self.assertEqual(image.shape, (tile_size, tile_size, 3))
+                else:
+                    self.assertEqual(image.shape, (tile_size, tile_size))
+
+    def test_data_extractor_raises_error_on_invalid_image_size_0(self):
+        with self.assertRaises(InvalidTileSizeError):
+            DataExtractor(
+                input_path=self.input_path,
+                output_path=self.output_path,
+                tile_size=0,
+                testing=True,  # limit input to 16 tiles for faster testing
+            )
+
+    def test_data_extractor_raises_error_on_invalid_image_size_11k(self):
+        with self.assertRaises(InvalidTileSizeError):
+            DataExtractor(
+                input_path=self.input_path,
+                output_path=self.output_path,
+                tile_size=11000,
+                testing=True,  # limit input to 16 tiles for faster testing
+            )
+
+    def test_data_extractor_raises_error_on_invalid_image_size_557(self):
+        with self.assertRaises(InvalidTileSizeError):
+            DataExtractor(
+                input_path=self.input_path,
+                output_path=self.output_path,
+                # lossy is False by default, so this should fail:
+                tile_size=557,
+                testing=True,  # limit input to 16 tiles for faster testing
+            )
+
+    def test_data_extractor_raises_error_on_invalid_input_path(self):
+        with self.assertRaises(InvalidPathError):
+            DataExtractor(
+                input_path="invalid_path",
+                output_path=self.output_path,
+                tile_size=250,
+                testing=True,  # limit input to 16 tiles for faster testing
+            )
+
+    def test_data_extractor_raises_error_on_absolute_path_in(self):
+        with self.assertRaises(AbsolutePathError):
+            DataExtractor(
+                input_path=os.path.abspath(self.input_path),
+                output_path=self.output_path,
+                tile_size=250,
+                testing=True,  # limit input to 16 tiles for faster testing
+            )
+
+    def test_data_extractor_raises_error_on_absolute_path_out(self):
+        with self.assertRaises(AbsolutePathError):
+            DataExtractor(
+                input_path=self.input_path,
+                output_path=os.path.abspath(self.output_path),
+                tile_size=250,
+                testing=True,  # limit input to 16 tiles for faster testing
+            )
+
+    def test_data_extractor_raises_error_on_empty_input_path(self):
+        with self.assertRaises(InvalidPathError):
+            DataExtractor(
+                input_path="",
+                output_path=self.output_path,
+                tile_size=250,
+                testing=True,  # limit input to 16 tiles for faster testing
+            )
+
+    def test_data_extractor_produces_masks_with_expected_categories(self):
+        all_msk_files = []
+        for tile_size in self.tile_sizes:
+            all_msk_files += glob.glob(os.path.join(
+                self.output_path, self._tile_subdir(tile_size), "*_msk.png"
+            ))
+        msk_set = set()
+        for msk_file in all_msk_files:
+            msk_array = np.array(Image.open(msk_file))
+            msk_set.update(msk_array.flatten())
+
+        true_set = {0, 63, 127, 191, 255}
+        self.assertSetEqual(msk_set, true_set)
+
+    def test_data_extractor_produces_expected_images(self):
+        all_files_new = []
+        all_files_known = []
+        for tile_size in self.tile_sizes:
+            all_files_new += glob.glob(
+                os.path.join(self.output_path,
+                             self._tile_subdir(tile_size), "*.png")
+            )
+            all_files_known += glob.glob(
+                os.path.join(self.output_path + "_test",
+                             self._tile_subdir(tile_size), "*.png")
+            )
+        # check that all files are identical
+        print(zip(all_files_new, all_files_known))
+        self.assertEqual(len(all_files_new), len(all_files_known))
+        for i in range(len(all_files_new)):
+            self.assertTrue(filecmp.cmp(all_files_new[i], all_files_known[i]))
+
+
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
 class TestDataSelector(unittest.TestCase):
 ========
 class TestSelection(unittest.TestCase):
@@ -423,28 +631,54 @@ class TestSelection(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 >>>>>>> 4241abc (First working version of data selector with multiclass)
 =======
         # remove output from last run
 >>>>>>> b0c8908 (Use custom exception names)
+=======
+        # remove output from last run
+        cls.tile_sizes = TILE_SIZES
+
+        cls.extractor_input_path = os.path.join(
+            "data", "testing", "converted_test")
+        cls.input_path = os.path.join("data", "testing", "extracted_test")
+        cls.output_path = os.path.join("data", "testing", "selected")
+        cls.verfication_path = os.path.join("data", "testing", "selected_test")
+
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
         cls.clean_up()
 
-        cls._first_run = True
-        cls.selector = DataSelector(
-            input_path=INPUT_PATH,
-            testing=True,  # limit input to 32 tiles for faster testing
-        )
+
+#        cls._first_run = True
+
+        cls.extractors = []
+        for tile_size in cls.tile_sizes:
+            cls.extractors.append(
+                DataExtractor(
+                    input_path=cls.extractor_input_path,
+                    output_path=cls.input_path,
+                    tile_size=tile_size,
+<<<<<<< HEAD
+                    output_path=OUTPUT_PATH,
+>>>>>>> 5acb817 (Refactor data selector tests)
+=======
+                    testing=True,  # limit input to 16 tiles for faster testing
+                    lossy=True,
+                )
+            )
 
         cls.selected_paths = []
 
-        for selection_size in SELECTION_SIZES:
-            for tile_size in TILE_SIZES:
-                cls.selector.select_data(
-                    tile_size=tile_size,
-                    output_path=OUTPUT_PATH,
->>>>>>> 5acb817 (Refactor data selector tests)
+        selection_sizes = SELECTION_SIZES
+        for selection_size in selection_sizes:
+            for extractor in cls.extractors:
+                cls.selector = DataSelector(
+                    extractor=extractor,
+                    output_path=cls.output_path,
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
                     train_n=selection_size[0],
                     test_n=selection_size[1],
                     random_seed=RANDOM_SEED,
@@ -498,22 +732,30 @@ class TestSelection(unittest.TestCase):
                 )
 =======
                 cls.selected_paths.append(os.path.join(
-                    OUTPUT_PATH,
-                    f"selected_tiles"
-                    + f"_{tile_size}"
-                    + f"_{selection_size[0]}"
-                    + f"_{selection_size[1]}"
-                    + f"_{RANDOM_SEED}"
+                    cls.output_path,
+                    cls.selected_subdir(
+                        tile_size,
+                        selection_size[0],
+                        selection_size[1],
+                        RANDOM_SEED,
+                    ),
                 ))
 >>>>>>> 4241abc (First working version of data selector with multiclass)
 
-    @staticmethod
-    def clean_up():
-        for tile_size in TILE_SIZES:
-            tile_path = os.path.join(INPUT_PATH, f"tiled_{tile_size}")
-            if os.path.exists(tile_path):
-                shutil.rmtree(tile_path)
+    @classmethod
+    def selected_subdir(cls, tile_size, train_n, test_n, random_seed):
+        return f"selected_tiles"\
+            + f"_{tile_size}"\
+            + f"_{train_n}"\
+            + f"_{test_n}"\
+            + f"_{random_seed}"\
+
+
+    @classmethod
+    def clean_up(cls):
+        for tile_size in cls.tile_sizes:
             for selection_size in SELECTION_SIZES:
+<<<<<<< HEAD
                 selection_path = os.path.join(
                     OUTPUT_PATH,
                     f"selected_tiles_"
@@ -525,9 +767,16 @@ class TestSelection(unittest.TestCase):
 =======
                     + f"_{RANDOM_SEED}"
 >>>>>>> 4241abc (First working version of data selector with multiclass)
+=======
+                subdir = cls.selected_subdir(
+                    tile_size,
+                    selection_size[0],
+                    selection_size[1],
+                    RANDOM_SEED,
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
                 )
-                if os.path.exists(selection_path):
-                    shutil.rmtree(selection_path)
+                if os.path.exists(os.path.join(cls.output_path, subdir)):
+                    shutil.rmtree(os.path.join(cls.output_path, subdir))
 
     def test_data_selector_creates_output_paths(self):
         for selected_path in self.selected_paths:
@@ -581,14 +830,19 @@ class TestSelection(unittest.TestCase):
     def test_data_selector_refuses_to_overwrite_existing_directory(self):
         existing_path = os.path.join(
 <<<<<<< HEAD
+<<<<<<< HEAD
             self.output_path,
 =======
             OUTPUT_PATH,
 >>>>>>> 5acb817 (Refactor data selector tests)
+=======
+            self.output_path,
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
             "existing_path"
         )
         with self.assertRaises(OutputPathExistsError):
             DataSelector(
+<<<<<<< HEAD
 <<<<<<< HEAD
                 extractor=self.extractors[0],
                 output_path=existing_path,
@@ -612,16 +866,20 @@ class TestSelection(unittest.TestCase):
                 input_path=INPUT_PATH,
             ).select_data(
                 tile_size=250,
+=======
+                extractor=self.extractors[0],
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
                 output_path=existing_path,
                 train_n=10,
                 test_n=5,
-                random_seed=42,
+                random_seed=RANDOM_SEED,
             )
 
     def test_data_selector_throws_error_more_images_requested_than_exist(self):
-        # huge train_n (only 32 tiles are available during testing)
+        # huge train_n (only 16 tiles are available during testing)
         train_n = 10000
         test_n = 5
+<<<<<<< HEAD
         tile_size = 500
 
 <<<<<<< HEAD
@@ -641,6 +899,15 @@ class TestSelection(unittest.TestCase):
                 output_path=OUTPUT_PATH,
                 random_seed=42,
 >>>>>>> 5acb817 (Refactor data selector tests)
+=======
+        with self.assertRaises(InsuffientDataError):
+            DataSelector(
+                extractor=self.extractors[0],
+                output_path=self.output_path,
+                train_n=train_n,
+                test_n=test_n,
+                random_seed=RANDOM_SEED,
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
             )
 
     def test_data_selector_produces_expected_filenames(self):
@@ -697,6 +964,7 @@ class TestSelection(unittest.TestCase):
                 else:
                     self.assertEqual(image.shape, (tile_size, tile_size))
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     def test_data_selector_raises_error_on_empty_output_path(self):
         with self.assertRaises(InvalidPathError):
@@ -761,15 +1029,26 @@ class TestSelection(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
 >>>>>>> 4241abc (First working version of data selector with multiclass)
 =======
+=======
+    def test_data_selector_raises_error_on_empty_output_path(self):
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
         with self.assertRaises(InvalidPathError):
 >>>>>>> b0c8908 (Use custom exception names)
             DataSelector(
-                input_path="invalid_path",
+                extractor=self.extractors[0],
+                output_path="",
+                train_n=10,
+                test_n=5,
+                random_seed=RANDOM_SEED,
             )
 
+<<<<<<< HEAD
     def test_data_selector_raises_error_on_absolute_path(self):
 <<<<<<< HEAD
 <<<<<<< HEAD
+=======
+    def test_data_selector_raises_error_on_absolute_output_path(self):
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
         with self.assertRaises(AbsolutePathError):
 =======
         with self.assertRaises(ValueError):
@@ -778,6 +1057,7 @@ class TestSelection(unittest.TestCase):
         with self.assertRaises(AbsolutePathError):
 >>>>>>> b0c8908 (Use custom exception names)
             DataSelector(
+<<<<<<< HEAD
                 input_path=os.path.abspath(INPUT_PATH),
             )
 
@@ -814,6 +1094,15 @@ class TestSelection(unittest.TestCase):
                 500, 10, 5, output_path=os.path.abspath(OUTPUT_PATH),)
 >>>>>>> 4241abc (First working version of data selector with multiclass)
 
+=======
+                extractor=self.extractors[0],
+                output_path=os.path.abspath(self.output_path),
+                train_n=10,
+                test_n=5,
+                random_seed=RANDOM_SEED,
+            )
+
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
     def test_data_selector_produces_masks_with_expected_categories(self):
         all_msk_files = []
         for selected_path in self.selected_paths:
@@ -859,9 +1148,11 @@ class TestSelection(unittest.TestCase):
                 os.path.join(selected_path, "**", "*.png"),
                 recursive=True,
             )
-
+            true_files_path = os.path.join(
+                self.verfication_path, os.path.basename(selected_path)
+            )
             all_files_known = glob.glob(
-                os.path.join(selected_path + "_fixed", "**", "*.png"),
+                os.path.join(true_files_path, "**", "*.png"),
                 recursive=True,
             )
 >>>>>>> 5acb817 (Refactor data selector tests)
@@ -870,6 +1161,7 @@ class TestSelection(unittest.TestCase):
         for i in range(len(all_files_new)):
             self.assertTrue(filecmp.cmp(all_files_new[i], all_files_known[i]))
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     def test_data_selector_picks_different_images_for_different_random_seeds(self):
 =======
@@ -907,6 +1199,9 @@ class TestSelection(unittest.TestCase):
     def test_data_selector_picks_different_images_for_different_random_seeds(self):
 
 >>>>>>> 5acb817 (Refactor data selector tests)
+=======
+    def test_data_selector_picks_different_images_for_different_random_seeds(self):
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
         random_seeds = (43, 44)
         tile_size = 250
         train_n = 10
@@ -936,19 +1231,24 @@ class TestSelection(unittest.TestCase):
 
         for random_seed in random_seeds:
             selected_path = os.path.join(
-                OUTPUT_PATH,
+                self.output_path,
                 f"selected_tiles_{tile_size}_{train_n}_{test_n}_{random_seed}"
             )
             if os.path.exists(selected_path):
                 shutil.rmtree(selected_path)
-            self.selector.select_data(
-                tile_size=tile_size,
+            DataSelector(
+                # first extractor has tile size 250
+                extractor=self.extractors[0],
+                output_path=selected_path,
                 train_n=train_n,
                 test_n=test_n,
-                output_path=OUTPUT_PATH,
                 random_seed=random_seed,
             )
+<<<<<<< HEAD
 >>>>>>> 5acb817 (Refactor data selector tests)
+=======
+
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
             selected_images.append(glob.glob(
                 os.path.join(selected_path, "**", "*.png"),
                 recursive=True,
@@ -976,6 +1276,10 @@ class TestSelection(unittest.TestCase):
             for test_file in test_fns:
                 self.assertNotIn(test_file, train_fns)
 
+<<<<<<< HEAD
 >>>>>>> 5acb817 (Refactor data selector tests)
+=======
+
+>>>>>>> 54fa04d (Refactor: separate extraction and selection)
 if __name__ == "__main__":
     unittest.main()
