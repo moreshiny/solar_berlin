@@ -33,7 +33,10 @@ from roof.logging import Logs
 
 tensorflow.keras.backend.clear_session()
 
-# Layers for the skip connections.
+# parameters of the model.
+output_classes = 5  # number of categorical classes.
+input_shape = (512, 512, 3)  # input size
+epochs = 1
 
 # parameters of the model.
 OUTPUT_CLASSES = 5  # number of categorical classes. For 2 classes = 1.
@@ -61,8 +64,8 @@ model = Unet(
     output_classes=OUTPUT_CLASSES,
     input_shape=INPUT_SHAPE,
     drop_out=True,
-    drop_out_rate={"512": 0.3, "256": 0.4, "128": 0.45, "64": 0.5},
-    multiclass=bool(OUTPUT_CLASSES - 1),
+    drop_out_rate={"512": 0.275, "256": 0.3, "128": 0.325, "64": 0.35},
+    multiclass=bool(output_classes - 1),
 )
 
 # Starting the logs
