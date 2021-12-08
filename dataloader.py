@@ -4,20 +4,6 @@ import os
 import tensorflow
 
 
-class LegacyModeError(Exception):
-    """ Raised when legacy modes is used on incompatible data """
-    pass
-
-
-class InvalidPathError(Exception):
-    """ Raised when an invalid path is given """
-    pass
-
-
-class InsuffientDataError(Exception):
-    """ Raised when a path does not contain sufficient images of the right size """
-    pass
-
 class DataLoader:
     """Class for creating tensorflow dataset."""
 
@@ -25,6 +11,7 @@ class DataLoader:
         self,
         path: str,
         batch_size: int = 32,
+        n_samples: int = None,
         input_shape: tuple = (224, 224, 3),
         multiclass: bool = False,
         legacy_mode: bool = True,
@@ -32,41 +19,34 @@ class DataLoader:
         """Class instance initialization.
 
         Args:
-            path (str): Path to data folder with "map" and "mask" pairs. For
-                legacy mode the masks should be in .tif format and have an
-                alpha channel with roofs classed 1-255 and no roof as 0.
-                For non-legacy mode the masks should be in .png format and have
-                a single channel with "no roof" classed as 0 and pv potenial
-                coded as 63 (worst), 127, 191, and 255 (best).
+            path (str): Path to data folder with "map" and "mask" pairs.
             batch_size (int, optional): Batch size for model training.
                 Defaults to 32.
-            input_shape (tuple, optional): Shape of input images.
-                Defaults to (224, 224, 3).
-            multiclass (bool, optional): Whether to use multiclass or binary
-                classification. Defaults to False.
-            legacy_mode (bool, optional): Whether to use legacy mode or not.
-                Defaults to True.
+            n_samples(int, optional): Number of input-target pairs to load.
+                Returns all available pairs if set to None. Defaults to None.
         """
         # initialize attributes
-        if not os.path.exists(path):
-            raise InvalidPathError(f"Path {path} does not exist.")
         self.path = path
         self.batch_size = batch_size
+        self.n_samples = n_samples
         self._dataset_input = None
         self._dataset_target = None
         self.dataset = None
         self.input_shape = input_shape
-        self.n_samples = None
 
-        # TODO remove legacy mode when no longer needed
         if legacy_mode:
-            assert multiclass == False, "Legacy mode is not compatible with multiclass mode."
+            assert (
+                multiclass == False
+            ), "Legacy mode is not compatible with multiclass mode."
+
         self._legacy_mode = legacy_mode
         self._multiclass = multiclass
 
         # TODO remove legacy mode when no longer needed
         if legacy_mode:
-            assert multiclass == False, "Legacy mode is not compatible with multiclass mode."
+            assert (
+                multiclass == False
+            ), "Legacy mode is not compatible with multiclass mode."
         self._legacy_mode = legacy_mode
         self._multiclass = multiclass
 
@@ -80,13 +60,6 @@ class DataLoader:
         # get image paths
         img_paths, target_paths = self._get_img_paths()
 
-        if self._legacy_mode:
-            for target_path in target_paths:
-                if "msk" in target_path:
-                    raise LegacyModeError(
-                        "Filnames indicate new type data but legacy mode is enabled."
-                    )
-
         # create datasets
         self._dataset_input = tensorflow.data.Dataset.from_tensor_slices(img_paths)
         self._dataset_target = tensorflow.data.Dataset.from_tensor_slices(target_paths)
@@ -98,7 +71,7 @@ class DataLoader:
         Returns:
             tuple: A tuple of style (input_paths, target_paths) where
                 both input_paths and target_paths are sorted lists with file
-                paths of .tif or .png images. The Nth element of target_paths
+                path names to .tif images. The Nth element of target_paths
                 corresponds to the target of the Nth element of input_paths.
         """
         # get all paths
@@ -107,31 +80,41 @@ class DataLoader:
 
         # data has not been curated and wrongly sized images are discarded
         useable_paths = self._discard_wrong_img_paths(all_paths)
-
-        if len(useable_paths) == 0:
-            raise InsuffientDataError(
-                f"No images found in {self.path} with the correct size."
-                )
-
         useable_paths.sort()
+
+        # keep only part of image paths if n_samples was specified
+        if self.n_samples is None:
+            self.n_samples = len(useable_paths) // 2
+
+        # we need to get twice as many paths as requested samples (map and mask)
+        n_paths = self.n_samples * 2
+
+        assert n_paths <= len(
+            useable_paths
+        ), f"""n_samples ({self.n_samples}) is greater than number of
+                available/useable images {len(useable_paths) // 2}."""
+
+        # keep only the first n_paths paths
+        useable_paths = useable_paths[:n_paths]
 
         # split input and target
         input_paths = [filename for filename in useable_paths if "map" in filename]
         # TODO "mask" is needed only for legacy mode, remove when no longer needed
-        target_paths = [filename for filename in useable_paths if "mask" in filename or "msk" in filename]
+        target_paths = [
+            filename
+            for filename in useable_paths
+            if "mask" in filename or "msk" in filename
+        ]
 
         assert len(input_paths) == len(
             target_paths
         ), f"""Number of input images ({len(input_paths)}) does not match
                 number of target images ({len(target_paths)})."""
 
-        self.n_samples = len(input_paths)
-
         return input_paths, target_paths
 
     def _discard_wrong_img_paths(self, all_paths):
         """Discard wrong files; function is temporary."""
-        # TODO remove this function when no longer needed (legacy mode)
         correct_filenames = []
         for path in all_paths:
             if tensorflow.keras.utils.load_img(path).size == self.input_shape[:2]:
@@ -145,14 +128,12 @@ class DataLoader:
             tensor (tensorflow.Tensor): Tensor with file name path of .tif
                 image to be loaded.
             channels (str): The color channels of the image that is desired.
-                Either "RGB", "A" (alpha), or "L" (greyscale). All channels are
-                normalized such that 255 -> 1.0 (in "RGB" and "A") or 255 ->
-                4.0 (in "L").
+                Either "RGB" or "A" (alpha). All channels are normalized such
+                that 255 = 1.0.
 
         Returns:
-            tensorflow.image: An image tensor of type float32. In "RGB" and "A"
-            mode the image is normalized from 0-255 to 0.0-1.0. In "L" mode the
-            image is normalized from 0-255 to 0.0-4.0.
+            tensorflow.image: An image tensor of type float32 normalized from
+                0-255 to 0.0-1.0.
         """
         # decode tensor and read image using helper function
         def _decode_tensor_load_image(tensor, color_mode):
@@ -161,15 +142,14 @@ class DataLoader:
                 color_mode=color_mode,
             )
             return img
+
         if channels == "RGB" or channels == "A":
-            [image, ] = tensorflow.py_function(
-                _decode_tensor_load_image, [
-                    tensor, "rgba"], [tensorflow.float32]
+            [image,] = tensorflow.py_function(
+                _decode_tensor_load_image, [tensor, "rgba"], [tensorflow.float32]
             )
         elif channels == "L":
-            [image, ] = tensorflow.py_function(
-                _decode_tensor_load_image, [
-                    tensor, "grayscale"], [tensorflow.float32]
+            [image,] = tensorflow.py_function(
+                _decode_tensor_load_image, [tensor, "grayscale"], [tensorflow.float32]
             )
 
         # normalize and keep queried channels
@@ -183,7 +163,7 @@ class DataLoader:
             img = tensorflow.math.ceil(image[:, :, 3])
             img = tensorflow.reshape(img, self.input_shape[:2] + tuple([1]))
         elif channels == "L":
-            # for mask images - greyscale with minimum value for "no roof"
+            # for mask images - grey scale with minimum value for "no roof"
             # higher values indicate better pv suitability categories
             if self._multiclass:
                 # normalise image to 0-4 (0 = no roof, 4 = best pv category)
@@ -191,9 +171,9 @@ class DataLoader:
                 img = tensorflow.math.ceil(img)
                 img = tensorflow.reshape(img, self.input_shape[:2] + tuple([1]))
             else:
-                # normalise image to 0-1 (0 = no roof, 1 = roof)
-                # all values >0 are considered "roof", 0 is "no roof"
-                img = tensorflow.math.ceil(image)
+                # floor and invert image so "no roof" is 1 and "roof" is 0
+                img = tensorflow.math.floor(image)
+                img = tensorflow.math.subtract(1.0, img)
                 img = tensorflow.reshape(img, self.input_shape[:2] + tuple([1]))
         else:
             raise ValueError("Unkown channels specified. Use 'RGB' or 'A'.")
@@ -250,3 +230,12 @@ class DataLoader:
         self.dataset = self.dataset.prefetch(
             buffer_size=tensorflow.data.experimental.AUTOTUNE
         )
+
+    def get_config(self) -> dict:
+        """Return the key characteristics of the loaded data"""
+        return {
+            "Data path": self.path,
+            "Batch size": self.batch_size,
+            "Number of samples": self.n_samples,
+            "Shape": self.input_shape,
+        }
