@@ -11,11 +11,11 @@ class Unet(tensorflow.keras.Model):
         self,
         output_classes: int = 1,
         input_shape: Tuple = (512, 512, 3),
-        resizing_shape: Tuple = (512, 512, 3),
         drop_out: bool = False,
         drop_out_rate: dict = {"512": 0, "256": 0, "128": 0, "64": 0},
         fine_tune_at: int = 0,
         upstack_trainable: bool = True,
+        multiclass: bool = False,
     ):
         """Class initialisation:
         Args:
@@ -27,6 +27,8 @@ class Unet(tensorflow.keras.Model):
             fine_tune_at: if non zero, freeze the upstacks, and unfreeze the corresponding number of layers\
                  in bottom of the pretrained network. Default to 0. 
             upstack_trainable: Boolean, if True, the upstack is trainable. Default to True. 
+            multiclass: boolean, if True, modify the activation of the last convolution to softmax,\
+                 else sigmoid. Default to False.
         """
         super(Unet, self).__init__()
 
@@ -76,13 +78,18 @@ class Unet(tensorflow.keras.Model):
         self.concatenate = tensorflow.keras.layers.Concatenate()
 
         # Last convolution layers.
+        if multiclass:
+            activation = "softmax"
+        else:
+            activation = "sigmoid"
         self._last_conv = tensorflow.keras.layers.Conv2DTranspose(
             filters=self._output_classes,
             kernel_size=3,
             strides=2,
             padding="same",
-            activation="sigmoid",
+            activation=activation,
         )
+
         self._last_conv.trainable = self._upstack_trainable
 
     @tensorflow.function

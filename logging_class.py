@@ -158,13 +158,14 @@ class Logs:
         plt.imshow(tensorflow.keras.utils.array_to_img(display_list[0]))
         plt.axis("off")
         plt.subplot(1, 3, 2)
-        plt.title("Predicted Mask")
+        plt.title("True Mask")
         type(display_list[1])
-        plt.imshow(tensorflow.keras.utils.array_to_img(display_list[1]), cmap="gray")
+        plt.imshow(tensorflow.keras.utils.array_to_img(display_list[1]), cmap="plasma")
         plt.axis("off")
         plt.subplot(1, 3, 3)
         plt.title("Predicted Mask")
-        plt.imshow(display_list[2], cmap="gray")
+        plt.imshow(display_list[2], cmap="plasma")
+        plt.axis("off")
         path_snapshot = self._local_path + "/snapshots"
         if not os.path.exists(path_snapshot):
             os.mkdir(path_snapshot)
