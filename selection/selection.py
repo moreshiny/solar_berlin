@@ -95,6 +95,7 @@ class DataExtractor(DataHandler):
             os.makedirs(tile_path)
 
         for raster_map_fn in self._input_raster_fns:
+            print(f"Processing {raster_map_fn}...")
             # create a temporary working directory
             temp_path = os.path.join(tile_path, "temp")
             self._verify_output_path(temp_path)
@@ -112,7 +113,16 @@ class DataExtractor(DataHandler):
                 map_tile_name + ".shp",
             )
             vector_file = ogr.Open(vector_fn)
-            vector_layer = vector_file.GetLayer()
+            try:
+                vector_layer = vector_file.GetLayer()
+            except AttributeError:
+                print(
+                    f"No vector objects for present for {map_tile_name}, skipping"
+                )
+                if os.path.exists(temp_path):
+                    shutil.rmtree(temp_path)
+                continue
+
             x_min, x_max, y_min, y_max = vector_layer.GetExtent()
 
             # define a temporary rastr for the mask
@@ -221,9 +231,11 @@ class DataExtractor(DataHandler):
                     # keep track of the number of tiles created
                     self.total_tiles += 1
 
+            print(f"{map_tile_name} tiles created.")
             # when testing, keep temporary files and stop after the first map tile
             if not self._testing:
-                shutil.rmtree(temp_path)
+                if os.path.exists(temp_path):
+                    shutil.rmtree(temp_path)
             if self._testing:
                 break
 
