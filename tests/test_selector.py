@@ -630,6 +630,9 @@ class TestDataExtractor(unittest.TestCase):
                 os.path.join(self.output_path + "_test",
                              self._tile_subdir(tile_size), "*.png")
             )
+        all_files_new.sort()
+        all_files_known.sort()
+
         # check that all files are identical
         print(zip(all_files_new, all_files_known))
         self.assertEqual(len(all_files_new), len(all_files_known))
@@ -1197,18 +1200,22 @@ class TestSelection(unittest.TestCase):
 >>>>>>> 1658920 (Fix binary mask loading and add mask category test cases)
     def test_data_selector_produces_expected_images(self):
         for selected_path in self.selected_paths:
-            all_files_new = glob.glob(
+            all_files_new = sorted(glob.glob(
                 os.path.join(selected_path, "**", "*.png"),
                 recursive=True,
-            )
+            ))
             true_files_path = os.path.join(
                 self.verfication_path, os.path.basename(selected_path)
             )
-            all_files_known = glob.glob(
+            all_files_known = sorted(glob.glob(
                 os.path.join(true_files_path, "**", "*.png"),
                 recursive=True,
+<<<<<<< HEAD
             )
 >>>>>>> 5acb817 (Refactor data selector tests)
+=======
+            ))
+>>>>>>> 31cb041 (Add sorting to tests to avoid spurious failures)
         # check that all files are identical
         self.assertEqual(len(all_files_new), len(all_files_known))
         for i in range(len(all_files_new)):
