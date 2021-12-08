@@ -1345,8 +1345,12 @@ class TestSelection(unittest.TestCase):
                 self.assertNotIn(test_file, train_fns)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> 5acb817 (Refactor data selector tests)
 =======
+=======
+    # TODO add test for file specified as output path
+>>>>>>> 3173269 (Add documentation to selection)
 
 >>>>>>> 54fa04d (Refactor: separate extraction and selection)
 if __name__ == "__main__":
