@@ -11,7 +11,7 @@ tensorflow.keras.backend.clear_session()
 # parameters of the model.
 output_classes = 5  # number of categorical classes.
 input_shape = (512, 512, 3)  # input size
-epochs = 100
+epochs = 1
 
 batch_size = 8  # batchsize
 # Path to the data
@@ -25,6 +25,7 @@ model = Unet(
     input_shape=input_shape,
     drop_out=True,
     drop_out_rate={"512": 0.275, "256": 0.3, "128": 0.325, "64": 0.35},
+    multiclass=bool(output_classes - 1),
 )
 
 # Starting the logs
