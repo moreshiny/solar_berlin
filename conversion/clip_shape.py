@@ -6,9 +6,11 @@ from osgeo import gdal
 RAW_DATA_DIR = os.path.join("..", "data", "raw")
 CONVERTED_DATA_DIR = os.path.join("..", "data", "converted")
 
-shapefile = gpd.read_file(
-    os.path.join(RAW_DATA_DIR, "overlay", "ST_PV_Potenzial_2013.zip")
-)
+
+shape_fn = os.path.join(RAW_DATA_DIR, "overlay", "ST_PV_Potenzial_2013.zip")
+print(f"Reading {shape_fn}. This can take a while...")
+
+shapefile = gpd.read_file(shape_fn)
 
 raster_dir = os.path.join(CONVERTED_DATA_DIR, "raster")
 
@@ -21,6 +23,14 @@ raster_filenames = glob.glob(os.path.join(raster_dir, "*.tif"))
 for raster_file in raster_filenames:
     print(f"Processing {raster_file}")
 
+    # get filename without extension
+    filename = os.path.basename(raster_file)
+    base_filename = os.path.splitext(filename)[0]
+
+    if os.path.exists(os.path.join(out_dir, base_filename)):
+        print(f"{base_filename} already exists - skipping!")
+        continue
+
     # get the extent of the current raster
     ds = gdal.Open(raster_file)
     x_min, x_max, y_min, y_max =\
@@ -32,19 +42,12 @@ for raster_file in raster_filenames:
 
     out_shapefile = shapefile.cx[x_min:x_max, y_min:y_max]
 
-    # get filename without extension
-    filename = os.path.basename(raster_file)
-    base_filename = os.path.splitext(filename)[0]
-
     # save the shape file matching the raster extent to the output directory
-    if not os.path.exists(os.path.join(out_dir, base_filename)):
-        os.makedirs(os.path.join(out_dir, base_filename))
-        try:
-            out_shapefile.to_file(os.path.join(
-                out_dir, base_filename, base_filename + ".shp"))
-        except ValueError:
-            print(f"No data in shapefile for {base_filename} - skipping!")
-    else:
-        print(f"{base_filename} already exists - skipping!")
+    os.makedirs(os.path.join(out_dir, base_filename))
+    try:
+        out_shapefile.to_file(os.path.join(
+            out_dir, base_filename, base_filename + ".shp"))
+    except ValueError:
+        print(f"No data in shapefile for {base_filename} - skipping!")
 
     print(f"Finished processing {raster_file}")

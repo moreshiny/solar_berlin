@@ -12,7 +12,8 @@ RAW_RASTER_FOLDER="$RAW_DATA_FOLDER/raster"
 RAW_OVERLAY_FOLDER="$RAW_DATA_FOLDER/overlay"
 
 # create the raw data folder
-mkdir -p $RAW_DATA_FOLDER
+mkdir -p $RAW_RASTER_FOLDER
+mkdir -p $RAW_OVERLAY_FOLDER
 
 # download the 2013 aerial image raster file zips:
 wget -nc https://fbinter.stadt-berlin.de/fb/atom/DOP/dop20true_2013/Mitte.zip \
