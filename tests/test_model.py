@@ -8,16 +8,22 @@ class TestModel(unittest.TestCase):
 
     def test_model_simple_run_does_not_result_in_error(self):
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> f905c7e (Update test for smaller test data)
         train_path = os.path.join(
             "data", "testing", "selected_test", "selected_tiles_224", "train"
         )
         test_path = os.path.join(
             "data", "testing", "selected_test", "selected_tiles_224", "test"
         )
+<<<<<<< HEAD
 =======
         train_path = "data/test_data_224/train"
         test_path = "data/test_data_224/test"
 >>>>>>> 70307a8 (Clean up tests)
+=======
+>>>>>>> f905c7e (Update test for smaller test data)
 
         layer_names = [
             "block_1_expand_relu",   # 64x64

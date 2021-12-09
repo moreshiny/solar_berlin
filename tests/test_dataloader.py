@@ -85,7 +85,7 @@ class TestDataLoader(unittest.TestCase):
                          "selected_tiles_500_10_5_42_fixed", "train"),
 =======
             os.path.join("data", "testing", "selected_test",
-                         "selected_tiles_224", "test_curated_1_final"),
+                         "selected_tiles_224", "train"),
             os.path.join("data", "testing", "selected_test",
                          "selected_tiles_500_10_5_42", "train"),
 >>>>>>> 54fa04d (Refactor: separate extraction and selection)
@@ -346,7 +346,7 @@ class TestDataLoader(unittest.TestCase):
         # this test ist done only on the origial curated dataset
         data_path = self.data_paths[0]
         tile_size = self._tile_size_from_path(data_path)
-        true_samples = 256
+        true_samples = 10
         dataloader = DataLoader(
             data_path, input_shape=(tile_size, tile_size, 3))
         dataloader.load()

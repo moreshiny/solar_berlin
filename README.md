@@ -107,6 +107,10 @@ To run the tests:
 ## Running Tests
 
 To run the tests:
+<<<<<<< HEAD
 - Additionally download "map.zip" from https://drive.google.com/drive/folders/1zJGu6x-S13IBi_N0VGynjAypKGTq6JSC and unzip it in the data folders
 >>>>>>> 25c8217 (Add extraction and selection instructions)
+=======
+- Additionally download "testing.zip" from https://drive.google.com/drive/folders/1zJGu6x-S13IBi_N0VGynjAypKGTq6JSC and unzip it in the data folders
+>>>>>>> f905c7e (Update test for smaller test data)
 - Run ```python run_tests.py```
