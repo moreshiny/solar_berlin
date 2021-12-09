@@ -52,5 +52,5 @@ To run the model:
 ## Running Tests
 
 To run the tests:
-- Additionally download "map.zip" from https://drive.google.com/drive/folders/1zJGu6x-S13IBi_N0VGynjAypKGTq6JSC and unzip it in the data folders
+- Additionally download "testing.zip" from https://drive.google.com/drive/folders/1zJGu6x-S13IBi_N0VGynjAypKGTq6JSC and unzip it in the data folders
 - Run ```python run_tests.py```
