@@ -2,6 +2,7 @@ import glob
 import os
 import tensorflow as tf
 
+<<<<<<< HEAD
 from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
 
 
@@ -18,6 +19,23 @@ class InvalidPathError(Exception):
 class InsuffientDataError(Exception):
     """ Raised when a path does not contain sufficient images of the right size """
     pass
+=======
+<<<<<<<< HEAD:roof/dataloader.py
+from roof.errors import (
+========
+<<<<<<< HEAD
+from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
+
+=======
+from common.errors import (
+>>>>>>>> bdb2ba5 (Combine classes into a single roof module):loading/dataloader.py
+    InvalidPathError,
+    LegacyModeError,
+    InsuffientDataError
+)
+>>>>>>> 3ab6826 (Move dataloader errors to common errors)
+
+>>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
 class DataLoader:
     """Class for creating tensorflow dataset."""
@@ -139,6 +157,10 @@ class DataLoader:
             raise InsuffientDataError(
                 f"No images found in {self.path} with the correct size."
             )
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> bdb2ba5 (Combine classes into a single roof module)
 =======
             raise FileNotFoundError(
 =======
@@ -147,6 +169,11 @@ class DataLoader:
                 f"No images found in {self.path} with the correct size."
                 )
 >>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 3ab6826 (Move dataloader errors to common errors)
+>>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
         useable_paths.sort()
 

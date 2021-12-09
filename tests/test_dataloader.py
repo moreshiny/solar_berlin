@@ -4,6 +4,7 @@ import os
 import numpy as np
 from PIL import Image
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 <<<<<<< HEAD
@@ -21,6 +22,15 @@ from loading.dataloader import LegacyModeError
 from loading.dataloader import InsuffientDataError
 from loading.dataloader import InvalidPathError
 >>>>>>> b8e175c (Rename subfolders)
+=======
+
+from roof.dataloader import DataLoader
+from roof.errors import (
+    LegacyModeError,
+    InsuffientDataError,
+    InvalidPathError,
+)
+>>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
 from roof.dataloader import DataLoader
 from roof.errors import (

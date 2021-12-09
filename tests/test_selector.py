@@ -24,6 +24,9 @@ from PIL import Image
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> bdb2ba5 (Combine classes into a single roof module)
 from roof.selection import DataExtractor, DataSelector
 from roof.errors import (
     AbsolutePathError,
@@ -32,6 +35,7 @@ from roof.errors import (
     InvalidTileSizeError,
     OutputPathExistsError,
 )
+<<<<<<< HEAD
 
 
 TILE_SIZES = (250, 500, 512)
@@ -415,6 +419,8 @@ SELECTION_SIZES = ((10, 5),)
 SELECTION_SIZES = ((10, 5), )
 >>>>>>> 4241abc (First working version of data selector with multiclass)
 RANDOM_SEED = 42
+=======
+>>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
 
 <<<<<<<< HEAD:tests/test_selector.py
