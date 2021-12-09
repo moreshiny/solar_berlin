@@ -12,13 +12,20 @@ tensorflow.keras.backend.clear_session()
 # parameters of the model.
 output_classes = 5  # number of categorical classes.
 input_shape = (512, 512, 3)  # input size
-epochs = 1
+epochs = 3
 
 batch_size = 8  # batchsize
-# Path to the data
+# Path to the data large multiclass dataset
+# path_train = "data/selected_tiles_512_4000_1000_42_partial/train"
+# path_test = "data/selected_tiles_512_4000_1000_42_partial/test"
+
+# Path to the data small multiclass dataset
 path_train = "data/selected_512_multiclass/selected_tiles_512_100_20_42/train"
 path_test = "data/selected_512_multiclass/selected_tiles_512_100_20_42/test"
 
+# path to the small mono class large dataset
+# path_train = "data/small_large/train"
+# path_test = "data/small_large/test"
 
 # calling the model.
 model = Unet(
@@ -32,8 +39,8 @@ model = Unet(
 # Starting the logs
 
 log = Logs()
-comment = "Full large dataset, increasing dropping rate in upstack,\n\
-     learning rate divided by two to 0.0005. "
+comment = "Full large dataset, multiclassification problem ,\n\
+     standard learning rate.  "
 log.main_log(
     comment=comment,
     model_config=model.get_config(),
@@ -43,15 +50,22 @@ log.main_log(
 print("log created")
 
 
+# listing the metrics which are used in the model.
+
+binary_accuracy = tensorflow.keras.metrics.BinaryAccuracy(name="accuracy")
+sparse_categorical_accuracy = tensorflow.keras.metrics.SparseCategoricalAccuracy(
+    name="sparse_categorical_accuracy", dtype=None
+)
+recall = tensorflow.keras.metrics.Recall(name="recall")
+precision = tensorflow.keras.metrics.Precision(name="precision")
+
 if output_classes > 1:
     multiclass = True
     loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
-    metrics = [
-        tensorflow.keras.metrics.SparseCategoricalAccuracy(
-            name="sparse_categorical_accuracy", dtype=None
-        ),
-        # tensorflow.compat.v1.metrics.average_precision_at_k(k=output_classes),
+    metric_list = [
+        "sparse_categorical_accuracy",
     ]
+    metrics = [sparse_categorical_accuracy]
     model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
         filepath=log.checkpoint_filepath,
         save_weights_only=False,
@@ -63,11 +77,12 @@ if output_classes > 1:
 else:
     multiclass = False
     loss = tensorflow.keras.losses.BinaryCrossentropy(from_logits=False)
-    metrics = [
+    metric_list = [
         "accuracy",
-        tensorflow.keras.metrics.Recall(name="recall"),
-        tensorflow.keras.metrics.Precision(name="precision"),
+        "recall",
+        "precision",
     ]
+    metrics = [binary_accuracy, precision, recall]
     model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
         filepath=log.checkpoint_filepath,
         save_weights_only=False,
@@ -101,10 +116,6 @@ dl_test.load()
 train_batches = dl_train.dataset
 test_batches = dl_test.dataset
 
-log.local_log(
-    train_data_config=dl_train.get_config(),
-    val_data_config=dl_test.get_config(),
-)
 
 print("data loaded")
 
@@ -120,7 +131,7 @@ tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
     write_graph=True,
 )
 
-patience = 30
+patience = 7
 # Parameters for early stopping
 early_stopping = tensorflow.keras.callbacks.EarlyStopping(
     monitor="val_loss",
@@ -131,7 +142,7 @@ early_stopping = tensorflow.keras.callbacks.EarlyStopping(
 print("callbacks defined")
 
 # compiling the model
-learning_rate = 0.0005
+learning_rate = 0.0001
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
 
 
@@ -152,13 +163,27 @@ history = model.fit(
     validation_steps=validation_steps,
     validation_data=test_batches,
     callbacks=[
-        model_checkpoint_callback,
-        tensorboard_callback,
+        # model_checkpoint_callback,
+        # tensorboard_callback,
         early_stopping,
     ],
 )
 
-num_batches = 3
+accuracies = {}
+accuracies["loss"] = [history.history["loss"], history.history["val_" + "loss"]]
+
+for metric in metric_list:
+    accuracies[metric] = [history.history[metric], history.history["val_" + metric]]
+
+print(accuracies)
+
+log.local_log(
+    train_data_config=dl_train.get_config(),
+    val_data_config=dl_test.get_config(),
+    metrics=accuracies,
+)
+
+num_batches = 3  # number of batches
 log.show_predictions(
     dataset=dl_test.dataset,
     model=model,
