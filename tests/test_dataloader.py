@@ -4,10 +4,12 @@ import os
 import numpy as np
 from PIL import Image
 
-from loading.dataloader import DataLoader
-from loading.dataloader import LegacyModeError
-from loading.dataloader import InsuffientDataError
-from loading.dataloader import InvalidPathError
+from roof.dataloader import DataLoader
+from roof.errors import (
+    LegacyModeError,
+    InsuffientDataError,
+    InvalidPathError,
+)
 
 
 class TestDataLoader(unittest.TestCase):
