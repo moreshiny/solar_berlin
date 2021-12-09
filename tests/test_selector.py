@@ -206,7 +206,7 @@ class TestDataExtractor(unittest.TestCase):
         all_msk_files = []
         for tile_size in self.tile_sizes:
             all_msk_files += glob.glob(os.path.join(
-                self.output_path, self._tile_subdir(tile_size), "*_msk.png"
+                self.output_path, self._tile_subdir(tile_size), "**", "*_msk.png"
             ))
         msk_set = set()
         for msk_file in all_msk_files:
@@ -222,11 +222,11 @@ class TestDataExtractor(unittest.TestCase):
         for tile_size in self.tile_sizes:
             all_files_new += glob.glob(
                 os.path.join(self.output_path,
-                             self._tile_subdir(tile_size), "*.png")
+                             self._tile_subdir(tile_size), "**", "*.png")
             )
             all_files_known += glob.glob(
                 os.path.join(self.output_path + "_test",
-                             self._tile_subdir(tile_size), "*.png")
+                             self._tile_subdir(tile_size), "**", "*.png")
             )
         all_files_new.sort()
         all_files_known.sort()
@@ -245,6 +245,16 @@ class TestDataExtractor(unittest.TestCase):
             testing=True,  # limit input to 16 tiles for faster testing
         )
         self.assertEqual(dataextractor.total_tiles, 16)
+
+    def test_data_extractor_saves_produced_tiles_in_subfolders(self):
+        for tile_size in self.tile_sizes:
+            tile_subdir = self._tile_subdir(tile_size)
+            raster_names = glob.glob(self.input_path + "/*.tif")
+            for raster_name in raster_names:
+                raster_basename = os.path.basename(raster_name)
+                raster_basename_wo_ext = os.path.splitext(raster_basename)[0]
+                self.assertTrue(os.path.exists(os.path.join(
+                    self.output_path, tile_subdir, raster_basename_wo_ext)))
 
 
 class TestDataSelector(unittest.TestCase):
