@@ -107,9 +107,9 @@ class DataExtractor(DataHandler):
 
         self._verify_input_path(input_path)
         self._input_path = input_path
-        self._input_raster_fns = glob.glob(
+        self._input_raster_fns = sorted(glob.glob(
             os.path.join(self._input_path, "raster", "*.tif")
-        )
+        ))
 
         if not type(self.tile_size) is int or self.tile_size < 1:
             raise InvalidTileSizeError(
@@ -140,20 +140,19 @@ class DataExtractor(DataHandler):
             self._verify_output_path(self.tile_path)
         except OutputPathExistsError:
             output_map_tile_fns = glob.glob(
-                os.path.join(self.tile_path, "*_map.png"))
+                os.path.join(self.tile_path, "**", "*_map.png"), recursive=True)
             output_msk_tile_fns = glob.glob(
-                os.path.join(self.tile_path, "*_msk.png"))
+                os.path.join(self.tile_path, "**", "*_msk.png"), recursive=True)
 
             expected_tile_nos = len(self._input_raster_fns) * \
                 (self.raster_tile_size**2 // self.tile_size**2)
 
             if len(output_map_tile_fns) != expected_tile_nos\
                     or len(output_msk_tile_fns) != expected_tile_nos:
-                raise OutputPathExistsError(
-                    f"""Output path {self.tile_path} exists and does not contain
-                        the expected number of tiles"""
-                )
+                self.total_tiles = 0
+                self._extract_data(self.tile_size, self.tile_path)
             else:
+                print("Tiles already extracted. All done.")
                 self.total_tiles = len(output_map_tile_fns)
         else:
             self.total_tiles = 0
@@ -172,10 +171,36 @@ class DataExtractor(DataHandler):
         if not os.path.exists(tile_path):
             os.makedirs(tile_path)
 
-        for raster_map_fn in self._input_raster_fns:
-            print(f"Processing {raster_map_fn}...")
+        for count, raster_map_fn in enumerate(self._input_raster_fns):
+            print(
+                f"Processing #{count+1} of {len(self._input_raster_fns)}: {raster_map_fn}..."
+            )
+
+            subfolder_fn = os.path.basename(raster_map_fn).split(".")[0]
+            if os.path.exists(os.path.join(tile_path, subfolder_fn)):
+                found_tile_nos = len(glob.glob(
+                    os.path.join(tile_path, subfolder_fn, "*_map.png")))
+                expected_tiles = (self.raster_tile_size**2 // tile_size**2)
+                if found_tile_nos == expected_tiles:
+                    print(f"{subfolder_fn} already extracted. Skipping...")
+                    self.total_tiles += expected_tiles
+                    continue
+                else:
+                    # check whether a vector file exists for this raster
+                    # if not, skip this raster
+                    if not os.path.exists(os.path.join(
+                            self._input_path, "vector", subfolder_fn, subfolder_fn + ".shp")):
+                        print(
+                            f"No vector file for {subfolder_fn}. Skipping...")
+                        continue
+                    else:
+                        raise OutputPathExistsError(
+                            f"""Output path {tile_path}/{subfolder_fn} exists and does not contain
+                            the expected number of tiles"""
+                        )
+
             # create a temporary working directory
-            temp_path = os.path.join(tile_path, "temp")
+            temp_path = os.path.join(tile_path, subfolder_fn, "temp")
             self._verify_output_path(temp_path)
             if not os.path.exists(temp_path):
                 os.makedirs(temp_path)
@@ -291,7 +316,7 @@ class DataExtractor(DataHandler):
                     # same msk tiles as greyscale
                     im = Image.fromarray(sub_array_msk).convert("L")
                     im.save(os.path.join(
-                        tile_path, f"{map_tile_name}_{x_coord}_{y_coord}_msk.png"
+                        tile_path, subfolder_fn, f"{map_tile_name}_{x_coord}_{y_coord}_msk.png"
                     ))
 
                     sub_array_map = raster_map_array[
@@ -303,7 +328,7 @@ class DataExtractor(DataHandler):
                     sub_array_map = sub_array_map.transpose(1, 2, 0)
                     im = Image.fromarray(sub_array_map).convert("RGB")
                     im.save(os.path.join(
-                        tile_path, f"{map_tile_name}_{x_coord}_{y_coord}_map.png"
+                        tile_path, subfolder_fn, f"{map_tile_name}_{x_coord}_{y_coord}_map.png"
                     ))
 
                     # keep track of the number of tiles created
@@ -419,12 +444,13 @@ class DataSelector(DataHandler):
         Returns:
             list: List of lists of tuples pairs of map and mask images
         """
-        # get all files in input directory
-        files = os.listdir(input_path)
+        # get all files in input directory and subdirectories
+        files = glob.glob(
+            os.path.join(input_path, "**", "*.png"), recursive=True
+        )
         files_map = [file for file in files if "map" in file]
         # TODO "mask" is only needed for legacy mode, remove when no longer needed
-        files_mask = [
-            file for file in files if "msk" in file or "mask" in file]
+        files_mask = [file for file in files if "msk" in file or "mask" in file]
 
         # sort files by name
         files_map.sort()
@@ -483,8 +509,8 @@ class DataSelector(DataHandler):
 
             # copy files to output folder
             for file_tuple in files[subfolder]:
-                for file_path in file_tuple:
-                    full_path_in = os.path.join(input_path, file_path)
-                    full_path_out = os.path.join(
-                        output_path_subfolder, file_path)
-                    shutil.copy(full_path_in, full_path_out)
+                for file_path_in in file_tuple:
+                    file_path_out = os.path.join(
+                        output_path_subfolder, os.path.basename(file_path_in)
+                    )
+                    shutil.copy(file_path_in, file_path_out)
