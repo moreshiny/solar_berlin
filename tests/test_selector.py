@@ -7,9 +7,14 @@ import numpy as np
 from PIL import Image
 
 
-from selection.selection import DataExtractor, DataSelector
-from common.errors import InvalidPathError, AbsolutePathError, OutputPathExistsError
-from common.errors import InvalidTileSizeError, InsuffientDataError
+from roof.selection import DataExtractor, DataSelector
+from roof.errors import (
+    AbsolutePathError,
+    InsuffientDataError,
+    InvalidPathError,
+    InvalidTileSizeError,
+    OutputPathExistsError,
+)
 
 
 TILE_SIZES = (250, 500, 512)

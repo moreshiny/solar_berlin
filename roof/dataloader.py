@@ -2,7 +2,7 @@ import glob
 import os
 import tensorflow as tf
 
-from common.errors import (
+from roof.errors import (
     InvalidPathError,
     LegacyModeError,
     InsuffientDataError
