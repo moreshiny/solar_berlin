@@ -75,7 +75,7 @@ class Logs:
         self,
         train_data_config: dict = {},
         val_data_config: dict = {},
-        metrics: dict = [],
+        metrics: dict = {},
     ) -> None:
         """Write the local with the characteristics of the model and the used data for the training and validation
         Args:
@@ -96,29 +96,28 @@ class Logs:
             local_log.write("\n")
             local_log.write(f"Train configuration: {train_data_config}")
             local_log.write("\n")
-            local_log.write(f"Training Accuracy: {metrics[0]}")
+            local_log.write(f"Train configuration: {val_data_config}")
             local_log.write("\n")
-            local_log.write(f"Validation Accuracy: {metrics[1]}")
-            local_log.write("\n")
-            local_log.write(f"Loss: {metrics[2]}")
-            local_log.write("\n")
-            local_log.write(f"Val loss: {metrics[3]}")
-            local_log.write("\n")
+            for key, values in metrics.items():
+                local_log.write(f"{key}: {values}")
+                local_log.write("\n")
 
-        plt.figure(figsize=(8, 16))
-        plt.subplot(2, 1, 1)
-        plt.plot(metrics[0], label="Training Accuracy")
-        plt.plot(metrics[1], label="Validation Accuracy")
-        plt.ylim([0.6, 1])
-        plt.legend(loc="upper left")
-        plt.title("Training and Validation Accuracy")
+        len_dict = len(metrics)
 
-        plt.subplot(2, 1, 2)
-        plt.plot(metrics[2], label="Training Loss")
-        plt.plot(metrics[3], label="Validation Loss")
-        plt.ylim([0, 1.0])
-        plt.legend(loc="upper right")
-        plt.title("Training and Validation Loss")
+        plt.figure(figsize=(8, 4 * len_dict))
+
+        position = 1
+        for key, values in metrics.items():
+            plt.subplot(len_dict, 1, position)
+            max_v = max(values[0] + values[1])
+            min_v = max(values[0] + values[1])
+            plt.plot(values[0], label=f"Training {key}")
+            plt.plot(values[1], label=f"Validation {key}")
+            plt.ylim([0.5 * min_v, 1.5 * max_v])
+            plt.legend(bbox_to_anchor=(0.05, 1.05), loc="upper left")
+            plt.title(f"Training and Validation {key}")
+            position += 1
+
         plt.xlabel("epoch")
 
         path_graph = self._path_log + self._current_time + "/losses.pdf"
@@ -178,6 +177,9 @@ class Logs:
                                 and predicted mask in that order.
 
         """
+        path_snapshot = self._local_path + "/snapshots"
+        if not os.path.exists(path_snapshot):
+            os.mkdir(path_snapshot)
         plt.figure(figsize=(18, 6))
         plt.subplot(1, 3, 1)
         plt.title("Input Image")
@@ -193,9 +195,6 @@ class Logs:
         plt.title("Predicted Mask")
         plt.imshow(display_list[2], cmap="plasma")
         plt.axis("off")
-        path_snapshot = self._local_path + "/snapshots"
-        if not os.path.exists(path_snapshot):
-            os.mkdir(path_snapshot)
         path_fig = path_snapshot + f"/output{np.random.rand()}.pdf"
         plt.savefig(path_fig)
         plt.close()
