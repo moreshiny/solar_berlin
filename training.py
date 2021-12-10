@@ -2,6 +2,7 @@
 # https://www.tensorflow.org/guide/keras/save_and_serialize
 import tensorflow
 
+# import tensorflow_addons as tfa
 from roof.dataloader import DataLoader
 from class_unet_resnet101v2 import Unet
 from logging_class import Logs
@@ -11,20 +12,25 @@ tensorflow.keras.backend.clear_session()
 # parameters of the model.
 output_classes = 5  # number of categorical classes. for 2 classes = 1.
 input_shape = (512, 512, 3)  # input size
-epochs = 30
+epochs = 100
 
-batch_size = 8  # batchsize
+batch_size = 16  # batchsize
 # Path to the data large multiclass dataset
-path_train = "data/selected_tiles_512_4000_1000_42_partial/train"
-path_test = "data/selected_tiles_512_4000_1000_42_partial/test"
+# path_train = "data/selected_tiles_512_4000_1000_42_partial/train"
+# path_test = "data/selected_tiles_512_4000_1000_42_partial/test"
 
 # Path to the data small multiclass dataset
-# path_train = "data/selected_512_multiclass/selected_tiles_512_100_20_42/train"
-# path_test = "data/selected_512_multiclass/selected_tiles_512_100_20_42/test"
+#path_train = "data/selected_512_multiclass/selected_tiles_512_100_20_42/train"
+#path_test = "data/selected_512_multiclass/selected_tiles_512_100_20_42/test"
 
 # path to the small mono class large dataset
 # path_train = "data/small_large/train"
 # path_test = "data/small_large/test"
+
+#Path to data for Daniel local machine: Half dataset
+path_train="data/selected/selected_tiles_512_4000_1000_42_partial/train"
+path_test="data/selected/selected_tiles_512_4000_1000_42_partial/test"
+
 
 # calling the model.
 model = Unet(
@@ -141,7 +147,7 @@ early_stopping = tensorflow.keras.callbacks.EarlyStopping(
 print("callbacks defined")
 
 # compiling the model
-learning_rate = 0.0001
+learning_rate = 0.001
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
 
 
