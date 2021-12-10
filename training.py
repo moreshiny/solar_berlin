@@ -115,8 +115,8 @@ dl_test = DataLoader(
 )
 
 
-dl_train.load()
-dl_test.load()
+dl_train.load(buffer_size = 1000)
+dl_test.load(buffer_size = 1000)
 
 train_batches = dl_train.dataset
 test_batches = dl_test.dataset
