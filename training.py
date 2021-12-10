@@ -38,7 +38,6 @@ output_classes = 5  # number of categorical classes.
 input_shape = (512, 512, 3)  # input size
 epochs = 3
 
-<<<<<<< HEAD
 # parameters of the model.
 OUTPUT_CLASSES = 5  # number of categorical classes. For 2 classes = 1.
 INPUT_SHAPE = (512, 512, 3)  # input size
@@ -58,16 +57,6 @@ COMMENT = "Tested on the clean 8000, first run with erosion/dilation,\n\
 # Path to data
 PATH_TRAIN = "data/bin_clean_8000/train"
 PATH_TEST = "data/bin_clean_8000/test"
-=======
-batch_size = 8  # batchsize
-# Path to the data large multiclass dataset
-# path_train = "data/selected_tiles_512_4000_1000_42_partial/train"
-# path_test = "data/selected_tiles_512_4000_1000_42_partial/test"
-
-# Path to the data small multiclass dataset
-path_train = "data/selected_512_multiclass/selected_tiles_512_100_20_42/train"
-path_test = "data/selected_512_multiclass/selected_tiles_512_100_20_42/test"
->>>>>>> c2ec310 (multiclass support to training.py and logging, plots added.)
 
 # path to the small mono class large dataset
 # path_train = "data/small_large/train"
@@ -85,12 +74,6 @@ model = Unet(
 # Starting the logs
 
 log = Logs()
-<<<<<<< HEAD
-
-=======
-comment = "Full large dataset, multiclassification problem ,\n\
-     standard learning rate.  "
->>>>>>> c2ec310 (multiclass support to training.py and logging, plots added.)
 log.main_log(
     comment=COMMENT,
     model_config=model.get_config(),
@@ -106,7 +89,6 @@ binary_accuracy = tensorflow.keras.metrics.BinaryAccuracy(name="accuracy")
 sparse_categorical_accuracy = tensorflow.keras.metrics.SparseCategoricalAccuracy(
     name="sparse_categorical_accuracy", dtype=None
 )
-<<<<<<< HEAD
 mae = tensorflow.keras.losses.MeanSquaredError(name="mae")
 recall = tensorflow.keras.metrics.Recall(name="recall")
 precision = tensorflow.keras.metrics.Precision(name="precision")
@@ -122,18 +104,6 @@ if OUTPUT_CLASSES > 1:
     # metrics = [sparse_categorical_accuracy]
     metrics = [mae]
     metric_list = [metric.name for metric in metrics]
-=======
-recall = tensorflow.keras.metrics.Recall(name="recall")
-precision = tensorflow.keras.metrics.Precision(name="precision")
-
-if output_classes > 1:
-    multiclass = True
-    loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
-    metric_list = [
-        "sparse_categorical_accuracy",
-    ]
-    metrics = [sparse_categorical_accuracy]
->>>>>>> c2ec310 (multiclass support to training.py and logging, plots added.)
     model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
         filepath=log.checkpoint_filepath,
         save_weights_only=False,
@@ -145,17 +115,8 @@ if output_classes > 1:
 else:
     MULTICLASS = False
     loss = tensorflow.keras.losses.BinaryCrossentropy(from_logits=False)
-<<<<<<< HEAD
     metrics = [binary_accuracy, precision, recall, tp, fn, fp]
     metric_list = [metric.name for metric in metrics]
-=======
-    metric_list = [
-        "accuracy",
-        "recall",
-        "precision",
-    ]
-    metrics = [binary_accuracy, precision, recall]
->>>>>>> c2ec310 (multiclass support to training.py and logging, plots added.)
     model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
         filepath=log.checkpoint_filepath,
         save_weights_only=False,
