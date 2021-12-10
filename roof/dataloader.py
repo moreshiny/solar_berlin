@@ -236,7 +236,7 @@ class DataLoader:
         if shuffle:
             self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
 
-        self.dataset = self.dataset.repeat()
+        # self.dataset = self.dataset.repeat()
         self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
 
         # fetch batches in background during model training
