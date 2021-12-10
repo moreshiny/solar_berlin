@@ -176,7 +176,7 @@ tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
     write_graph=True,
 )
 
-patience = 7
+patience = 5
 # Parameters for early stopping
 early_stopping = tensorflow.keras.callbacks.EarlyStopping(
     monitor="val_loss",
@@ -187,7 +187,7 @@ early_stopping = tensorflow.keras.callbacks.EarlyStopping(
 print("callbacks defined")
 
 # compiling the model
-learning_rate = 0.01
+learning_rate = 0.005
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
 
 
