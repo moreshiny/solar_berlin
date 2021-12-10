@@ -251,10 +251,10 @@ class Logs:
         for key, values in metrics.items():
             plt.subplot(len_dict, 1, position)
             max_v = max(values[0] + values[1])
-            min_v = max(values[0] + values[1])
+            min_v = min(values[0] + values[1])
             plt.plot(values[0], label=f"Training {key}")
             plt.plot(values[1], label=f"Validation {key}")
-            plt.ylim([0.5 * min_v, 1.5 * max_v])
+            plt.ylim([0.7 * min_v, 1.2 * max_v])
             plt.legend(bbox_to_anchor=(0.05, 1.05), loc="upper left")
             plt.title(f"Training and Validation {key}")
             position += 1
