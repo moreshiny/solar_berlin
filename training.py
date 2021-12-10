@@ -18,7 +18,7 @@ the dataloader format.
 """
 import tensorflow
 
-from dataloader import DataLoader
+from roof.dataloader import DataLoader
 from unet.unet_resnet101v2 import Unet
 from roof.logging import Logs
 
@@ -61,6 +61,11 @@ PATH_TEST = "data/bin_clean_8000/test"
 # path to the small mono class large dataset
 # path_train = "data/small_large/train"
 # path_test = "data/small_large/test"
+
+#Path to data for Daniel local machine: Half dataset
+path_train="data/selected/selected_tiles_512_4000_1000_42_partial/train"
+path_test="data/selected/selected_tiles_512_4000_1000_42_partial/test"
+
 
 # calling the model.
 model = Unet(
@@ -180,7 +185,7 @@ early_stopping = tensorflow.keras.callbacks.EarlyStopping(
 print("callbacks defined")
 
 # compiling the model
-learning_rate = 0.0001
+learning_rate = 0.001
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
 
 
