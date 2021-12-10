@@ -241,3 +241,12 @@ class DataLoader:
         self.dataset = self.dataset.prefetch(
             buffer_size=tf.data.experimental.AUTOTUNE
         )
+
+    def get_config(self) -> dict:
+        """Return the key characteristics of the loaded data"""
+        return {
+            "Data path": self.path,
+            "Batch size": self.batch_size,
+            "Number of samples": self.n_samples,
+            "Shape": self.input_shape,
+        }
