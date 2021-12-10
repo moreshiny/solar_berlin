@@ -144,8 +144,10 @@ dl_test = DataLoader(
     batch_size=batch_size,
     input_shape=input_shape,
 )
-dl_train.load()
-dl_test.load()
+
+
+dl_train.load(buffer_size = 1000)
+dl_test.load(buffer_size = 1000)
 
 dl_test = DataLoader(
     PATH_TEST,
