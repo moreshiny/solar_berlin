@@ -2,11 +2,7 @@ import glob
 import os
 import tensorflow as tf
 
-from roof.errors import (
-    InvalidPathError,
-    LegacyModeError,
-    InsuffientDataError
-)
+from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
 
 
 class DataLoader:
@@ -51,7 +47,9 @@ class DataLoader:
 
         # TODO remove legacy mode when no longer needed
         if legacy_mode:
-            assert multiclass == False, "Legacy mode is not compatible with multiclass mode."
+            assert (
+                multiclass == False
+            ), "Legacy mode is not compatible with multiclass mode."
         self._legacy_mode = legacy_mode
         self._multiclass = multiclass
 
@@ -101,13 +99,11 @@ class DataLoader:
         useable_paths.sort()
 
         # split input and target
-        input_paths = [
-            filename for filename in useable_paths
-            if "map" in filename
-        ]
+        input_paths = [filename for filename in useable_paths if "map" in filename]
         # TODO "mask" is needed only for legacy mode, remove when no longer needed
         target_paths = [
-            filename for filename in useable_paths
+            filename
+            for filename in useable_paths
             if "mask" in filename or "msk" in filename
         ]
 
@@ -152,15 +148,14 @@ class DataLoader:
                 color_mode=color_mode,
             )
             return img
+
         if channels == "RGB" or channels == "A":
-            [image, ] = tf.py_function(
-                _decode_tensor_load_image, [
-                    tensor, "rgba"], [tf.float32]
+            [image,] = tf.py_function(
+                _decode_tensor_load_image, [tensor, "rgba"], [tf.float32]
             )
         elif channels == "L":
-            [image, ] = tf.py_function(
-                _decode_tensor_load_image, [
-                    tensor, "grayscale"], [tf.float32]
+            [image,] = tf.py_function(
+                _decode_tensor_load_image, [tensor, "grayscale"], [tf.float32]
             )
 
         # normalize and keep queried channels
@@ -190,7 +185,7 @@ class DataLoader:
             raise ValueError("Unkown channels specified. Use 'RGB' or 'A'.")
         return img
 
-    def load(self, buffer_size: int = None) -> None:
+    def load(self, buffer_size: int = None, shuffle: bool = True) -> None:
         """Load images into dataset and store in self.dataset attribute. The
         dataset will contain (input, target) pairs. Addional settings actions
         performed on the dataset are:
@@ -230,17 +225,17 @@ class DataLoader:
         self.dataset = tf.data.Dataset.zip((inputs, targets))
 
         # caching
-        #self.dataset = self.dataset.cache()
+        # self.dataset = self.dataset.cache()
 
         # shuffle and create batches
-        self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
-        #self.dataset = self.dataset.repeat()
+        if shuffle:
+            self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
+
+        # self.dataset = self.dataset.repeat()
         self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
 
         # fetch batches in background during model training
-        self.dataset = self.dataset.prefetch(
-            buffer_size=tf.data.experimental.AUTOTUNE
-        )
+        self.dataset = self.dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
     def get_config(self) -> dict:
         """Return the key characteristics of the loaded data"""
