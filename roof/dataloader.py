@@ -3,6 +3,7 @@ import os
 import tensorflow as tf
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
 
 
@@ -34,6 +35,9 @@ from common.errors import (
     InsuffientDataError
 )
 >>>>>>> 3ab6826 (Move dataloader errors to common errors)
+=======
+from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
+>>>>>>> 93c4af9 (dataloader updated for shuffling option)
 
 >>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
@@ -95,6 +99,7 @@ class DataLoader:
 
         # TODO remove legacy mode when no longer needed
         if legacy_mode:
+<<<<<<< HEAD
 <<<<<<< HEAD:roof/dataloader.py
             assert (
                 multiclass == False
@@ -102,6 +107,11 @@ class DataLoader:
 =======
             assert multiclass == False, "Legacy mode is not compatible with multiclass mode."
 >>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
+=======
+            assert (
+                multiclass == False
+            ), "Legacy mode is not compatible with multiclass mode."
+>>>>>>> 93c4af9 (dataloader updated for shuffling option)
         self._legacy_mode = legacy_mode
         self._multiclass = multiclass
 
@@ -178,10 +188,7 @@ class DataLoader:
         useable_paths.sort()
 
         # split input and target
-        input_paths = [
-            filename for filename in useable_paths
-            if "map" in filename
-        ]
+        input_paths = [filename for filename in useable_paths if "map" in filename]
         # TODO "mask" is needed only for legacy mode, remove when no longer needed
 <<<<<<< HEAD:roof/dataloader.py
 <<<<<<< HEAD:roof/dataloader.py
@@ -195,7 +202,8 @@ class DataLoader:
 >>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
 =======
         target_paths = [
-            filename for filename in useable_paths
+            filename
+            for filename in useable_paths
             if "mask" in filename or "msk" in filename
         ]
 >>>>>>> 28bd397 (minor formatting dataloader):dataloader.py
@@ -327,6 +335,7 @@ class DataLoader:
 
         # caching
 <<<<<<< HEAD
+<<<<<<< HEAD
         # self.dataset = self.dataset.cache()
 
         # shuffle and create batches
@@ -351,6 +360,19 @@ class DataLoader:
             buffer_size=tf.data.experimental.AUTOTUNE
         )
 >>>>>>> 68eacb2 (updated version of the dataloader fro devd_dataselection)
+=======
+        # self.dataset = self.dataset.cache()
+
+        # shuffle and create batches
+        if shuffle:
+            self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
+
+        # self.dataset = self.dataset.repeat()
+        self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
+
+        # fetch batches in background during model training
+        self.dataset = self.dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+>>>>>>> 93c4af9 (dataloader updated for shuffling option)
 
     def get_config(self) -> dict:
         """Return the key characteristics of the loaded data"""
