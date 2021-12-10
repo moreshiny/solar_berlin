@@ -36,7 +36,7 @@ tensorflow.keras.backend.clear_session()
 # parameters of the model.
 output_classes = 5  # number of categorical classes.
 input_shape = (512, 512, 3)  # input size
-epochs = 3
+epochs = 35
 
 # parameters of the model.
 OUTPUT_CLASSES = 5  # number of categorical classes. For 2 classes = 1.
@@ -63,8 +63,8 @@ PATH_TEST = "data/bin_clean_8000/test"
 # path_test = "data/small_large/test"
 
 #Path to data for Daniel local machine: Half dataset
-path_train="data/selected/selected_tiles_512_4000_1000_42_partial/train"
-path_test="data/selected/selected_tiles_512_4000_1000_42_partial/test"
+path_train="data/selected_tiles_512_4000_1000_42_cleaned/train"
+path_test="data/selected_tiles_512_4000_1000_42_cleaned/test"
 
 
 # calling the model.
@@ -176,7 +176,7 @@ tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
     write_graph=True,
 )
 
-patience = 5
+patience = 7
 # Parameters for early stopping
 early_stopping = tensorflow.keras.callbacks.EarlyStopping(
     monitor="val_loss",
@@ -187,7 +187,7 @@ early_stopping = tensorflow.keras.callbacks.EarlyStopping(
 print("callbacks defined")
 
 # compiling the model
-learning_rate = 0.005
+learning_rate = 0.001
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
 
 
