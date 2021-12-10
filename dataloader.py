@@ -219,11 +219,11 @@ class DataLoader:
         self.dataset = tensorflow.data.Dataset.zip((inputs, targets))
 
         # caching
-        self.dataset = self.dataset.cache()
+        # self.dataset = self.dataset.cache()
 
         # shuffle and create batches
         self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
-        self.dataset = self.dataset.repeat()
+        # self.dataset = self.dataset.repeat()
         self.dataset = self.dataset.batch(self.batch_size)
 
         # fetch batches in background during model training
