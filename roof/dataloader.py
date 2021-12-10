@@ -326,6 +326,7 @@ class DataLoader:
         self.dataset = tf.data.Dataset.zip((inputs, targets))
 
         # caching
+<<<<<<< HEAD
         # self.dataset = self.dataset.cache()
 
         # shuffle and create batches
@@ -333,6 +334,13 @@ class DataLoader:
             self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
 
         self.dataset = self.dataset.repeat()
+=======
+        #self.dataset = self.dataset.cache()
+
+        # shuffle and create batches
+        self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
+        #self.dataset = self.dataset.repeat()
+>>>>>>> 720c0fd (remove caching from dataloader)
         self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
 
         # fetch batches in background during model training
