@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """This class can be used to the automation of the data cleaning using
   a efficient image segmentation model. The cleaning is based on estimating the
   highest loss of a given keas model, which is passed to the class.
@@ -20,17 +21,40 @@ class DataCleaning:
     highest loss of a given keas model, which is passed to the class.
     """
 
+=======
+# This class can be used to the automation of the data cleaning using a efficient image segmentation model.
+import os
+import glob
+import shutil
+import math
+import numpy as np
+import pandas as pd
+from roof.errors import OutputPathExistsError
+from PIL import Image
+import tensorflow
+
+
+class DataCleaning:
+>>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
     def __init__(
         self,
         path_to_clean: str,
         input_shape: tuple = (512, 512, 3),
         model: tensorflow.keras.models = None,
     ) -> None:
+<<<<<<< HEAD
         """ Class initialisation.
         Args:
             path: a string, path to the folder which will be screened.
             input_shape: Input shape of the images to consider, default to (512, 512, 3).
             model: a Keras model used for instance segmentation of the roof. Default to None.
+=======
+        """ Class instantiation (right word?).
+        Args:
+            path: a string, path to the folder which will be screened.
+            input_shape: Input shape of the images to consider, default to (512, 512, 3).
+            model: a Keras model used for instance segmentation of the roof. Default to None. 
+>>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
             accuracy_threshold: an integer defining the threshold at which\
                 the accuracy is considered bad and the image needs to be discarded.
         """
@@ -39,16 +63,20 @@ class DataCleaning:
         self._input_shape = input_shape
         self._model = model
 
+<<<<<<< HEAD
         if not os.path.exists(self._path_to_clean):
             raise OutputPathExistsError(
                 "The past you are trying to clean does not exist. Be careful, Jérémie!"
             )
 
+=======
+>>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
         # local variables.
         self.path_images = []
         self.bad_images = []
         self.bad_masks = []
         self._scce = tensorflow.keras.losses.SparseCategoricalCrossentropy()
+<<<<<<< HEAD
         self._binary_crossentropy = tensorflow.keras.losses.BinaryCrossentropy(
             from_logits=False
         )
@@ -57,6 +85,11 @@ class DataCleaning:
         self._keep_list = []
         self.discard_list = []
         self._discard_df = None
+=======
+ 
+        self._losses = []
+        
+>>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
 
         self._input_paths, self._target_paths = self._get_img_paths()
 
@@ -116,6 +149,7 @@ class DataCleaning:
                 correct_filenames.append(path)
         return correct_filenames
 
+<<<<<<< HEAD
     def _logging_losses(self, proportion_empty: int = 0.25):
         """Logs the imqges/mqsk loss qccording to the model.
         Args:
@@ -124,10 +158,15 @@ class DataCleaning:
             discarded.
 
         """
+=======
+    def _logging_losses(self):
+        """Logs the imqges/mqsk loss qccording to the model."""
+>>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
 
         for image_path, mask_path in zip(self._input_paths, self._target_paths):
             img = Image.open(image_path)
             img = img.convert("RGB")
+<<<<<<< HEAD
             img = np.array(img) / 255
             img = np.expand_dims(img, axis=0)
             mask = Image.open(mask_path)
@@ -221,10 +260,50 @@ class DataCleaning:
         output_folder_name: str = "dirty",
         delete_existing_output_path_no_warning=False,
     ):
+=======
+            img = np.array(img)
+            img = np.expand_dims(img, axis=0)
+            mask = Image.open(mask_path)
+            mask = mask.convert("1")
+            mask = np.array(mask)
+            pred = self._model.predict(img)
+            loss =  self._scce(mask, pred).numpy()
+            list_df = [image_path, mask_path, loss]
+            self._losses.append(list_df)
+
+        self._losses = pd.DataFrame(self._losses, columns = ["path_img", "path_mask", "loss"])
+        
+
+
+    def cleaning(self, proportion: float = 0.2, out_folder_name: str = "dirty"):
+        """Perform the cleaning according to the losses.
+            Args: 
+            proportion: a float indicating the proportion of element we want to consider for cleaning. 
+
+         """
+
+        self._logging_losses()
+        n_predict = self._losses.shape[0]
+        n_discard = math.ceil(proportion * n_predict)
+        self._discard = self._losses.nlargest(n_discard, "loss")
+
+        print(self._discard.head(n_discard))
+
+        self.bad_images = list(self._discard["path_img"])
+        self.bad_masks = list(self._discard["path_mask"])
+
+        self._move_bad_files(out_folder_name)
+
+
+
+
+    def _move_bad_files(self, output_folder_name: str, delete_existing_output_path_no_warning=False):
+>>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
         """Copy image files from the input path to the output path.
 
         Args:
             image_files (list): Filenames as returned by select_random_map_images
+<<<<<<< HEAD
             output_path (str): file location to copy to, dafault to "dirty".
             delete_existing_output_path_no_warning (bool, optional): Delete output
             path first if it exists, without warning. Defaults to False.
@@ -237,13 +316,24 @@ class DataCleaning:
             self._discard_df = pd.read_csv(
                 self._path_to_clean + "/high_loss_elements.csv"
             )
+=======
+            input_path (str): original file location
+            output_path (str): file location to copy to
+            delete_existing_output_path_no_warning (bool, optional): Delete output
+            path first if it exists, without warning. Defaults to False.
+        """
+
+>>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
         # if we have been asked to, delete existing out path without warning
         # TODO is this safe?
 
         output_path = self._path_to_clean + "/" + output_folder_name + "/"
 
+<<<<<<< HEAD
         self._output_path = output_path
 
+=======
+>>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
         if delete_existing_output_path_no_warning and os.path.exists(output_path):
             shutil.rmtree(output_path)
 
@@ -251,6 +341,7 @@ class DataCleaning:
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         else:
+<<<<<<< HEAD
             raise OutputPathExistsError(
                 "At least one of the output directory already exists."
                 "\nSet delete_existing=True to remove it."
@@ -355,3 +446,18 @@ class DataCleaning:
             mask_discarded, ["path_img", "path_mask"]
         ]
         return self.discard_list
+=======
+            raise OutputPathExistsError("At least one of the output directory already exists."
+                                        "\nSet delete_existing=True to remove it.")
+
+        # get file names into a dict for easier processing
+
+        file_to_move = self.bad_images + self.bad_masks
+
+
+        for file_path_in in file_to_move:
+            file_path_out = os.path.join(
+                        output_path, os.path.basename(file_path_in)
+                    )
+            shutil.move(file_path_in, file_path_out)
+>>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
