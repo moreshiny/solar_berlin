@@ -146,8 +146,8 @@ dl_test = DataLoader(
 )
 
 
-dl_train.load(buffer_size = 1000)
-dl_test.load(buffer_size = 1000)
+dl_train.load(buffer_size = 500)
+dl_test.load(shuffle = False)
 
 dl_test = DataLoader(
     PATH_TEST,
@@ -187,7 +187,7 @@ early_stopping = tensorflow.keras.callbacks.EarlyStopping(
 print("callbacks defined")
 
 # compiling the model
-learning_rate = 0.001
+learning_rate = 0.01
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
 
 
