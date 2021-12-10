@@ -12,7 +12,7 @@ tensorflow.keras.backend.clear_session()
 # parameters of the model.
 output_classes = 5  # number of categorical classes. for 2 classes = 1.
 input_shape = (512, 512, 3)  # input size
-epochs = 100
+epochs = 35
 
 batch_size = 16  # batchsize
 # Path to the data large multiclass dataset
@@ -28,8 +28,8 @@ batch_size = 16  # batchsize
 # path_test = "data/small_large/test"
 
 #Path to data for Daniel local machine: Half dataset
-path_train="data/selected/selected_tiles_512_4000_1000_42_partial/train"
-path_test="data/selected/selected_tiles_512_4000_1000_42_partial/test"
+path_train="data/selected_tiles_512_4000_1000_42_cleaned/train"
+path_test="data/selected_tiles_512_4000_1000_42_cleaned/test"
 
 
 # calling the model.
@@ -136,7 +136,7 @@ tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
     write_graph=True,
 )
 
-patience = 5
+patience = 7
 # Parameters for early stopping
 early_stopping = tensorflow.keras.callbacks.EarlyStopping(
     monitor="val_loss",
@@ -147,7 +147,7 @@ early_stopping = tensorflow.keras.callbacks.EarlyStopping(
 print("callbacks defined")
 
 # compiling the model
-learning_rate = 0.005
+learning_rate = 0.001
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
 
 
@@ -157,7 +157,7 @@ model.compile(optimizer=opt, loss=loss, metrics=metrics)
 print("compiling done")
 # training the model.
 
-steps_per_epoch = dl_train.n_samples / batch_size
+steps_per_epoch = dl_train.n_samples // batch_size
 validation_steps = max(dl_test.n_samples // batch_size, 1)
 
 
