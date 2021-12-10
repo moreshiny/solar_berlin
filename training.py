@@ -10,18 +10,18 @@ from logging_class import Logs
 tensorflow.keras.backend.clear_session()
 
 # parameters of the model.
-output_classes = 5  # number of categorical classes.
+output_classes = 5  # number of categorical classes. for 2 classes = 1.
 input_shape = (512, 512, 3)  # input size
-epochs = 3
+epochs = 30
 
 batch_size = 8  # batchsize
 # Path to the data large multiclass dataset
-# path_train = "data/selected_tiles_512_4000_1000_42_partial/train"
-# path_test = "data/selected_tiles_512_4000_1000_42_partial/test"
+path_train = "data/selected_tiles_512_4000_1000_42_partial/train"
+path_test = "data/selected_tiles_512_4000_1000_42_partial/test"
 
 # Path to the data small multiclass dataset
-path_train = "data/selected_512_multiclass/selected_tiles_512_100_20_42/train"
-path_test = "data/selected_512_multiclass/selected_tiles_512_100_20_42/test"
+# path_train = "data/selected_512_multiclass/selected_tiles_512_100_20_42/train"
+# path_test = "data/selected_512_multiclass/selected_tiles_512_100_20_42/test"
 
 # path to the small mono class large dataset
 # path_train = "data/small_large/train"
@@ -32,7 +32,7 @@ model = Unet(
     output_classes=output_classes,
     input_shape=input_shape,
     drop_out=True,
-    drop_out_rate={"512": 0.275, "256": 0.3, "128": 0.325, "64": 0.35},
+    drop_out_rate={"512": 0.3, "256": 0.35, "128": 0.4, "64": 0.45},
     multiclass=bool(output_classes - 1),
 )
 
@@ -131,7 +131,7 @@ tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
     write_graph=True,
 )
 
-patience = 7
+patience = 10
 # Parameters for early stopping
 early_stopping = tensorflow.keras.callbacks.EarlyStopping(
     monitor="val_loss",
@@ -163,8 +163,8 @@ history = model.fit(
     validation_steps=validation_steps,
     validation_data=test_batches,
     callbacks=[
-        # model_checkpoint_callback,
-        # tensorboard_callback,
+        model_checkpoint_callback,
+        tensorboard_callback,
         early_stopping,
     ],
 )
@@ -183,7 +183,7 @@ log.local_log(
     metrics=accuracies,
 )
 
-num_batches = 3  # number of batches
+num_batches = 5  # number of batches
 log.show_predictions(
     dataset=dl_test.dataset,
     model=model,
