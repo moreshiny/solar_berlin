@@ -230,12 +230,12 @@ class DataLoader:
         self.dataset = tf.data.Dataset.zip((inputs, targets))
 
         # caching
-        self.dataset = self.dataset.cache()
+        #self.dataset = self.dataset.cache()
 
         # shuffle and create batches
         self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
-        self.dataset = self.dataset.repeat()
-        self.dataset = self.dataset.batch(self.batch_size)
+        #self.dataset = self.dataset.repeat()
+        self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
 
         # fetch batches in background during model training
         self.dataset = self.dataset.prefetch(
