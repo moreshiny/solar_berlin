@@ -74,7 +74,7 @@ if output_classes > 1:
     model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
         filepath=log.checkpoint_filepath,
         save_weights_only=False,
-        monitor="sparse_categorical_accuracy",
+        monitor="val_sparse_categorical_accuracy",
         mode="max",
         save_best_only=True,
         verbose=1,
@@ -91,7 +91,7 @@ else:
     model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
         filepath=log.checkpoint_filepath,
         save_weights_only=False,
-        monitor="accuracy",
+        monitor="val_accuracy",
         mode="max",
         save_best_only=True,
         verbose=1,
@@ -115,8 +115,8 @@ dl_test = DataLoader(
 )
 
 
-dl_train.load(buffer_size = 1000)
-dl_test.load(buffer_size = 1000)
+dl_train.load(buffer_size = 500)
+dl_test.load(shuffle = False)
 
 train_batches = dl_train.dataset
 test_batches = dl_test.dataset
@@ -147,7 +147,7 @@ early_stopping = tensorflow.keras.callbacks.EarlyStopping(
 print("callbacks defined")
 
 # compiling the model
-learning_rate = 0.001
+learning_rate = 0.01
 opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
 
 
