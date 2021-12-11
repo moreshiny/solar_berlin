@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 """This class can be used to the automation of the data cleaning using
   a efficient image segmentation model. The cleaning is based on estimating the
   highest loss of a given keas model, which is passed to the class.
@@ -23,15 +24,21 @@ class DataCleaning:
 
 =======
 # This class can be used to the automation of the data cleaning using a efficient image segmentation model.
+=======
+# This class can be used to the automation of the data cleaning using
+#  a efficient image segmentation model.
+>>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
 import os
 import glob
 import shutil
-import math
+import sys
 import numpy as np
 import pandas as pd
-from roof.errors import OutputPathExistsError
+import matplotlib.pyplot as plt
 from PIL import Image
 import tensorflow
+from roof.errors import OutputPathExistsError
+
 
 
 class DataCleaning:
@@ -53,8 +60,12 @@ class DataCleaning:
         Args:
             path: a string, path to the folder which will be screened.
             input_shape: Input shape of the images to consider, default to (512, 512, 3).
+<<<<<<< HEAD
             model: a Keras model used for instance segmentation of the roof. Default to None. 
 >>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
+=======
+            model: a Keras model used for instance segmentation of the roof. Default to None.
+>>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
             accuracy_threshold: an integer defining the threshold at which\
                 the accuracy is considered bad and the image needs to be discarded.
         """
@@ -64,18 +75,26 @@ class DataCleaning:
         self._model = model
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
         if not os.path.exists(self._path_to_clean):
             raise OutputPathExistsError(
                 "The past you are trying to clean does not exist. Be careful, Jérémie!"
             )
+<<<<<<< HEAD
 
 =======
 >>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
+=======
+        
+>>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
         # local variables.
         self.path_images = []
         self.bad_images = []
         self.bad_masks = []
         self._scce = tensorflow.keras.losses.SparseCategoricalCrossentropy()
+<<<<<<< HEAD
 <<<<<<< HEAD
         self._binary_crossentropy = tensorflow.keras.losses.BinaryCrossentropy(
             from_logits=False
@@ -90,6 +109,13 @@ class DataCleaning:
         self._losses = []
         
 >>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
+=======
+        self._losses = []
+        self._output_path = ""
+        self._keep_list = []
+        self.discard_list = []
+        self._discard_df = None
+>>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
 
         self._input_paths, self._target_paths = self._get_img_paths()
 
@@ -267,38 +293,42 @@ class DataCleaning:
             mask = mask.convert("1")
             mask = np.array(mask)
             pred = self._model.predict(img)
-            loss =  self._scce(mask, pred).numpy()
+            loss = self._scce(mask, pred).numpy()
             list_df = [image_path, mask_path, loss]
             self._losses.append(list_df)
 
-        self._losses = pd.DataFrame(self._losses, columns = ["path_img", "path_mask", "loss"])
-        
-
+        self._losses = pd.DataFrame(
+            self._losses, columns=["path_img", "path_mask", "loss"]
+        )
 
     def cleaning(self, proportion: float = 0.2, out_folder_name: str = "dirty"):
         """Perform the cleaning according to the losses.
-            Args: 
-            proportion: a float indicating the proportion of element we want to consider for cleaning. 
+        Args:
+        proportion: a float indicating the proportion of element we want to consider for cleaning.
 
-         """
+        """
 
         self._logging_losses()
         n_predict = self._losses.shape[0]
-        n_discard = math.ceil(proportion * n_predict)
-        self._discard = self._losses.nlargest(n_discard, "loss")
+        n_discard = np.ceil(proportion * n_predict).astype(int)
+        self._discard_df = self._losses.nlargest(n_discard, "loss")
 
-        print(self._discard.head(n_discard))
-
-        self.bad_images = list(self._discard["path_img"])
-        self.bad_masks = list(self._discard["path_mask"])
+        self.bad_images = list(self._discard_df["path_img"])
+        self.bad_masks = list(self._discard_df["path_mask"])
 
         self._move_bad_files(out_folder_name)
 
+<<<<<<< HEAD
 
 
 
     def _move_bad_files(self, output_folder_name: str, delete_existing_output_path_no_warning=False):
 >>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
+=======
+    def _move_bad_files(
+        self, output_folder_name: str, delete_existing_output_path_no_warning=False
+    ):
+>>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
         """Copy image files from the input path to the output path.
 
         Args:
@@ -330,10 +360,15 @@ class DataCleaning:
         output_path = self._path_to_clean + "/" + output_folder_name + "/"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         self._output_path = output_path
 
 =======
 >>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
+=======
+        self._output_path = output_path
+
+>>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
         if delete_existing_output_path_no_warning and os.path.exists(output_path):
             shutil.rmtree(output_path)
 
@@ -342,10 +377,14 @@ class DataCleaning:
             os.makedirs(output_path)
         else:
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
             raise OutputPathExistsError(
                 "At least one of the output directory already exists."
                 "\nSet delete_existing=True to remove it."
             )
+<<<<<<< HEAD
 
         # get file names into a dict for easier processing
 
@@ -449,15 +488,93 @@ class DataCleaning:
 =======
             raise OutputPathExistsError("At least one of the output directory already exists."
                                         "\nSet delete_existing=True to remove it.")
+=======
+>>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
 
         # get file names into a dict for easier processing
 
-        file_to_move = self.bad_images + self.bad_masks
+        file_to_copy = self.bad_images + self.bad_masks
 
+        for file_path_in in file_to_copy:
+            file_path_out = os.path.join(output_path, os.path.basename(file_path_in))
+            shutil.copy(file_path_in, file_path_out)
 
+<<<<<<< HEAD
         for file_path_in in file_to_move:
             file_path_out = os.path.join(
                         output_path, os.path.basename(file_path_in)
                     )
             shutil.move(file_path_in, file_path_out)
 >>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
+=======
+    def manual_sorting(
+        self,
+        class_called: bool = True,
+        path_to_clean: str = "",
+    ) -> None:
+        """
+        Trigger the manual sorting of the considered folder.
+        Args:
+            class_called: a boolean, if the classd has been called before, the method uses
+             the parameters of the class, else the method requires an input path.
+            path__to_clean: path to be cleaned if class called if false.
+        """
+        
+        if not class_called:
+            
+            all_paths = glob.glob(os.path.join(path_to_clean, "*.tif"))
+            all_paths += glob.glob(os.path.join(path_to_clean, "*.png"))
+
+            all_paths.sort()
+
+            input_paths = [filename for filename in all_paths if "map" in filename]
+            target_paths = [
+                filename
+                for filename in all_paths
+                if "mask" in filename or "msk" in filename
+            ]
+            self._keep_list = []
+            self.discard_list = []
+        else:
+            input_paths = list(self._discard_df.loc[:,"path_img"])
+            target_paths = list(self._discard_df.loc[:,"path_mask"])
+            
+        image_path = ""
+        target_path = ""
+        break_out_flag = True
+
+        def onpress(event):
+            nonlocal image_path, target_path, break_out_flag
+            sys.stdout.flush()
+            if event.key == "d":
+                self.discard_list.append(image_path)
+                self.discard_list.append(target_path)
+                break_out_flag = False
+                plt.close()
+
+            elif event.key == "k":
+                self._keep_list.append(image_path)
+                self._keep_list.append(target_path)
+                break_out_flag = False
+                plt.close()
+
+            elif event.key == "q":
+                break_out_flag = True
+
+        for image_path, target_path in zip(input_paths, target_paths):
+            img = Image.open(image_path)
+            mask = Image.open(target_path)
+            fig, axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(14, 7))
+            plt.title("Press k to keep, d to discard, q to stop")
+            fig.canvas.mpl_connect("key_press_event", onpress)
+            axs[0].imshow(img)
+            axs[0].axis("off")
+            axs[1].imshow(mask)
+            axs[1].axis("off")
+            plt.title("Press k to keep, d to discard, s to stop")
+            plt.show()
+            if break_out_flag:
+                break
+
+        return self.discard_list
+>>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
