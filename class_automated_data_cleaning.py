@@ -1,5 +1,6 @@
 # This class can be used to the automation of the data cleaning using
 #  a efficient image segmentation model.
+#
 import os
 import glob
 import shutil
@@ -10,7 +11,6 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import tensorflow
 from roof.errors import OutputPathExistsError
-
 
 
 class DataCleaning:
@@ -37,7 +37,7 @@ class DataCleaning:
             raise OutputPathExistsError(
                 "The past you are trying to clean does not exist. Be careful, Jérémie!"
             )
-        
+
         # local variables.
         self.path_images = []
         self.bad_images = []
@@ -126,8 +126,9 @@ class DataCleaning:
         self._losses = pd.DataFrame(
             self._losses, columns=["path_img", "path_mask", "loss"]
         )
+        print(self._losses.head())
 
-    def cleaning(self, proportion: float = 0.2, out_folder_name: str = "dirty"):
+    def cleaning(self, proportion: float = 0.2):
         """Perform the cleaning according to the losses.
         Args:
         proportion: a float indicating the proportion of element we want to consider for cleaning.
@@ -138,25 +139,36 @@ class DataCleaning:
         n_predict = self._losses.shape[0]
         n_discard = np.ceil(proportion * n_predict).astype(int)
         self._discard_df = self._losses.nlargest(n_discard, "loss")
+        self._discard_df["read"] = 0
+        self._discard_df["discard"] = 0
+        self._discard_df.to_csv(
+            self._path_to_clean + "/high_loss_elements.csv", index=False, header=True
+        )
 
         self.bad_images = list(self._discard_df["path_img"])
         self.bad_masks = list(self._discard_df["path_mask"])
 
-        self._move_bad_files(out_folder_name)
-
-    def _move_bad_files(
-        self, output_folder_name: str, delete_existing_output_path_no_warning=False
+    def move_discarded_files(
+        self,
+        output_folder_name: str = "dirty",
+        delete_existing_output_path_no_warning=False,
     ):
         """Copy image files from the input path to the output path.
 
         Args:
             image_files (list): Filenames as returned by select_random_map_images
-            input_path (str): original file location
-            output_path (str): file location to copy to
+            output_path (str): file location to copy to, dafault to "dirty".
             delete_existing_output_path_no_warning (bool, optional): Delete output
             path first if it exists, without warning. Defaults to False.
         """
-
+        if not os.path.exists(self._path_to_clean + "/high_loss_elements.csv"):
+            return print(
+                "Please provide a CSV file high_loss_elements.csv for cleaning"
+            )
+        else:
+            self._discard_df = pd.read_csv(
+                self._path_to_clean + "/high_loss_elements.csv"
+            )
         # if we have been asked to, delete existing out path without warning
         # TODO is this safe?
 
@@ -178,17 +190,17 @@ class DataCleaning:
 
         # get file names into a dict for easier processing
 
-        file_to_copy = self.bad_images + self.bad_masks
+        mask_discard = self._discard_df["discard"] == 1
+
+        file_to_copy = list(self._discard_df.loc[mask_discard, "path_img"]) + list(
+            self._discard_df.loc[mask_discard, "path_mask"]
+        )
 
         for file_path_in in file_to_copy:
             file_path_out = os.path.join(output_path, os.path.basename(file_path_in))
-            shutil.copy(file_path_in, file_path_out)
+            shutil.move(file_path_in, file_path_out)
 
-    def manual_sorting(
-        self,
-        class_called: bool = True,
-        path_to_clean: str = "",
-    ) -> None:
+    def manual_sorting(self) -> None:
         """
         Trigger the manual sorting of the considered folder.
         Args:
@@ -196,26 +208,20 @@ class DataCleaning:
              the parameters of the class, else the method requires an input path.
             path__to_clean: path to be cleaned if class called if false.
         """
-        
-        if not class_called:
-            
-            all_paths = glob.glob(os.path.join(path_to_clean, "*.tif"))
-            all_paths += glob.glob(os.path.join(path_to_clean, "*.png"))
 
-            all_paths.sort()
+        if not os.path.exists(self._path_to_clean + "/high_loss_elements.csv"):
 
-            input_paths = [filename for filename in all_paths if "map" in filename]
-            target_paths = [
-                filename
-                for filename in all_paths
-                if "mask" in filename or "msk" in filename
-            ]
-            self._keep_list = []
-            self.discard_list = []
+            self._discard_df = pd.DataFrame(columns=["path_img", "path_mask", "loss"])
+            self._discard_df["path_img"] = self._input_paths
+            self._discard_df["path_mask"] = self._target_paths
+            self._discard_df["discard"] = 0
+            self._discard_df["read"] = 0
+
         else:
-            input_paths = list(self._discard_df.loc[:,"path_img"])
-            target_paths = list(self._discard_df.loc[:,"path_mask"])
-            
+            self._discard_df = pd.read_csv(
+                self._path_to_clean + "/high_loss_elements.csv"
+            )
+
         image_path = ""
         target_path = ""
         break_out_flag = True
@@ -224,21 +230,28 @@ class DataCleaning:
             nonlocal image_path, target_path, break_out_flag
             sys.stdout.flush()
             if event.key == "d":
-                self.discard_list.append(image_path)
-                self.discard_list.append(target_path)
+                mask_path = self._discard_df["path_img"] == image_path
+                self._discard_df.loc[mask_path, "discard"] = 1
                 break_out_flag = False
                 plt.close()
 
             elif event.key == "k":
-                self._keep_list.append(image_path)
-                self._keep_list.append(target_path)
+                mask_path = self._discard_df["path_img"] == image_path
+                self._discard_df.loc[mask_path, "discard"] = 0
                 break_out_flag = False
                 plt.close()
 
             elif event.key == "q":
                 break_out_flag = True
 
-        for image_path, target_path in zip(input_paths, target_paths):
+        mask_unread = self._discard_df["read"] == 0
+        read_path = self._discard_df.loc[mask_unread].loc[:, ["path_img", "path_mask"]]
+
+        for image_path, target_path in zip(
+            read_path["path_img"], read_path["path_mask"]
+        ):
+            mask_path = self._discard_df["path_img"] == image_path
+            self._discard_df.loc[mask_path, "read"] = 1
             img = Image.open(image_path)
             mask = Image.open(target_path)
             fig, axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(14, 7))
@@ -252,5 +265,14 @@ class DataCleaning:
             plt.show()
             if break_out_flag:
                 break
+
+        self._discard_df.to_csv(
+            self._path_to_clean + "/high_loss_elements.csv", index=False, header=True
+        )
+
+        mask_discarded = self._discard_df["discard"] == 1
+        self.discard_list = self._discard_df.loc[mask_discarded].loc[
+            :, ["path_img", "path_mask"]
+        ]
 
         return self.discard_list
