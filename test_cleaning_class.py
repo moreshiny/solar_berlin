@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 """run file for the automated cleaning class."""
 from class_automated_data_cleaning import DataCleaning
 from class_unet_resnet101v2 import Unet
@@ -67,21 +68,24 @@ print("File moved.")
 
 print("Done")
 =======
+=======
+"""run file for the automated cleaning class."""
+>>>>>>> 62c2250 (updated cleaning, and test cleaning class updated: the cleaning can now be started again at all time)
 from class_automated_data_cleaning import DataCleaning
 from class_unet_resnet101v2 import Unet
 
 # Define the parameters of the model to be used.
-output_classes = 5  # number of categorical classes.
-input_shape = (512, 512, 3)  # input size
+OUTPUT_CLASSES = 5  # number of categorical classes.
+INPUT_SHAPE = (512, 512, 3)  # input size
 
 
 # calling the model. For inference, drop out must be deactivated.
 # The structure of the model must be identical to the loaded model.
 model = Unet(
-    output_classes=output_classes,
-    input_shape=input_shape,
+    output_classes=OUTPUT_CLASSES,
+    input_shape=INPUT_SHAPE,
     drop_out=False,
-    multiclass=bool(output_classes - 1),
+    multiclass=bool(OUTPUT_CLASSES - 1),
 )
 
 # Path to check point. This is a directory. Lead to an error when calling it.
@@ -102,33 +106,35 @@ cleaning = DataCleaning(
 )
 
 # Perform the cleaning. The proportion parameter signals the proportion of samples to study.
-# These samples are copied in a folder called dirty by default.
-# if the folder already exists, an exception will be raised.
-# To delete, use the parameters of the _move_bad_files method of the class.
+# create a CSV containing the paths with the highest loss.
 PROPORTION = 0.1
-cleaning.cleaning(proportion=PROPORTION, out_folder_name="dirty")
+cleaning.cleaning(proportion=PROPORTION)
 
 
-print("Done")
+print("Cleaning Done")
 
 
 # Calling the manual sorting. If the cleaning method of the class has been called before,
-#the sorting starts with the picture with the highest loss. The content is loaded from the Dataframe
-# cleaning._discard_df. if not, define the classe, and
-# specifiy here te path to clean by setting class_called = False, and
-#path_to_clean = "your_path". Return the list of paths manually discarded.
-discard_list = cleaning.manual_sorting(class_called=True)
-#Stand-alone usage
-#discard_list = cleaning.manual_sorting(class_called=False, path_to_clean = PATH_TO_CLEAN)
+# the sorting starts with the picture with the highest loss. The content is loaded from the Dataframe
+# cleaning._discard_df. If a file called high_loss_elements does not exist in the folde
+# the dataframe will be created from the elements of the folder.
+discard_list = cleaning.manual_sorting()
 
 
-#Print the list of the paths manually discared into a folder to save it.
-with open(
-    PATH_TO_CLEAN + "/discarded.txt", "a", encoding="utf-8"
-) as discarded_elements:
-    for path in discard_list:
-        discarded_elements.write(path)
-        discarded_elements.write("\n")
+print("Manual sorting Done")
+
+
+
+
+
+# Move the marked files to be discared from the `CSV file to a folder called by default dirty.
+
+cleaning.move_discarded_files(
+        output_folder_name = "dirty",
+        delete_existing_output_path_no_warning=True,
+    )
+
+print("File moved.")
 
 
 print("Done")
