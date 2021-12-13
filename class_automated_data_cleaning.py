@@ -51,6 +51,7 @@ class DataCleaning:
         path_to_clean: str,
         input_shape: tuple = (512, 512, 3),
         model: tensorflow.keras.models = None,
+        multiclass: bool = False,
     ) -> None:
 <<<<<<< HEAD
         """ Class initialisation.
@@ -307,7 +308,6 @@ class DataCleaning:
         self._losses = pd.DataFrame(
             self._losses, columns=["path_img", "path_mask", "loss"]
         )
-        print(self._losses.head())
 
     def cleaning(self, proportion: float = 0.2):
         """Perform the cleaning according to the losses.
@@ -609,13 +609,12 @@ class DataCleaning:
             img = Image.open(image_path)
             mask = Image.open(target_path)
             fig, axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(14, 7))
-            plt.title("Press k to keep, d to discard, q to stop")
             fig.canvas.mpl_connect("key_press_event", onpress)
             axs[0].imshow(img)
             axs[0].axis("off")
             axs[1].imshow(mask)
             axs[1].axis("off")
-            plt.title("Press k to keep, d to discard, s to stop")
+            plt.suptitle("Press k to keep, d to discard, q to quit",fontsize=20)
             plt.show()
             if break_out_flag:
                 break
