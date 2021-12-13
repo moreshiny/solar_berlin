@@ -6,6 +6,9 @@ from PIL import Image
 from osgeo import gdal
 from osgeo import ogr
 from abc import ABC
+import json
+import geopandas as gpd
+from shapely.geometry import Polygon, box
 
 from roof.errors import (
     AbsolutePathError,
@@ -104,6 +107,7 @@ class DataExtractor(DataHandler):
         """
         self._testing = testing
         self.tile_size = tile_size
+        self.total_tiles = 0
 
         self._verify_input_path(input_path)
         self._input_path = input_path
@@ -152,13 +156,24 @@ class DataExtractor(DataHandler):
                 self.total_tiles = 0
                 self._extract_data(self.tile_size, self.tile_path)
             else:
-                print("Tiles already extracted. All done.")
-                self.total_tiles = len(output_map_tile_fns)
+                print("Tiles already extracted. Checking coco.")
+                coco_fns = glob.glob(
+                    os.path.join(self.tile_path, "**", "*.json")
+                )
+                expected_coco_nos = len(self._input_raster_fns)
+                if not len(coco_fns) == expected_coco_nos:
+                    print("Coco jsons incomplete. Recreating.")
+                    self.total_tiles = 0
+                    self._extract_data(
+                        self.tile_size, self.tile_path, coco_only=True)
+                else:
+                    print("Coco json present. Extraction complete")
+                    self.total_tiles = len(output_map_tile_fns)
         else:
             self.total_tiles = 0
             self._extract_data(self.tile_size, self.tile_path)
 
-    def _extract_data(self, tile_size: int, tile_path: str):
+    def _extract_data(self, tile_size: int, tile_path: str, coco_only: bool = False):
         """ Main method for extracting data. For each raster tile encountered,
             the corresponding vector file is rasterised, clipped to the size of
             the raster and converted to a mask image. Creates a temporary
@@ -167,6 +182,8 @@ class DataExtractor(DataHandler):
         Args:
             tile_size (int): Size of the tiles to be extracted.
             tile_path (str): The subdirectory in which to save the tiles.
+            coco_only (bool, optional): Whether to only extract coco jsons (if)
+                tiles have already been extracted. Defaults to False.
         """
         if not os.path.exists(tile_path):
             os.makedirs(tile_path)
@@ -175,29 +192,38 @@ class DataExtractor(DataHandler):
             print(
                 f"Processing #{count+1} of {len(self._input_raster_fns)}: {raster_map_fn}..."
             )
+            tile_coco_only = coco_only
 
             subfolder_fn = os.path.basename(raster_map_fn).split(".")[0]
-            if os.path.exists(os.path.join(tile_path, subfolder_fn)):
-                found_tile_nos = len(glob.glob(
-                    os.path.join(tile_path, subfolder_fn, "*_map.png")))
-                expected_tiles = (self.raster_tile_size**2 // tile_size**2)
-                if found_tile_nos == expected_tiles:
-                    print(f"{subfolder_fn} already extracted. Skipping...")
-                    self.total_tiles += expected_tiles
-                    continue
-                else:
-                    # check whether a vector file exists for this raster
-                    # if not, skip this raster
-                    if not os.path.exists(os.path.join(
-                            self._input_path, "vector", subfolder_fn, subfolder_fn + ".shp")):
+            if not tile_coco_only:
+                if os.path.exists(os.path.join(tile_path, subfolder_fn)):
+                    found_tile_nos = len(glob.glob(
+                        os.path.join(tile_path, subfolder_fn, "*_map.png")))
+                    expected_tiles = (self.raster_tile_size**2 // tile_size**2)
+                    if found_tile_nos == expected_tiles:
                         print(
-                            f"No vector file for {subfolder_fn}. Skipping...")
-                        continue
+                            f"{subfolder_fn} already extracted. Checking coco...")
+                        if os.path.exists(os.path.join(tile_path, subfolder_fn, subfolder_fn + ".json")):
+                            print(f"{subfolder_fn} coco present. Skipping...")
+                            self.total_tiles += expected_tiles
+                            continue
+                        else:
+                            print(
+                                f"{subfolder_fn} coco not found. Generating...")
+                            tile_coco_only = True
                     else:
-                        raise OutputPathExistsError(
-                            f"""Output path {tile_path}/{subfolder_fn} exists and does not contain
-                            the expected number of tiles"""
-                        )
+                        # check whether a vector file exists for this raster
+                        # if not, skip this raster
+                        if not os.path.exists(os.path.join(
+                                self._input_path, "vector", subfolder_fn, subfolder_fn + ".shp")):
+                            print(
+                                f"No vector file for {subfolder_fn}. Skipping...")
+                            continue
+                        else:
+                            raise OutputPathExistsError(
+                                f"""Output path {tile_path}/{subfolder_fn} exists and does not contain
+                                the expected number of tiles"""
+                            )
 
             # create a temporary working directory
             temp_path = os.path.join(tile_path, subfolder_fn, "temp")
@@ -228,47 +254,51 @@ class DataExtractor(DataHandler):
 
             x_min, x_max, y_min, y_max = vector_layer.GetExtent()
 
-            # define a temporary rastr for the mask
-            tmp_msk_raster_fn = os.path.join(
-                temp_path,
-                map_tile_name + "_msk.tif"
-            )
+            shapefile = gpd.read_file(vector_fn)
             # set pixel_size to match the map raster
             pixel_size = .2
-            # resolution based on the extent we got from the vector
-            x_res = int((x_max - x_min) / pixel_size)
-            y_res = int((y_max - y_min) / pixel_size)
-            gtiff_driver = gdal.GetDriverByName("GTiff")
-            tmp_msk_raster = gtiff_driver.Create(
-                tmp_msk_raster_fn,
-                x_res,
-                y_res,
-                1,  # one band
-                gdal.GDT_Int16
-            )
-            # GT(0) x-coordinate of the upper-left corner of the upper-left pixel.
-            # GT(1) w-e pixel resolution / pixel width.
-            # GT(2) row rotation (typically zero).
-            # GT(3) y-coordinate of the upper-left corner of the upper-left pixel.
-            # GT(4) column rotation (typically zero).
-            # GT(5) n-s pixel resolution / pixel height (negative value for a north-up image).
-            tmp_msk_raster.SetGeoTransform(
-                (x_min, pixel_size, 0, y_max, 0, -pixel_size)
-            )
 
-            # set the first (and only) band default value to -1
-            tmp_msk_raster.GetRasterBand(1).SetNoDataValue(-1)
+            if not tile_coco_only:
+                # define a temporary rastr for the mask
+                tmp_msk_raster_fn = os.path.join(
+                    temp_path,
+                    map_tile_name + "_msk.tif"
+                )
 
-            # overwrite the band with each polygon's 'eig_kl_pv' (0, 1, 2 or 3)
-            # any area not covered by a vector object remains at -1 ("no roof")
-            gdal.RasterizeLayer(
-                tmp_msk_raster,
-                [1],  # band one (the only band)
-                vector_layer,
-                options=["ATTRIBUTE=eig_kl_pv"]
-            )
-            # ensure the raster is closed so that changes are written to disk
-            del tmp_msk_raster
+                # resolution based on the extent we got from the vector
+                x_res = int((x_max - x_min) / pixel_size)
+                y_res = int((y_max - y_min) / pixel_size)
+                gtiff_driver = gdal.GetDriverByName("GTiff")
+                tmp_msk_raster = gtiff_driver.Create(
+                    tmp_msk_raster_fn,
+                    x_res,
+                    y_res,
+                    1,  # one band
+                    gdal.GDT_Int16
+                )
+                # GT(0) x-coordinate of the upper-left corner of the upper-left pixel.
+                # GT(1) w-e pixel resolution / pixel width.
+                # GT(2) row rotation (typically zero).
+                # GT(3) y-coordinate of the upper-left corner of the upper-left pixel.
+                # GT(4) column rotation (typically zero).
+                # GT(5) n-s pixel resolution / pixel height (negative value for a north-up image).
+                tmp_msk_raster.SetGeoTransform(
+                    (x_min, pixel_size, 0, y_max, 0, -pixel_size)
+                )
+
+                # set the first (and only) band default value to -1
+                tmp_msk_raster.GetRasterBand(1).SetNoDataValue(-1)
+
+                # overwrite the band with each polygon's 'eig_kl_pv' (0, 1, 2 or 3)
+                # any area not covered by a vector object remains at -1 ("no roof")
+                gdal.RasterizeLayer(
+                    tmp_msk_raster,
+                    [1],  # band one (the only band)
+                    vector_layer,
+                    options=["ATTRIBUTE=eig_kl_pv"]
+                )
+                # ensure the raster is closed so that changes are written to disk
+                del tmp_msk_raster
 
             # open the map raster to get the extent
             raster_map_file = gdal.Open(raster_map_fn)
@@ -279,60 +309,213 @@ class DataExtractor(DataHandler):
             x_min_p = int((x_min_s - x_min) / pixel_size)
             y_min_p = int((y_max - y_max_s) / pixel_size)
 
-            # create a temporary raster for the clipped mask
-            tmp_msk_raster_clip_fn = os.path.join(
-                temp_path, map_tile_name + "_msk_clip.tif"
-            )
-            # crop mask rater to the extent of the map raster
-            # this cuts any objects overlapping the edges at the edge of the map
-            gdal.Translate(tmp_msk_raster_clip_fn, tmp_msk_raster_fn, srcWin=[
-                x_min_p,
-                y_min_p,
-                self.raster_tile_size,
-                self.raster_tile_size,
-            ])
+            if not tile_coco_only:
+                # create a temporary raster for the clipped mask
+                tmp_msk_raster_clip_fn = os.path.join(
+                    temp_path, map_tile_name + "_msk_clip.tif"
+                )
+                # crop mask rater to the extent of the map raster
+                # this cuts any objects overlapping the edges at the edge of the map
+                gdal.Translate(tmp_msk_raster_clip_fn, tmp_msk_raster_fn, srcWin=[
+                    x_min_p,
+                    y_min_p,
+                    self.raster_tile_size,
+                    self.raster_tile_size,
+                ])
 
-            # load the map and tempoary mask as numpy arrays for processing
-            raster_map_array = gdal.Open(raster_map_fn).ReadAsArray()
-            tmp_msk_raster_clip_array = gdal.Open(
-                tmp_msk_raster_clip_fn).ReadAsArray()
+                # load the map and tempoary mask as numpy arrays for processing
+                raster_map_array = gdal.Open(raster_map_fn).ReadAsArray()
+                tmp_msk_raster_clip = gdal.Open(tmp_msk_raster_clip_fn)
 
-            # shift categories by 1 to make 0 the lowest category
-            # 0 is now "no roof", 1, 2, 3, 4 are the pv categories
-            tmp_msk_raster_clip_array = tmp_msk_raster_clip_array + 1
-            # shift categories into visible range, 4 is the max possible value
-            # 0 is now "no roof", 63, 127, 191, 255 are the pv categories
-            tmp_msk_raster_clip_array = tmp_msk_raster_clip_array / 4 * 255
+                tmp_msk_raster_clip_array = tmp_msk_raster_clip.ReadAsArray()
+
+                # shift categories by 1 to make 0 the lowest category
+                # 0 is now "no roof", 1, 2, 3, 4 are the pv categories
+                tmp_msk_raster_clip_array = tmp_msk_raster_clip_array + 1
+                # shift categories into visible range, 4 is the max possible value
+                # 0 is now "no roof", 63, 127, 191, 255 are the pv categories
+                tmp_msk_raster_clip_array = tmp_msk_raster_clip_array / 4 * 255
+
+            tmp_xmin, _, _, tmp_ymax =\
+                raster_map_file.GetGeoTransform()[0], raster_map_file.GetGeoTransform()[0]\
+                + raster_map_file.RasterXSize * raster_map_file.GetGeoTransform()[1], raster_map_file.GetGeoTransform()[3]\
+                + raster_map_file.RasterYSize * \
+                raster_map_file.GetGeoTransform(
+                )[5], raster_map_file.GetGeoTransform()[3]
+
+            # create a coco json file for this tile
+            coco_json = {
+                "info": {
+                    "description": "",
+                    "url": "",
+                    "version": "",
+                    "year": 2021,
+                    "contributor": "",
+                    "date_created": "",
+                },
+                "licenses": [],
+                "images": [],
+                "annotations": [],
+                "categories": [
+                    {
+                        "id": 0,
+                        "name": "pv1",
+                        "supercategory": "roof",
+                    },
+                    {
+                        "id": 1,
+                        "name": "pv2",
+                        "supercategory": "roof",
+                    },
+                    {
+                        "id": 2,
+                        "name": "pv3",
+                        "supercategory": "roof",
+                    },
+                    {
+                        "id": 3,
+                        "name": "pv4",
+                        "supercategory": "roof",
+                    },
+                ],
+            }
 
             # shift a window of tile_size over the rasters and save the tiles
             # as png images - if self.raster_tile_size is smaller than the
             # raster extent, a part of the map is omited
-            for x_coord in range(0, self.raster_tile_size, tile_size):
-                for y_coord in range(0, self.raster_tile_size, tile_size):
-                    sub_array_msk = tmp_msk_raster_clip_array[
-                        x_coord: (x_coord + tile_size),
-                        y_coord: (y_coord + tile_size),
-                    ]
-                    # same msk tiles as greyscale
-                    im = Image.fromarray(sub_array_msk).convert("L")
-                    im.save(os.path.join(
-                        tile_path, subfolder_fn, f"{map_tile_name}_{x_coord}_{y_coord}_msk.png"
-                    ))
+            for y_coord in range(0, self.raster_tile_size, tile_size):
+                for x_coord in range(0, self.raster_tile_size, tile_size):
 
-                    sub_array_map = raster_map_array[
-                        :,
-                        x_coord:x_coord + tile_size,
-                        y_coord:y_coord + tile_size,
-                    ]
-                    # save map tiles as channel-last RGB
-                    sub_array_map = sub_array_map.transpose(1, 2, 0)
-                    im = Image.fromarray(sub_array_map).convert("RGB")
-                    im.save(os.path.join(
-                        tile_path, subfolder_fn, f"{map_tile_name}_{x_coord}_{y_coord}_map.png"
-                    ))
+                    filename = f"{map_tile_name}_{y_coord}_{x_coord}"
+                    if not tile_coco_only:
+                        sub_array_msk = tmp_msk_raster_clip_array[
+                            y_coord: (y_coord + tile_size),
+                            x_coord: (x_coord + tile_size),
+                        ]
+                        # same msk tiles as greyscale
+                        im = Image.fromarray(sub_array_msk).convert("L")
+                        im.save(os.path.join(
+                            tile_path, subfolder_fn, f"{filename}_msk.png"
+                        ))
 
-                    # keep track of the number of tiles created
+                        sub_array_map = raster_map_array[
+                            :,
+                            y_coord:y_coord + tile_size,
+                            x_coord:x_coord + tile_size,
+                        ]
+                        # save map tiles as channel-last RGB
+                        sub_array_map = sub_array_map.transpose(1, 2, 0)
+                        im = Image.fromarray(sub_array_map).convert("RGB")
+                        im.save(os.path.join(
+                            tile_path, subfolder_fn, f"{filename}_map.png"
+                        ))
+
+                    image_id = filename
+                    # append the image info to the coco json
+                    coco_json["images"].append({
+                        "file_name": f"{filename}_map.png",
+                        "height": tile_size,
+                        "width": tile_size,
+                        "id": image_id,
+                    })
+
+                    sub_vector_xmin = tmp_xmin + x_coord * pixel_size
+                    sub_vector_xmax = sub_vector_xmin + tile_size * pixel_size
+
+                    sub_vector_ymax = tmp_ymax - y_coord * pixel_size
+                    sub_vector_ymin = sub_vector_ymax - tile_size * pixel_size
+
+                    sub_vector = shapefile.cx[
+                        sub_vector_xmin:sub_vector_xmax,
+                        sub_vector_ymin:sub_vector_ymax,
+                    ]
+
+                    # iterate over the polygons in the goepands vector
+                    for _, row in sub_vector.iterrows():
+                        polygon = row
+
+                        # get the extens of the current tile
+                        x_min_extent = tmp_xmin + x_coord * pixel_size
+                        x_max_extent = x_min_extent + tile_size * pixel_size
+
+                        y_min_extent = tmp_ymax - y_coord * pixel_size
+                        y_max_extent = y_min_extent - tile_size * pixel_size
+
+                        # get the category for this polygon
+                        category = int(polygon["eig_kl_pv"])
+                        # get the segmentation for this polygon
+                        segmentation_geo = polygon["geometry"].exterior.coords
+
+                        for x, y in segmentation_geo:
+                            x = x
+                            y = sub_vector_ymax - y
+
+                        full_extent_poly = box(
+                            x_min_extent, y_min_extent, x_max_extent, y_max_extent
+                        )
+
+                        segmentation_clipped = Polygon(segmentation_geo)\
+                            .intersection(full_extent_poly)
+
+                        bounds = segmentation_clipped.bounds
+
+                        if bounds == ():
+                            continue
+
+                        bbox_clipped = [
+                            bounds[0],
+                            bounds[1],
+                            bounds[2] - bounds[0],
+                            bounds[1] - bounds[3],
+                        ]
+
+                        # convert the segmentation to coco format
+                        segmentations = []
+
+                        if segmentation_clipped.geom_type == "MultiPolygon":
+                            for segementation_sub in segmentation_clipped.geoms:
+                                segmentation = []
+                                for x, y in segementation_sub.exterior.coords:
+                                    x_pix = (x - sub_vector_xmin) / \
+                                        pixel_size
+                                    y_pix = tile_size - (y - sub_vector_ymin) / \
+                                        pixel_size
+                                    segmentation += x_pix, y_pix
+                                segmentations.append(segmentation)
+
+                        else:
+                            segmentation = []
+                            for x, y in segmentation_clipped.exterior.coords:
+                                x_pix = (x - sub_vector_xmin) / \
+                                    pixel_size
+                                y_pix = tile_size - (y - sub_vector_ymin) / \
+                                    pixel_size
+                                segmentation += x_pix, y_pix
+                            segmentations = [segmentation]
+
+                        bbox = [
+                            (bbox_clipped[0] - sub_vector_xmin) / pixel_size,
+                            tile_size -
+                            (bbox_clipped[1] - sub_vector_ymin) / pixel_size,
+                            bbox_clipped[2] / pixel_size,
+                            bbox_clipped[3] / pixel_size,
+                        ]
+
+                        annotation_id = f"{len(coco_json['annotations'])}-{image_id}"
+                        coco_json["annotations"].append({
+                            "id": annotation_id,
+                            "image_id": image_id,
+                            "category_id": category,
+                            "segmentation": segmentations,
+                            "bbox": bbox,
+                        })
+
+                        # keep track of the number of tiles created
                     self.total_tiles += 1
+
+                    # save the coco json file
+                    with open(os.path.join(tile_path, subfolder_fn, f"{map_tile_name}.json"), "w") as f:
+                        json.dump(coco_json, f)
 
             print(f"{map_tile_name} tiles created.")
             # when testing, keep temporary files and stop after the first map tile
@@ -412,6 +595,88 @@ class DataSelector(DataHandler):
             input_path=self.extractor.tile_path,
             output_path=self.output_path,
         )
+
+        self._copy_coco_info(
+            file_lists,
+            input_path=self.extractor.tile_path,
+            output_path=self.output_path,
+        )
+
+    def _copy_coco_info(self, file_lists, input_path, output_path):
+
+        # get file names into a dict for easier processing
+        files = {}
+        folders = {}
+        folders["train"] = []
+        files["train"] = []
+        for fn_tuple in file_lists[0]:
+            files["train"].append(fn_tuple[0].split("/")[-1])
+            folders["train"].append(fn_tuple[0].split("/")[-2])
+
+        folders["test"] = []
+        files["test"] = []
+        for fn_tuple in file_lists[1]:
+            files["test"].append(fn_tuple[0].split("/")[-1])
+            folders["test"].append(fn_tuple[0].split("/")[-2])
+
+        for subfolder in ["train", "test"]:
+
+            coco_json = {
+                "info": {
+                    "description": "",
+                    "url": "",
+                    "version": "",
+                    "year": 2021,
+                    "contributor": "",
+                    "date_created": "",
+                },
+                "licenses": [],
+                "images": [],
+                "annotations": [],
+                "categories": [
+                    {
+                        "id": 0,
+                        "name": "pv1",
+                        "supercategory": "roof",
+                    },
+                    {
+                        "id": 1,
+                        "name": "pv2",
+                        "supercategory": "roof",
+                    },
+                    {
+                        "id": 2,
+                        "name": "pv3",
+                        "supercategory": "roof",
+                    },
+                    {
+                        "id": 3,
+                        "name": "pv4",
+                        "supercategory": "roof",
+                    },
+                ],
+            }
+
+            folder_names = []
+            for folder_name in folders[subfolder]:
+                if folder_name not in folder_names:
+                    folder_names.append(folder_name)
+            ids = []
+            for filename in folder_names:
+                all_coco = json.load(
+                    open(os.path.join(input_path, filename, filename+".json")))
+                for image in all_coco["images"]:
+                    if image["file_name"] in files[subfolder]:
+                        coco_json["images"].append(image)
+                        ids.append(image["id"])
+                ids = list(set(ids))
+                print(ids)
+                for annotations in all_coco["annotations"]:
+                    if annotations["image_id"] in ids:
+                        coco_json["annotations"].append(annotations)
+            with open(os.path.join(output_path, subfolder, "coco.json"), "w") as f:
+                json.dump(coco_json, f)
+
 
     def _verify_request_size(self) -> None:
         """Verify that the requested number of tiles can be met.
