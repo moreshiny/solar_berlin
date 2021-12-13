@@ -343,6 +343,19 @@ class DataExtractor(DataHandler):
                 break
 
 
+class DummyExtractor(DataExtractor):
+    """ A trusting dummy extractor that simply records what data it finds. """
+
+    def __init__(self, input_path):
+        tiles_found = glob.glob(
+            os.path.join(input_path, "**", "*_map.png"),
+            recursive=True
+        )
+        self.tile_size = int(os.path.basename(input_path).split("_")[-1])
+        self.total_tiles = len(tiles_found)
+        self.tile_path = input_path
+
+
 class DataSelector(DataHandler):
     """
     DataSelector handles the selection of data from a folder containing map
@@ -354,7 +367,9 @@ class DataSelector(DataHandler):
         """Initialize the DataSelector.
 
         Args:
-            extractor (DataExtractor): An extractor pointing to the input data.
+            extractor (DataExtractor or str): An extractor pointing to the input data.
+                Alternatively pass a string pointing to extracted tiles. This will
+                use the data pointed to (with a DummyExtractor).
             output_path (str): A path-like in which to store the selected tiles.
                 A subdirectory is created within this folder.
             train_n (int): Number of train tiles to select.
@@ -362,7 +377,13 @@ class DataSelector(DataHandler):
             random_seed (int, optional): Seed for shuffling the data. Defaults to 0.
 
         """
-        self.extractor = extractor
+
+        if type(extractor) is str:
+            print("Path was passed so using dummy extractor.")
+            self._verify_input_path(extractor)
+            self.extractor = DummyExtractor(extractor)
+        else:
+            self.extractor = extractor
 
         self.train_n = train_n
         self.test_n = test_n
@@ -370,7 +391,7 @@ class DataSelector(DataHandler):
 
         self._verify_superdirectory_path(output_path)
         output_subdir = self._subdir_name(
-            extractor.tile_size,
+            self.extractor.tile_size,
             train_n,
             test_n,
             random_seed
