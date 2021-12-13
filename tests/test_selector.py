@@ -31,11 +31,17 @@ class TestDataExtractor(unittest.TestCase):
         cls.input_path_invalid_vector = os.path.join(
             "data", "testing", "converted_invalid_test"
         )
+        cls.input_path_incomplete_extraction = os.path.join(
+            "data", "testing", "converted_coco_missing_test"
+        )
         cls.output_path = os.path.join(
             "data", "testing", "extracted"
         )
         cls.output_path_invalid_vector = os.path.join(
             "data", "testing", "extracted_invalid"
+        )
+        cls.output_path_incomplete_extraction = os.path.join(
+            "data", "testing", "extracted_coco_missing_test"
         )
         cls.tile_sizes = TILE_SIZES
 
@@ -232,7 +238,6 @@ class TestDataExtractor(unittest.TestCase):
         all_files_known.sort()
 
         # check that all files are identical
-        print(zip(all_files_new, all_files_known))
         self.assertEqual(len(all_files_new), len(all_files_known))
         for i in range(len(all_files_new)):
             self.assertTrue(filecmp.cmp(all_files_new[i], all_files_known[i]))
@@ -256,6 +261,62 @@ class TestDataExtractor(unittest.TestCase):
                 self.assertTrue(os.path.exists(os.path.join(
                     self.output_path, tile_subdir, raster_basename_wo_ext)))
 
+    def test_data_extractor_creates_expected_coco_json(self):
+        coco_new_fns = []
+        coco_known_fns = []
+        for tile_size in self.tile_sizes:
+            coco_new_fns += glob.glob(
+                os.path.join(self.output_path,
+                             self._tile_subdir(tile_size), "**", "*.json")
+            )
+            coco_known_fns += glob.glob(
+                os.path.join(self.output_path + "_test",
+                             self._tile_subdir(tile_size), "**", "*.json")
+            )
+        coco_new_fns.sort()
+        coco_known_fns.sort()
+
+        # check that all files are identical
+        self.assertEqual(len(coco_new_fns), len(coco_known_fns))
+        for i in range(len(coco_new_fns)):
+            self.assertTrue(filecmp.cmp(coco_new_fns[i], coco_known_fns[i]))
+
+    def test_data_extractor_creates_missing_coco_json_existing_tiles(self):
+
+        coco_to_clean = glob.glob(os.path.join(
+            self.output_path_incomplete_extraction, "**", "*.json"), recursive=True)
+
+        for coco_fn in coco_to_clean:
+            os.remove(coco_fn)
+
+        temp_folders = glob.glob(os.path.join(
+            self.output_path_incomplete_extraction, "**", "temp"), recursive=True)
+
+        for temp_folder in temp_folders:
+            shutil.rmtree(temp_folder)
+
+        _ = DataExtractor(
+            input_path=self.input_path,
+            output_path=self.output_path_incomplete_extraction,
+            tile_size=250,
+            testing=True,  # limit input to 16 tiles for faster testing
+            lossy=True,
+        )
+        coco_new_fns = glob.glob(
+            os.path.join(self.output_path_incomplete_extraction,
+                         self._tile_subdir(250), "**", "*.json")
+        )
+
+        coco_known_fns = glob.glob(
+            os.path.join(self.output_path + "_test",
+                         self._tile_subdir(250), "**", "*.json")
+        )
+        coco_new_fns.sort()
+        coco_known_fns.sort()
+        # check that all files are identical
+        self.assertEqual(len(coco_new_fns), len(coco_known_fns))
+        for i in range(len(coco_new_fns)):
+            self.assertTrue(filecmp.cmp(coco_new_fns[i], coco_known_fns[i]))
 
 class TestDataSelector(unittest.TestCase):
 
@@ -390,7 +451,8 @@ class TestDataSelector(unittest.TestCase):
             for image_fn in train_fns + test_fns:
                 pattern_msk = "^.*-dop20[0-9_]*_msk.png$"
                 pattern_map = "^.*-dop20[0-9_]*_map.png$"
-
+                if ".json" in image_fn:
+                    continue
                 if "_map.png" in image_fn:
                     self.assertRegex(image_fn, pattern_map)
                 else:
