@@ -34,6 +34,7 @@ from roof.logging import Logs
 tensorflow.keras.backend.clear_session()
 
 # parameters of the model.
+<<<<<<< HEAD
 output_classes = 5  # number of categorical classes.
 input_shape = (512, 512, 3)  # input size
 epochs = 35
@@ -57,14 +58,28 @@ COMMENT = "Tested on the clean 8000, first run with erosion/dilation,\n\
 # Path to data
 PATH_TRAIN = "data/bin_clean_8000/train"
 PATH_TEST = "data/bin_clean_8000/test"
+=======
+OUTPUT_CLASSES = 5  # number of categorical classes. for 2 classes = 1.
+INPUT_SHAPE = (512, 512, 3)  # input size
+EPOCHS = 35
+
+BATCH_SIZE = 8  # batchsize
+# Path to the data large multiclass dataset
+# path_train = "data/selected_tiles_512_4000_1000_42_partial/train"
+# path_test = "data/selected_tiles_512_4000_1000_42_partial/test"
+
+# Path to the data small multiclass dataset
+# path_train = "data/selected_512_multiclass/selected_tiles_512_100_20_42/train"
+# path_test = "data/selected_512_multiclass/selected_tiles_512_100_20_42/test"
+>>>>>>> ff249c3 (updated requirements with pandas)
 
 # path to the small mono class large dataset
 # path_train = "data/small_large/train"
 # path_test = "data/small_large/test"
 
-#Path to data for Daniel local machine: Half dataset
-path_train="data/selected_tiles_512_4000_1000_42_cleaned/train"
-path_test="data/selected_tiles_512_4000_1000_42_cleaned/test"
+# Path to data for Daniel local machine: Half dataset
+PATH_TRAIN = "data/cleaned_4000_extract/train"
+PATH_TEST = "data/cleaned_4000_extract/test"
 
 
 # calling the model.
@@ -72,13 +87,25 @@ model = Unet(
     output_classes=OUTPUT_CLASSES,
     input_shape=INPUT_SHAPE,
     drop_out=True,
+<<<<<<< HEAD
     drop_out_rate={"512": 0.275, "256": 0.3, "128": 0.325, "64": 0.35},
     multiclass=bool(output_classes - 1),
+=======
+    drop_out_rate={"512": 0.3, "256": 0.35, "128": 0.4, "64": 0.45},
+    multiclass=bool(OUTPUT_CLASSES - 1),
+>>>>>>> ff249c3 (updated requirements with pandas)
 )
 
 # Starting the logs
 
 log = Logs()
+<<<<<<< HEAD
+=======
+COMMENT = "Full large dataset, with the 20pc highst loss cleaned with the \n\
+    with the latest model, multiclassification problem ,\n\
+    standard learning rate."
+
+>>>>>>> ff249c3 (updated requirements with pandas)
 log.main_log(
     comment=COMMENT,
     model_config=model.get_config(),
@@ -98,11 +125,14 @@ mae = tensorflow.keras.losses.MeanSquaredError(name="mae")
 recall = tensorflow.keras.metrics.Recall(name="recall")
 precision = tensorflow.keras.metrics.Precision(name="precision")
 
+<<<<<<< HEAD
 tp = tensorflow.keras.metrics.TruePositives()
 fn = tensorflow.keras.metrics.FalseNegatives()
 fp = tensorflow.keras.metrics.FalsePositives()
 
 
+=======
+>>>>>>> ff249c3 (updated requirements with pandas)
 if OUTPUT_CLASSES > 1:
     MULTICLASS = True
     loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
@@ -140,14 +170,16 @@ dl_train = DataLoader(
 )
 
 dl_test = DataLoader(
-    path_test,
-    batch_size=batch_size,
-    input_shape=input_shape,
+    PATH_TEST,
+    batch_size=BATCH_SIZE,
+    input_shape=INPUT_SHAPE,
+    legacy_mode=False,
+    multiclass=MULTICLASS,
 )
 
 
-dl_train.load(buffer_size = 500)
-dl_test.load(shuffle = False)
+dl_train.load(buffer_size=500)
+dl_test.load(shuffle=False)
 
 dl_test = DataLoader(
     PATH_TEST,
@@ -176,7 +208,7 @@ tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
     write_graph=True,
 )
 
-patience = 7
+PATIENCE = 7
 # Parameters for early stopping
 early_stopping = tensorflow.keras.callbacks.EarlyStopping(
     monitor="val_loss",
@@ -187,8 +219,8 @@ early_stopping = tensorflow.keras.callbacks.EarlyStopping(
 print("callbacks defined")
 
 # compiling the model
-learning_rate = 0.001
-opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate)
+LEARNING_RATE = 0.001
+opt = tensorflow.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
 
 
 model.compile(optimizer=opt, loss=loss, metrics=metrics)
@@ -228,7 +260,11 @@ log.local_log(
     metrics=accuracies,
 )
 
+<<<<<<< HEAD
 num_batches = 3  # number of batches
+=======
+NUM_BATCHES = 5  # number of batches
+>>>>>>> ff249c3 (updated requirements with pandas)
 log.show_predictions(
     dataset=dl_test.dataset,
     model=model,
@@ -236,5 +272,61 @@ log.show_predictions(
     multiclass=MULTICLASS,
 )
 
+<<<<<<< HEAD
+=======
+# print("first fitting round")
+# tensorflow.keras.backend.clear_session()
+# print("Starting fine tuning")
+
+# model_dict = model.get_config()
+
+# model_dict["fine_tune_at"] = 4
+# model_dict["upstack_trainable"] = True
+
+#  Second you create the model from the configuration dictionary. This creates a new models with the same layer configuration
+# best_model = Unet.from_config(model_dict)
+# # Finally, you load the weights in the new models.
+# # best_model.load_weights(log.checkpoint_filepath)
+
+# opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate / 10)
+
+# best_model._down_stack.compile(
+#     optimizer=opt,
+#     loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
+#     metrics=[
+#         "accuracy",
+#         tensorflow.keras.metrics.Recall(name="recall"),
+#         tensorflow.keras.metrics.Precision(name="precision"),
+#     ],
+# )
+
+
+# history = best_model._down_stack.fit(
+#     train_batches,
+#     epochs=epochs,
+#     steps_per_epoch=steps_per_epoch,
+#     validation_steps=validation_steps,
+#     validation_data=test_batches,
+#     callbacks=[
+#         model_checkpoint_callback,
+#         tensorboard_callback,
+#         early_stopping,
+#     ],
+# )
+
+# # I am explaining how to load the model's weight for a custom model.
+# # First you get the overwritten configuration of the custim model.
+# model_dict = best_model.get_config()
+
+# # Second you create the model from the configuration dictionary. This creates a new models with the same layer configuration
+# best_best_model = Unet.from_config(model_dict)
+# # Finally, you load the weights in the new models.
+# best_best_model.load_weights(log.checkpoint_filepath)
+
+
+# # logging examples of prediction on the test data sets.
+# number of batches used to display sample predictions.
+
+>>>>>>> ff249c3 (updated requirements with pandas)
 
 tensorflow.keras.backend.clear_session()
