@@ -23,14 +23,14 @@ PATH_CHECKPOINT = "logs/12_14_2021_19_30_44/checkpoint.ckpt"
 model.load_weights(PATH_CHECKPOINT)
 
 # Define the path of the folder containing the images to sort
-PATH_TO_CLEAN = "data/cleaned_4000_extract/test"
+PATH_TO_CLEAN = "data/bin_clean_8000/test"
 
 
 # call the cleaning class.
 cleaning = DataCleaning(
     path_to_clean=PATH_TO_CLEAN,
     input_shape=(512, 512, 3),
-    #model=model,
+    model=model,
 )
 
 # Perform the cleaning. The proportion parameter signals the proportion of samples to study.

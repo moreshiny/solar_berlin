@@ -34,31 +34,6 @@ from roof.logging import Logs
 tensorflow.keras.backend.clear_session()
 
 # parameters of the model.
-<<<<<<< HEAD
-output_classes = 5  # number of categorical classes.
-input_shape = (512, 512, 3)  # input size
-epochs = 35
-
-# parameters of the model.
-OUTPUT_CLASSES = 5  # number of categorical classes. For 2 classes = 1.
-INPUT_SHAPE = (512, 512, 3)  # input size
-EPOCHS = 35
-PATIENCE = 7
-
-BATCH_SIZE = 8  # batchsize
-
-NUM_BATCHES = 10  # number of batches
-
-
-COMMENT = "Tested on the clean 8000, first run with erosion/dilation,\n\
-    standard learning rate, best dropout.\n\
-    Testing as a multiclassifier. First test of,\n\
-    erosion and dilation.   "
-
-# Path to data
-PATH_TRAIN = "data/bin_clean_8000/train"
-PATH_TEST = "data/bin_clean_8000/test"
-=======
 OUTPUT_CLASSES = 5  # number of categorical classes. for 2 classes = 1.
 INPUT_SHAPE = (512, 512, 3)  # input size
 EPOCHS = 35
@@ -71,7 +46,6 @@ BATCH_SIZE = 8  # batchsize
 # Path to the data small multiclass dataset
 # path_train = "data/selected_512_multiclass/selected_tiles_512_100_20_42/train"
 # path_test = "data/selected_512_multiclass/selected_tiles_512_100_20_42/test"
->>>>>>> ff249c3 (updated requirements with pandas)
 
 # path to the small mono class large dataset
 # path_train = "data/small_large/train"
@@ -87,25 +61,17 @@ model = Unet(
     output_classes=OUTPUT_CLASSES,
     input_shape=INPUT_SHAPE,
     drop_out=True,
-<<<<<<< HEAD
-    drop_out_rate={"512": 0.275, "256": 0.3, "128": 0.325, "64": 0.35},
-    multiclass=bool(output_classes - 1),
-=======
     drop_out_rate={"512": 0.3, "256": 0.35, "128": 0.4, "64": 0.45},
     multiclass=bool(OUTPUT_CLASSES - 1),
->>>>>>> ff249c3 (updated requirements with pandas)
 )
 
 # Starting the logs
 
 log = Logs()
-<<<<<<< HEAD
-=======
 COMMENT = "Full large dataset, with the 20pc highst loss cleaned with the \n\
     with the latest model, multiclassification problem ,\n\
     standard learning rate."
 
->>>>>>> ff249c3 (updated requirements with pandas)
 log.main_log(
     comment=COMMENT,
     model_config=model.get_config(),
@@ -125,14 +91,6 @@ mae = tensorflow.keras.losses.MeanSquaredError(name="mae")
 recall = tensorflow.keras.metrics.Recall(name="recall")
 precision = tensorflow.keras.metrics.Precision(name="precision")
 
-<<<<<<< HEAD
-tp = tensorflow.keras.metrics.TruePositives()
-fn = tensorflow.keras.metrics.FalseNegatives()
-fp = tensorflow.keras.metrics.FalsePositives()
-
-
-=======
->>>>>>> ff249c3 (updated requirements with pandas)
 if OUTPUT_CLASSES > 1:
     MULTICLASS = True
     loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
@@ -260,11 +218,7 @@ log.local_log(
     metrics=accuracies,
 )
 
-<<<<<<< HEAD
-num_batches = 3  # number of batches
-=======
 NUM_BATCHES = 5  # number of batches
->>>>>>> ff249c3 (updated requirements with pandas)
 log.show_predictions(
     dataset=dl_test.dataset,
     model=model,
@@ -272,8 +226,6 @@ log.show_predictions(
     multiclass=MULTICLASS,
 )
 
-<<<<<<< HEAD
-=======
 # print("first fitting round")
 # tensorflow.keras.backend.clear_session()
 # print("Starting fine tuning")
@@ -327,6 +279,5 @@ log.show_predictions(
 # # logging examples of prediction on the test data sets.
 # number of batches used to display sample predictions.
 
->>>>>>> ff249c3 (updated requirements with pandas)
 
 tensorflow.keras.backend.clear_session()
