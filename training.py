@@ -1,8 +1,10 @@
 # For saving models, refere to
 # https://www.tensorflow.org/guide/keras/save_and_serialize
+import numpy as np
 import tensorflow
 
 # import tensorflow_addons as tfa
+
 from roof.dataloader import DataLoader
 from class_unet_resnet101v2 import Unet
 from logging_class import Logs
@@ -13,8 +15,22 @@ tensorflow.keras.backend.clear_session()
 OUTPUT_CLASSES = 5  # number of categorical classes. for 2 classes = 1.
 INPUT_SHAPE = (512, 512, 3)  # input size
 EPOCHS = 35
+PATIENCE = 7
 
 BATCH_SIZE = 8  # batchsize
+
+NUM_BATCHES = 10  # number of batches
+
+
+COMMENT = "Full large dataset, with the 30pc highst loss cleaned with the \n\
+    with the latest model, and the 25pc empty frame discarded, multiclassification\n\
+    problem, standard learning rate. "
+
+# Path to data 
+PATH_TRAIN = "data/bin_clean_4000/train"
+PATH_TEST = "data/bin_clean_4000/test"
+
+
 # Path to the data large multiclass dataset
 # path_train = "data/selected_tiles_512_4000_1000_42_partial/train"
 # path_test = "data/selected_tiles_512_4000_1000_42_partial/test"
@@ -27,9 +43,6 @@ BATCH_SIZE = 8  # batchsize
 # path_train = "data/small_large/train"
 # path_test = "data/small_large/test"
 
-# Path to data for Daniel local machine: Half dataset
-PATH_TRAIN = "data/cleaned_4000_extract/train"
-PATH_TEST = "data/cleaned_4000_extract/test"
 
 
 # calling the model.
@@ -44,9 +57,6 @@ model = Unet(
 # Starting the logs
 
 log = Logs()
-COMMENT = "Full large dataset, with the 20pc highst loss cleaned with the \n\
-    with the latest model, multiclassification problem ,\n\
-    standard learning rate."
 
 log.main_log(
     comment=COMMENT,
@@ -138,7 +148,7 @@ tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
     write_graph=True,
 )
 
-PATIENCE = 7
+
 # Parameters for early stopping
 early_stopping = tensorflow.keras.callbacks.EarlyStopping(
     monitor="val_loss",
@@ -190,7 +200,7 @@ log.local_log(
     metrics=accuracies,
 )
 
-NUM_BATCHES = 5  # number of batches
+
 log.show_predictions(
     dataset=dl_test.dataset,
     model=model,
@@ -250,6 +260,28 @@ log.show_predictions(
 
 # # logging examples of prediction on the test data sets.
 # number of batches used to display sample predictions.
+accuracy = tensorflow.keras.metrics.BinaryAccuracy()
+precision = tensorflow.keras.metrics.Precision()
+recall = tensorflow.keras.metrics.Recall()
+
+iterator = iter(dl_test.dataset)
+
+for batch_image, batch_target in iterator:
+    y_pred_prob = model.predict(batch_image)
+    y_pred_multi = np.argmax(y_pred_prob, axis=-1)
+    y_pred_multi = y_pred_multi.squeeze()
+    y_true_multi = batch_target.numpy()
+    y_pred_one = (y_pred_multi > 0).astype(int)
+    y_true_one = (y_true_multi > 0).astype(int)
+    y_true_one = y_true_one.squeeze()
+    accuracy.update_state(y_true_one, y_pred_one)
+    precision.update_state(y_true_one, y_pred_one)
+    recall.update_state(y_true_one, y_pred_one)
+
+print("For the binary classifier, induced by the categorical classifier:")
+print("Binary accuracy:", accuracy.result().numpy())
+print("Precision", precision.result().numpy())
+print("Recall", recall.result().numpy())
 
 
 tensorflow.keras.backend.clear_session()
