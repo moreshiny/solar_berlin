@@ -44,6 +44,9 @@ class DataCleaning:
         self.bad_images = []
         self.bad_masks = []
         self._scce = tensorflow.keras.losses.SparseCategoricalCrossentropy()
+        self._binary_crossentropy = tensorflow.keras.losses.BinaryCrossentropy(
+            from_logits=False
+        )
         self._losses = []
         self._output_path = ""
         self._keep_list = []
@@ -108,42 +111,74 @@ class DataCleaning:
                 correct_filenames.append(path)
         return correct_filenames
 
-    def _logging_losses(self):
-        """Logs the imqges/mqsk loss qccording to the model."""
+    def _logging_losses(self, proportion_empty: int = 0.25):
+        """Logs the imqges/mqsk loss qccording to the model.
+        Args:
+            proportion_empty: an integer for selecting images whose masks are at least
+            1 - proportion_empty empty. The corresponding images will be automatically
+            discarded.
+
+        """
 
         for image_path, mask_path in zip(self._input_paths, self._target_paths):
             img = Image.open(image_path)
             img = img.convert("RGB")
-            img = np.array(img)
+            img = np.array(img) / 255
             img = np.expand_dims(img, axis=0)
             mask = Image.open(mask_path)
-            mask = mask.convert("1")
             mask = np.array(mask)
             pred = self._model.predict(img)
-            loss = self._scce(mask, pred).numpy()
-            list_df = [image_path, mask_path, loss]
+            pred_bin = 1 - pred[0, :, :,0]
+            pred_bin = pred_bin.squeeze()
+            mask_bin = (mask > 0).astype(int)
+            mask_bin = mask_bin.squeeze()
+            cat_loss = self._scce(mask, pred).numpy()
+            bin_loss = self._binary_crossentropy(mask_bin, pred_bin).numpy()
+            if (
+                np.sum(mask_bin)
+                < proportion_empty * self._input_shape[0] * self._input_shape[1]
+            ):
+                discard = 1
+                read = 1
+            else:
+                discard = 0
+                read = 0
+            list_df = [image_path, mask_path, cat_loss, bin_loss, discard, read]
             self._losses.append(list_df)
 
-        self._losses = pd.DataFrame(
-            self._losses, columns=["path_img", "path_mask", "loss"]
-        )
+        columns = ["path_img", "path_mask", "cat_loss", "bin_loss", "discard", "read"]
+        self._losses = pd.DataFrame(self._losses, columns=columns)
 
-    def cleaning(self, proportion: float = 0.2):
+
+
+    def cleaning(self, proportion: float = 0.2, proportion_empty: int = 0.25):
         """Perform the cleaning according to the losses.
         Args:
         proportion: a float indicating the proportion of element we want to consider for cleaning.
+        proportion_empty: an integer for selecting images whose masks are at least
+                1 - proportion_empty empty. The corresponding images will be automatically
+                discarded.
 
         """
 
-        self._logging_losses()
+        self._logging_losses(proportion_empty=proportion_empty)
         n_predict = self._losses.shape[0]
         n_discard = np.ceil(proportion * n_predict).astype(int)
-        self._discard_df = self._losses.nlargest(n_discard, "loss")
-        self._discard_df["read"] = 0
-        self._discard_df["discard"] = 0
+        self._discard_df = self._losses.nlargest(n_discard, "bin_loss")
         self._discard_df.to_csv(
             self._path_to_clean + "/high_loss_elements.csv", index=False, header=True
         )
+        
+
+        print("Number of images:", self._losses.shape[0])
+        print("Number of images of high losses:", self._discard_df.shape[0])
+        n_presorted = np.sum(self._discard_df["discard"])
+        print(
+            f"Automatically dicarded based on {proportion_empty}pc empty mask:",
+            n_presorted,
+        )
+        print("Images to sort automatically:", self._discard_df.shape[0] - n_presorted)
+
 
         self.bad_images = list(self._discard_df["path_img"])
         self.bad_masks = list(self._discard_df["path_mask"])
@@ -211,7 +246,7 @@ class DataCleaning:
 
         if not os.path.exists(self._path_to_clean + "/high_loss_elements.csv"):
 
-            self._discard_df = pd.DataFrame(columns=["path_img", "path_mask", "loss"])
+            self._discard_df = pd.DataFrame(columns=["path_img", "path_mask"])
             self._discard_df["path_img"] = self._input_paths
             self._discard_df["path_mask"] = self._target_paths
             self._discard_df["discard"] = 0
@@ -225,6 +260,9 @@ class DataCleaning:
         image_path = ""
         target_path = ""
         break_out_flag = True
+
+        to_go = self._discard_df.shape[0] - np.sum(self._discard_df["discard"])
+
 
         def onpress(event):
             nonlocal image_path, target_path, break_out_flag
@@ -247,6 +285,7 @@ class DataCleaning:
         mask_unread = self._discard_df["read"] == 0
         read_path = self._discard_df.loc[mask_unread].loc[:, ["path_img", "path_mask"]]
 
+        counter = 0
         for image_path, target_path in zip(
             read_path["path_img"], read_path["path_mask"]
         ):
@@ -260,18 +299,13 @@ class DataCleaning:
             axs[0].axis("off")
             axs[1].imshow(mask)
             axs[1].axis("off")
-            plt.suptitle("Press k to keep, d to discard, q to quit",fontsize=20)
+            plt.suptitle(f"Press k to keep, d to discard, q to quit; Remaining images: {to_go - counter}", fontsize=20)
             plt.show()
             if break_out_flag:
                 break
-
         self._discard_df.to_csv(
             self._path_to_clean + "/high_loss_elements.csv", index=False, header=True
         )
-
         mask_discarded = self._discard_df["discard"] == 1
-        self.discard_list = self._discard_df.loc[mask_discarded].loc[
-            :, ["path_img", "path_mask"]
-        ]
-
+        self.discard_list = self._discard_df.loc[mask_discarded,["path_img", "path_mask"]]
         return self.discard_list
