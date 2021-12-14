@@ -1,5 +1,4 @@
-from detectron2.evaluation import COCOEvaluator
-
+import random
 import datetime
 import cv2
 import matplotlib.pyplot as plt
@@ -9,18 +8,21 @@ from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 from detectron2.data.datasets import register_coco_instances
 from detectron2.data import DatasetCatalog
+from detectron2.evaluation import COCOEvaluator
 
 from detectron2.engine import DefaultTrainer
 from detectron2 import model_zoo
 
 import os
 
+random.seed(42)
+
 data_dir = "data/"
 
 register_coco_instances("my_dataset_train", {},
-                        "data/selected_coco_sample/selected_tiles_512_2000_500_42/train/coco.json", "data/selected_coco_sample/selected_tiles_512_2000_500_42/train")
+                        "data/selected/selected_tiles_512_40000_10000_42/train/coco.json", "data/selected/selected_tiles_512_40000_10000_42/train")
 register_coco_instances("my_dataset_val", {},
-                        "data/selected_coco_sample/selected_tiles_512_2000_500_42/test/coco.json", "data/selected_coco_sample/selected_tiles_512_2000_500_42/test")
+                        "data/selected/selected_tiles_512_40000_10000_42/test/coco.json", "data/selected/selected_tiles_512_40000_10000_42/test")
 
 cfg = get_cfg()
 cfg.merge_from_file(model_zoo.get_config_file(
@@ -30,8 +32,8 @@ cfg.DATASETS.TRAIN = ("my_dataset_train",)
 cfg.DATASETS.TEST = ("my_dataset_val",)
 
 # n_samples divided by batch_size so once per epoch
-n_samples = 2000
-cfg.SOLVER.IMS_PER_BATCH = 2
+n_samples = 40000
+cfg.SOLVER.IMS_PER_BATCH = 64
 cfg.TEST.EVAL_PERIOD = n_samples // cfg.SOLVER.IMS_PER_BATCH
 
 cfg.DATALOADER.NUM_WORKERS = 1
@@ -41,9 +43,9 @@ cfg.SOLVER.BASE_LR = 0.001  # default LR
 
 # epochs is MAX_ITER * BATCH_SIZE / TOTAL_NUM_IMAGES
 # MAX_ITER = epochs * TOTAL_NUM_IMAGES / BATCH_SIZE
-epochs = 8
+epochs = 1
 cfg.SOLVER.MAX_ITER = epochs * n_samples // cfg.SOLVER.IMS_PER_BATCH
-cfg.SOLVER.MAX_ITER = 10
+# cfg.SOLVER.MAX_ITER = 10
 cfg.SOLVER.STEPS = []        # do not decay learning rate
 cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512  # default
 
@@ -120,9 +122,7 @@ predictor = DefaultPredictor(cfg)
 val_metadata = MetadataCatalog.get("my_dataset_val")
 dict_val = DatasetCatalog.get("my_dataset_val")
 
-for i, image in enumerate(dict_val):
-    if i > 40:
-        break
+for image in random.sample(dict_val, 100):
     im = cv2.imread(image['file_name'])
     outputs = predictor(im)
     vis1 = Visualizer(
@@ -148,4 +148,5 @@ for i, image in enumerate(dict_val):
         plt.imshow(display_list[j].get_image())
         plt.axis("off")
 
-    plt.savefig(os.path.join(cfg.OUTPUT_DIR, f"prediction-{i}.png"))
+    plt.savefig(os.path.join(cfg.OUTPUT_DIR,
+                f"prediction-{image['file_name']}"))
