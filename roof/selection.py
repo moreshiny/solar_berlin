@@ -471,16 +471,20 @@ class DataExtractor(DataHandler):
 
                         # convert the segmentation to coco format
                         segmentations = []
+                        area = 0
+                        if segmentation_clipped.geom_type == "Point" or segmentation_clipped.geom_type == "LineString":
+                            continue
 
                         if segmentation_clipped.geom_type == "MultiPolygon":
-                            for segementation_sub in segmentation_clipped.geoms:
+                            for segmentation_sub in segmentation_clipped.geoms:
                                 segmentation = []
-                                for x, y in segementation_sub.exterior.coords:
+                                for x, y in segmentation_sub.exterior.coords:
                                     x_pix = (x - sub_vector_xmin) / \
                                         pixel_size
                                     y_pix = tile_size - (y - sub_vector_ymin) / \
                                         pixel_size
                                     segmentation += x_pix, y_pix
+                                area += segmentation_sub.area / pixel_size ** 2
                                 segmentations.append(segmentation)
 
                         else:
@@ -491,6 +495,7 @@ class DataExtractor(DataHandler):
                                 y_pix = tile_size - (y - sub_vector_ymin) / \
                                     pixel_size
                                 segmentation += x_pix, y_pix
+                            area = segmentation_clipped.area / pixel_size ** 2
                             segmentations = [segmentation]
 
                         bbox = [
@@ -501,13 +506,15 @@ class DataExtractor(DataHandler):
                             bbox_clipped[3] / pixel_size,
                         ]
 
-                        annotation_id = f"{len(coco_json['annotations'])}-{image_id}"
+                        annotation_id = f"{len(coco_json['annotations'])}"
                         coco_json["annotations"].append({
                             "id": annotation_id,
                             "image_id": image_id,
                             "category_id": category,
                             "segmentation": segmentations,
                             "bbox": bbox,
+                            "iscrowd": 0,
+                            "area": area,
                         })
 
                         # keep track of the number of tiles created
@@ -671,9 +678,10 @@ class DataSelector(DataHandler):
                         ids.append(image["id"])
                 ids = list(set(ids))
                 print(ids)
-                for annotations in all_coco["annotations"]:
-                    if annotations["image_id"] in ids:
-                        coco_json["annotations"].append(annotations)
+                for annotation in all_coco["annotations"]:
+                    if annotation["image_id"] in ids:
+                        annotation["id"] = len(coco_json["annotations"])
+                        coco_json["annotations"].append(annotation)
             with open(os.path.join(output_path, subfolder, "coco.json"), "w") as f:
                 json.dump(coco_json, f)
 
