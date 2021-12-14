@@ -23,20 +23,21 @@ PATH_CHECKPOINT = "Logs/12_09_2021_22_25_55/checkpoint.ckpt"
 model.load_weights(PATH_CHECKPOINT)
 
 # Define the path of the folder containing the images to sort
-PATH_TO_CLEAN = "data/cleaned_4000_extract/test"
+PATH_TO_CLEAN = "data/bin_clean_4000/test"
 
 
 # call the cleaning class.
 cleaning = DataCleaning(
     path_to_clean=PATH_TO_CLEAN,
     input_shape=(512, 512, 3),
-    #model=model,
+    model=model,
 )
 
 # Perform the cleaning. The proportion parameter signals the proportion of samples to study.
 # create a CSV containing the paths with the highest loss.
-#PROPORTION = 0.2
-#cleaning.cleaning(proportion=PROPORTION)
+PROPORTION = 0.3
+PROPORTION_EMPTY = 0.25
+cleaning.cleaning(proportion=PROPORTION, proportion_empty=PROPORTION_EMPTY)
 
 
 print("Cleaning Done")
@@ -57,11 +58,12 @@ print("Manual sorting Done")
 
 # Move the marked files to be discared from the `CSV file to a folder called by default dirty.
 
-cleaning.move_discarded_files(
+list_discarded = cleaning.move_discarded_files(
         output_folder_name = "dirty",
         delete_existing_output_path_no_warning=True,
     )
 
+print(list_discarded)
 print("File moved.")
 
 
