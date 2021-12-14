@@ -4,3 +4,5 @@ numpy
 pandas
 matplotlib
 gdal
+geopandas
+opencv-python
