@@ -1,3 +1,7 @@
+import shutil
+import glob
+import torch
+import numpy as np
 import random
 import datetime
 import cv2
@@ -117,8 +121,8 @@ os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 # cfg now already contains everything we've set previously. We changed it a little bit for inference:
 # path to the model we just trained
 cfg.MODEL.WEIGHTS = os.path.join(
-    cfg.OUTPUT_DIR, f"model_0014999.pth")
-cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7   # set a custom testing threshold
+    cfg.OUTPUT_DIR, f"model_0019999.pth")
+cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.0   # set a custom testing threshold
 
 predictor = DefaultPredictor(cfg)
 
@@ -126,27 +130,90 @@ val_metadata = MetadataCatalog.get("my_dataset_val")
 dict_val = DatasetCatalog.get("my_dataset_val")
 
 predictions_dir = os.path.join(cfg.OUTPUT_DIR, "predictions")
+bin_mask_dir = os.path.join(cfg.OUTPUT_DIR, "bin_masks")
 os.makedirs(predictions_dir, exist_ok=True)
+os.makedirs(bin_mask_dir, exist_ok=True)
 
-for image in random.sample(dict_val, 100):
-    im = cv2.imread(image['file_name'])
-    outputs = predictor(im)
-    vis1 = Visualizer(
-        im,
-        metadata=val_metadata,
-    )
-    out1 = vis1.draw_instance_predictions(outputs["instances"].to("cpu"))
-    cv2.imwrite(
-        f"{predictions_dir}/{image['image_id']}_predicted.png", out1.get_image())
+# for image in random.sample(dict_val, 100):
+#     im = cv2.imread(image['file_name'])
+#     outputs = predictor(im)
+#     vis1 = Visualizer(
+#         im,
+#         metadata=val_metadata,
+#     )
+#     out1 = vis1.draw_instance_predictions(outputs["instances"].to("cpu"))
+#     cv2.imwrite(
+#         f"{predictions_dir}/{image['image_id']}_predicted.png", out1.get_image())
 
-    im2 = cv2.imread(image['file_name'])
-    vis2 = Visualizer(
-        im2,
-        metadata=val_metadata,
-    )
-    out2 = vis2.draw_dataset_dict(image)
-    cv2.imwrite(
-        f"{predictions_dir}/{image['image_id']}_true.png", out2.get_image())
+#     im2 = cv2.imread(image['file_name'])
+#     vis2 = Visualizer(
+#         im2,
+#         metadata=val_metadata,
+#     )
+#     out2 = vis2.draw_dataset_dict(image)
+#     cv2.imwrite(
+#         f"{predictions_dir}/{image['image_id']}_true.png", out2.get_image())
+
+
+images = glob.glob(
+    "data/selected/selected_tiles_512_4000_1000_42/test/*_map.png")
+masks = glob.glob(
+    "data/selected/selected_tiles_512_4000_1000_42/test/*_msk.png")
+
+output_dir = "data/selected/selected_tiles_512_4000_1000_42_transparent/test/"
+
+os.makedirs(output_dir, exist_ok=True)
+
+
+# copy all masks to the output dir
+for mask in masks:
+    shutil.copy(mask, output_dir)
+
+for img_fn in images:
+
+    #for idx, image_dict in enumerate(random.sample(dict_val, 100)):
+    #img_fn = image
+    img = cv2.imread(img_fn)
+    # print(img_fn)
+    # print(img)
+    outputs = predictor(img)
+    scores = outputs["instances"].scores.tolist()
+    #print(scores)
+    mask = outputs['instances'].get('pred_masks')
+    print(mask.shape)
+    mask = mask.to('cpu')
+    num, h, w = mask.shape
+    #bin_mask = np.zeros((h, w))
+
+    # # convert to numpy and reverse the dimensions
+    # mask = mask.numpy()
+    # mask = np.transpose(mask, (1, 2, 0))
+    # mask = mask.astype(np.uint8)
+    # mask = mask * 255
+    # mask = mask.squeeze()
+    # print(mask.shape)
+    # print(mask)
+
+    mask = mask.type(torch.float32)
+
+    for i, score in enumerate(scores):
+        mask[i] = mask[i] * score
+
+    bin_mask = torch.sum(mask, dim=0)
+
+    # reduce value above 1 to one in bin_mask
+    bin_mask[bin_mask > 1] = 1
+    print(bin_mask.max())
+    bin_mask = (bin_mask + .5) * 170
+    bin_mask = np.expand_dims(bin_mask, axis=2)
+
+    out_img = np.concatenate([img, bin_mask], axis=2)
+
+    #print(out_img.shape)
+
+    # print(bin_mask.shape)
+    filename = os.path.join(output_dir, os.path.basename(img_fn))
+    cv2.imwrite(filename, out_img)
 
     # plt.figure(figsize=(200, 200))
     # title = ["Predicted", "Ground Truth"]
