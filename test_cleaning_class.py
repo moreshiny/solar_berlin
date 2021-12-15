@@ -17,13 +17,13 @@ model = Unet(
 )
 
 # Path to check point. This is a directory. Lead to an error when calling it.
-PATH_CHECKPOINT = "Logs/12_09_2021_22_25_55/checkpoint.ckpt"
+PATH_CHECKPOINT = "logs/12_14_2021_19_30_44/checkpoint.ckpt"
 
 # Loading the weights
 model.load_weights(PATH_CHECKPOINT)
 
 # Define the path of the folder containing the images to sort
-PATH_TO_CLEAN = "data/bin_clean_4000/test"
+PATH_TO_CLEAN = "data/clean _4000_discard_empty/test"
 
 
 # call the cleaning class.
@@ -53,15 +53,12 @@ discard_list = cleaning.manual_sorting()
 print("Manual sorting Done")
 
 
-
-
-
 # Move the marked files to be discared from the `CSV file to a folder called by default dirty.
 
 list_discarded = cleaning.move_discarded_files(
-        output_folder_name = "dirty",
-        delete_existing_output_path_no_warning=True,
-    )
+    output_folder_name="dirty",
+    delete_existing_output_path_no_warning=True,
+)
 
 print(list_discarded)
 print("File moved.")
