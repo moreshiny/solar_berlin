@@ -51,7 +51,6 @@ class DataCleaning:
         path_to_clean: str,
         input_shape: tuple = (512, 512, 3),
         model: tensorflow.keras.models = None,
-        multiclass: bool = False,
     ) -> None:
 <<<<<<< HEAD
         """ Class initialisation.
@@ -313,7 +312,7 @@ class DataCleaning:
             mask = Image.open(mask_path)
             mask = np.array(mask)
             pred = self._model.predict(img)
-            pred_bin = 1 - pred[0, :, :,0]
+            pred_bin = 1 - pred[0, :, :, 0]
             pred_bin = pred_bin.squeeze()
             mask_bin = (mask > 0).astype(int)
             mask_bin = mask_bin.squeeze()
@@ -334,36 +333,64 @@ class DataCleaning:
         columns = ["path_img", "path_mask", "cat_loss", "bin_loss", "discard", "read"]
         self._losses = pd.DataFrame(self._losses, columns=columns)
 
-
-
-    def cleaning(self, proportion: float = 0.2, proportion_empty: int = 0.25):
+    def cleaning(
+        self,
+        proportion: float = 0.2,
+        proportion_empty: float = 0.25,
+        proportion_discarded_empty: float = 0.75,
+    ):
         """Perform the cleaning according to the losses.
         Args:
         proportion: a float indicating the proportion of element we want to consider for cleaning.
         proportion_empty: an integer for selecting images whose masks are at least
                 1 - proportion_empty empty. The corresponding images will be automatically
                 discarded.
+        proportion_discarded_empty: a float inidicated the proportion of low-loss empty mask that
+                will be discared.
 
         """
 
         self._logging_losses(proportion_empty=proportion_empty)
         n_predict = self._losses.shape[0]
         n_discard = np.ceil(proportion * n_predict).astype(int)
+        n_discard_empty = np.floor((1 - proportion) * n_predict).astype(int)
+
+        complement_loss = self._losses.nsmallest(n_discard_empty, "bin_loss")
+        activated_pixels_list = []
+        for path_mask in complement_loss["path_mask"]:
+            mask = Image.open(path_mask)
+            mask = np.array(mask)
+            mask_bin = mask > 0
+            if np.sum(mask_bin) < 0.01 * self._input_shape[0] * self._input_shape[1]:
+                activated_pixels_list.append(True)
+            else:
+                activated_pixels_list.append(False)
+        complement_loss["activated_pixels"] = activated_pixels_list
+        mask_empty_mask = complement_loss["activated_pixels"] == True
+        empty_mask_df = complement_loss.loc[mask_empty_mask, :]
+        empty_mask_df = empty_mask_df.sample(frac=proportion_discarded_empty)
+        empty_mask_df.drop("activated_pixels", axis=1)
+        empty_mask_df.loc[:, "discard"] = 1
+
         self._discard_df = self._losses.nlargest(n_discard, "bin_loss")
+        self._discard_df.append(empty_mask_df)
+
         self._discard_df.to_csv(
             self._path_to_clean + "/high_loss_elements.csv", index=False, header=True
         )
-        
 
         print("Number of images:", self._losses.shape[0])
         print("Number of images of high losses:", self._discard_df.shape[0])
         n_presorted = np.sum(self._discard_df["discard"])
         print(
-            f"Automatically dicarded based on {proportion_empty}pc empty mask:",
+            f"High-Loss automatically dicarded based on {proportion_empty}pc empty mask:",
             n_presorted,
         )
-        print("Images to sort automatically:", self._discard_df.shape[0] - n_presorted)
-
+        print(
+            f"{proportion_discarded_empty}pc Low-loss automatically discarded based",
+            empty_mask_df.shape[0],
+        )
+        print("Images to sort manually:", self._discard_df.shape[0] - n_presorted)
 
         self.bad_images = list(self._discard_df["path_img"])
         self.bad_masks = list(self._discard_df["path_mask"])
@@ -621,7 +648,6 @@ class DataCleaning:
 
         to_go = self._discard_df.shape[0] - np.sum(self._discard_df["discard"])
 
-
         def onpress(event):
             nonlocal image_path, target_path, break_out_flag
             sys.stdout.flush()
@@ -647,6 +673,7 @@ class DataCleaning:
         for image_path, target_path in zip(
             read_path["path_img"], read_path["path_mask"]
         ):
+            counter += 1
             mask_path = self._discard_df["path_img"] == image_path
             self._discard_df.loc[mask_path, "read"] = 1
             img = Image.open(image_path)
@@ -657,7 +684,10 @@ class DataCleaning:
             axs[0].axis("off")
             axs[1].imshow(mask)
             axs[1].axis("off")
-            plt.suptitle(f"Press k to keep, d to discard, q to quit; Remaining images: {to_go - counter}", fontsize=20)
+            plt.suptitle(
+                f"Press k to keep, d to discard, q to quit; Remaining images: {to_go - counter}",
+                fontsize=20,
+            )
             plt.show()
             if break_out_flag:
                 break
@@ -665,6 +695,8 @@ class DataCleaning:
             self._path_to_clean + "/high_loss_elements.csv", index=False, header=True
         )
         mask_discarded = self._discard_df["discard"] == 1
-        self.discard_list = self._discard_df.loc[mask_discarded,["path_img", "path_mask"]]
+        self.discard_list = self._discard_df.loc[
+            mask_discarded, ["path_img", "path_mask"]
+        ]
         return self.discard_list
 >>>>>>> e374b66 (tinder like data cleaning added, as well as a runf file added)
