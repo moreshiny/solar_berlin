@@ -3,7 +3,11 @@
 from class_automated_data_cleaning import DataCleaning
 
 
+<<<<<<< HEAD
 PATH_TO_CLEAN = "data/j_to_clean"
+=======
+PATH_TO_CLEAN = "data/bin_clean_4000/test"
+>>>>>>> 49ab123 (test cleaning file to run the test cleaning class without automated cleaning)
 
 
 # call the cleaning class.
@@ -21,7 +25,11 @@ print("Manual sorting Done")
 list_discarded = cleaning.move_discarded_files(
     output_folder_name="dirty",
     delete_existing_output_path_no_warning=True,
+<<<<<<< HEAD
  )
+=======
+)
+>>>>>>> 49ab123 (test cleaning file to run the test cleaning class without automated cleaning)
 
 print(list_discarded)
 print("File moved.")
