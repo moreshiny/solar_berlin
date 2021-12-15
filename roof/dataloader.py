@@ -1,3 +1,4 @@
+import random
 import glob
 import os
 import tensorflow as tf
@@ -15,6 +16,7 @@ class DataLoader:
         input_shape: tuple = (224, 224, 3),
         multiclass: bool = False,
         legacy_mode: bool = True,
+        discard_mask_proportion: float = 0,
     ) -> None:
         """Class instance initialization.
 
@@ -33,6 +35,8 @@ class DataLoader:
                 classification. Defaults to False.
             legacy_mode (bool, optional): Whether to use legacy mode or not.
                 Defaults to True.
+            discard_mask_proportion: (float, optional): Percentage of masks with no
+                labels to discard
         """
         # initialize attributes
         if not os.path.exists(path):
@@ -44,6 +48,7 @@ class DataLoader:
         self.dataset = None
         self.input_shape = input_shape
         self.n_samples = None
+        self._discard_mask_proportion = discard_mask_proportion
 
         # TODO remove legacy mode when no longer needed
         if legacy_mode:
@@ -99,13 +104,24 @@ class DataLoader:
         useable_paths.sort()
 
         # split input and target
-        input_paths = [filename for filename in useable_paths if "map" in filename]
+        input_paths_all = [
+            filename
+            for filename in useable_paths
+            if "map" in filename
+        ]
         # TODO "mask" is needed only for legacy mode, remove when no longer needed
-        target_paths = [
+        target_paths_all = [
             filename
             for filename in useable_paths
             if "mask" in filename or "msk" in filename
         ]
+
+        if self._discard_mask_proportion > 0:
+            target_paths, input_paths = self._discard_emty_masks(
+                target_paths_all, input_paths_all)
+        else:
+            target_paths = target_paths_all
+            input_paths = input_paths_all
 
         assert len(input_paths) == len(
             target_paths
@@ -115,6 +131,18 @@ class DataLoader:
         self.n_samples = len(input_paths)
 
         return input_paths, target_paths
+
+    def _discard_emty_masks(self, msk_fns, map_fns):
+        """ Discards a part of empty masks as speicified by
+            discard_mask_proportion."""
+        for msk_fn in msk_fns:
+            msk = tf.keras.preprocessing.image.load_img(msk_fn)
+            if tf.math.reduce_max(msk) == 0:
+                if random.random() < self._discard_mask_proportion:
+                    map_fns.remove(msk_fn.replace("msk", "map"))
+                    msk_fns.remove(msk_fn)
+
+        return msk_fns, map_fns
 
     def _discard_wrong_img_paths(self, all_paths):
         """Discard wrong files; function is temporary."""
