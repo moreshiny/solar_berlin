@@ -20,22 +20,13 @@ model = Unet(
 )
 
 # Path to check point. This is a directory. Lead to an error when calling it.
-<<<<<<< HEAD
-PATH_CHECKPOINT = "logs/12_14_2021_19_30_44/checkpoint.ckpt"
-=======
 PATH_CHECKPOINT = "logs/best_model_15_12/checkpoint.ckpt"
->>>>>>> 630a8f0 (Modify test cleaning for mask r cleaning)
 
 # Loading the weights
 model.load_weights(PATH_CHECKPOINT)
 
 # Define the path of the folder containing the images to sort
-<<<<<<< HEAD
-PATH_TO_CLEAN = "data/clean _4000_discard_empty/test"
-=======
-PATH_TO_CLEAN = "data/selected/selected_tiles_512_1000_200_42_cleaning/train"
->>>>>>> 630a8f0 (Modify test cleaning for mask r cleaning)
-
+PATH_TO_CLEAN = "data/cleaning/25_p_excluded_tiles/"
 
 # call the cleaning class.
 cleaning = DataCleaning(
@@ -47,7 +38,7 @@ cleaning = DataCleaning(
 # Perform the cleaning. The proportion parameter signals the proportion of samples to study.
 # create a CSV containing the paths with the highest loss.
 PROPORTION = 0.2
-PROPORTION_EMPTY = 0.1
+PROPORTION_EMPTY = 1
 cleaning.cleaning(proportion=PROPORTION, proportion_empty=PROPORTION_EMPTY)
 
 
@@ -63,13 +54,8 @@ print("Cleaning Done")
 
 # print("Manual sorting Done")
 
-<<<<<<< HEAD
-=======
 # load the coco json and remove any image that is not in the folder.
 
-
-
->>>>>>> 630a8f0 (Modify test cleaning for mask r cleaning)
 # Move the marked files to be discared from the `CSV file to a folder called by default dirty.
 
 list_discarded = cleaning.move_discarded_files(
@@ -81,68 +67,68 @@ list_discarded = cleaning.move_discarded_files(
 print("File moved.")
 
 
-# create a coco json file for this tile
-coco_json = {
-    "info": {
-        "description": "",
-        "url": "",
-        "version": "",
-        "year": 2021,
-        "contributor": "",
-        "date_created": "",
-    },
-    "licenses": [],
-    "images": [],
-    "annotations": [],
-    "categories": [
-        {
-            "id": 0,
-            "name": "pv1",
-            "supercategory": "roof",
-        },
-        {
-            "id": 1,
-            "name": "pv2",
-            "supercategory": "roof",
-        },
-        {
-            "id": 2,
-            "name": "pv3",
-            "supercategory": "roof",
-        },
-        {
-            "id": 3,
-            "name": "pv4",
-            "supercategory": "roof",
-        },
-    ],
-}
+# # create a coco json file for this tile
+# coco_json = {
+#     "info": {
+#         "description": "",
+#         "url": "",
+#         "version": "",
+#         "year": 2021,
+#         "contributor": "",
+#         "date_created": "",
+#     },
+#     "licenses": [],
+#     "images": [],
+#     "annotations": [],
+#     "categories": [
+#         {
+#             "id": 0,
+#             "name": "pv1",
+#             "supercategory": "roof",
+#         },
+#         {
+#             "id": 1,
+#             "name": "pv2",
+#             "supercategory": "roof",
+#         },
+#         {
+#             "id": 2,
+#             "name": "pv3",
+#             "supercategory": "roof",
+#         },
+#         {
+#             "id": 3,
+#             "name": "pv4",
+#             "supercategory": "roof",
+#         },
+#     ],
+# }
 
-ids = []
-dirty_files = glob.glob(os.path.join(PATH_TO_CLEAN, "dirty", "*_map.png"))
-dirty_files.sort()
-dirty_map_fns = []
-for image_fn in dirty_files:
-    if "_map.png" in image_fn:
-        dirty_map_fns.append(os.path.basename(image_fn))
+# ids = []
+# dirty_files = glob.glob(os.path.join(PATH_TO_CLEAN, "dirty", "*_map.png"))
+# dirty_files.sort()
+# dirty_map_fns = []
+# for image_fn in dirty_files:
+#     if "_map.png" in image_fn:
+#         dirty_map_fns.append(os.path.basename(image_fn))
 
 
-with open(os.path.join(PATH_TO_CLEAN, "coco.json"), "r") as f:
-    all_coco = json.load(f)
-print(dirty_map_fns)
-for image in all_coco["images"]:
-    print(image["file_name"])
-    if image["file_name"] not in dirty_map_fns:
-        coco_json["images"].append(image)
-        ids.append(image["id"])
-ids = list(set(ids))
-for annotation in all_coco["annotations"]:
-    if annotation["image_id"] in ids:
-        annotation["id"] = len(coco_json["annotations"])
-        coco_json["annotations"].append(annotation)
+# with open(os.path.join(PATH_TO_CLEAN, "coco.json"), "r") as f:
+#     all_coco = json.load(f)
+# print(dirty_map_fns)
+# for image in all_coco["images"]:
+#     print(image["file_name"])
+#     if image["file_name"] not in dirty_map_fns:
+#         coco_json["images"].append(image)
+#         ids.append(image["id"])
+# ids = list(set(ids))
+# for annotation in all_coco["annotations"]:
+#     if annotation["image_id"] in ids:
+#         annotation["id"] = len(coco_json["annotations"])
+#         coco_json["annotations"].append(annotation)
 
-with open(os.path.join(PATH_TO_CLEAN, "coco_clean.json"), "w") as f:
-    json.dump(coco_json, f)
+# with open(os.path.join(PATH_TO_CLEAN, "coco_clean.json"), "w") as f:
+#     json.dump(coco_json, f)
 
 
 print("Done")
