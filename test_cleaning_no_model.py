@@ -4,10 +4,14 @@ from class_automated_data_cleaning import DataCleaning
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 PATH_TO_CLEAN = "data/j_to_clean"
 =======
 PATH_TO_CLEAN = "data/bin_clean_4000/test"
 >>>>>>> 49ab123 (test cleaning file to run the test cleaning class without automated cleaning)
+=======
+PATH_TO_CLEAN = "data/j_to_clean"
+>>>>>>> a90ca2b (updated cleaning class: calculation of remaining updated)
 
 
 # call the cleaning class.
@@ -22,6 +26,7 @@ discard_list = cleaning.manual_sorting()
 print("Manual sorting Done")
 
 
+<<<<<<< HEAD
 list_discarded = cleaning.move_discarded_files(
     output_folder_name="dirty",
     delete_existing_output_path_no_warning=True,
@@ -30,8 +35,14 @@ list_discarded = cleaning.move_discarded_files(
 =======
 )
 >>>>>>> 49ab123 (test cleaning file to run the test cleaning class without automated cleaning)
+=======
+#list_discarded = cleaning.move_discarded_files(
+#    output_folder_name="dirty",
+#    delete_existing_output_path_no_warning=True,
+#)
+>>>>>>> a90ca2b (updated cleaning class: calculation of remaining updated)
 
-print(list_discarded)
+#print(list_discarded)
 print("File moved.")
 
 

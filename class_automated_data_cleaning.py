@@ -365,11 +365,11 @@ class DataCleaning:
                 activated_pixels_list.append(True)
             else:
                 activated_pixels_list.append(False)
-        complement_loss["activated_pixels"] = activated_pixels_list
-        mask_empty_mask = complement_loss["activated_pixels"] == True
+        complement_loss["almost_empty"] = activated_pixels_list
+        mask_empty_mask = complement_loss["almost_empty"] == True
         empty_mask_df = complement_loss.loc[mask_empty_mask, :]
         empty_mask_df = empty_mask_df.sample(frac=proportion_discarded_empty)
-        empty_mask_df.drop("activated_pixels", axis=1)
+        empty_mask_df.drop("almost_empty", axis=1)
         empty_mask_df.loc[:, "discard"] = 1
 
         self._discard_df = self._losses.nlargest(n_discard, "bin_loss")
@@ -511,6 +511,7 @@ class DataCleaning:
         if not os.path.exists(self._path_to_clean + "/high_loss_elements.csv"):
 
             print("No CSV file read: browsing existing documents")
+<<<<<<< HEAD
             self._discard_df = pd.DataFrame(columns=["path_img", "path_mask"])
             self._discard_df["path_img"] = self._input_paths
             self._discard_df["path_mask"] = self._target_paths
@@ -631,6 +632,8 @@ class DataCleaning:
 
         if not os.path.exists(self._path_to_clean + "/high_loss_elements.csv"):
 
+=======
+>>>>>>> a90ca2b (updated cleaning class: calculation of remaining updated)
             self._discard_df = pd.DataFrame(columns=["path_img", "path_mask"])
             self._discard_df["path_img"] = self._input_paths
             self._discard_df["path_mask"] = self._target_paths
@@ -638,6 +641,7 @@ class DataCleaning:
             self._discard_df["read"] = 0
 
         else:
+            print("CSV file found: loading the document.")
             self._discard_df = pd.read_csv(
                 self._path_to_clean + "/high_loss_elements.csv"
             )
@@ -645,8 +649,6 @@ class DataCleaning:
         image_path = ""
         target_path = ""
         break_out_flag = True
-
-        to_go = self._discard_df.shape[0] - np.sum(self._discard_df["discard"])
 
         def onpress(event):
             nonlocal image_path, target_path, break_out_flag
@@ -667,7 +669,15 @@ class DataCleaning:
                 break_out_flag = True
 
         mask_unread = self._discard_df["read"] == 0
-        read_path = self._discard_df.loc[mask_unread].loc[:, ["path_img", "path_mask"]]
+        mask_not_discarded = self._discard_df["discard"] == 0
+        mask_unread_notdiscarded_yet = mask_unread & mask_not_discarded
+        read_path = self._discard_df.loc[
+            mask_unread_notdiscarded_yet, ["path_img", "path_mask"]
+        ]
+
+        to_go = read_path.shape[0]
+
+        print(to_go)
 
         counter = 0
         for image_path, target_path in zip(
