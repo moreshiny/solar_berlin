@@ -130,6 +130,9 @@ class DataLoader:
 
         self.n_samples = len(input_paths)
 
+        self._input_fns_list = input_paths
+        self._target_fns_list = target_paths
+
         return input_paths, target_paths
 
     def _discard_emty_masks(self, msk_fns, map_fns):
