@@ -124,8 +124,11 @@ class DataCleaning:
             discarded.
 
         """
-
+        counter = 0
         for image_path, mask_path in zip(self._input_paths, self._target_paths):
+            if counter % 100 == 0:
+                print(f"Current at file number {counter}")
+            counter += 1
             img = Image.open(image_path)
             img = img.convert("RGB")
             img = np.array(img) / 255
