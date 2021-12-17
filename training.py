@@ -14,21 +14,21 @@ tensorflow.keras.backend.clear_session()
 # parameters of the model.
 OUTPUT_CLASSES = 5  # number of categorical classes. for 2 classes = 1.
 INPUT_SHAPE = (512, 512, 3)  # input size
-EPOCHS = 35
-PATIENCE = 7
+EPOCHS = 100
+PATIENCE = 20
 
-BATCH_SIZE = 8  # batchsize
+BATCH_SIZE = 32  # batchsize
 
-NUM_BATCHES = 10  # number of batches
+NUM_BATCHES = 2  # number of batches for predictions
 
 
-COMMENT = "Full large dataset, with the 30pc highst loss cleaned with the \n\
+COMMENT = "Full large dataset ( with the 30pc highst loss cleaned with the \n\
     with the latest model, and the 25pc empty frame discarded, multiclassification\n\
     problem, standard learning rate. "
 
-# Path to data 
-PATH_TRAIN = "data/bin_clean_4000/train"
-PATH_TEST = "data/bin_clean_4000/test"
+# Path to data
+PATH_TRAIN = "data/cleaned/bin_clean_8000/train_unet/transparent"
+PATH_TEST = "data/cleaned/bin_clean_8000/test"
 
 
 # Path to the data large multiclass dataset
@@ -54,6 +54,11 @@ model = Unet(
     multiclass=bool(OUTPUT_CLASSES - 1),
 )
 
+# Load previous weights
+# path_checkpoint = "logs/12_16_2021_22_54_01/checkpoint.ckpt"
+# model.load_weights(path_checkpoint)
+
+
 # Starting the logs
 
 log = Logs()
@@ -76,6 +81,8 @@ sparse_categorical_accuracy = tensorflow.keras.metrics.SparseCategoricalAccuracy
 recall = tensorflow.keras.metrics.Recall(name="recall")
 precision = tensorflow.keras.metrics.Precision(name="precision")
 
+SAVE_WEIGHTS_ONLY = True
+
 if OUTPUT_CLASSES > 1:
     MULTICLASS = True
     loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
@@ -85,7 +92,7 @@ if OUTPUT_CLASSES > 1:
     metrics = [sparse_categorical_accuracy]
     model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
         filepath=log.checkpoint_filepath,
-        save_weights_only=False,
+        save_weights_only=SAVE_WEIGHTS_ONLY,
         monitor="val_sparse_categorical_accuracy",
         mode="max",
         save_best_only=True,
@@ -102,7 +109,7 @@ else:
     metrics = [binary_accuracy, precision, recall]
     model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
         filepath=log.checkpoint_filepath,
-        save_weights_only=False,
+        save_weights_only=SAVE_WEIGHTS_ONLY,
         monitor="val_accuracy",
         mode="max",
         save_best_only=True,
@@ -145,7 +152,8 @@ print("data loaded")
 tensorboard_callback = tensorflow.keras.callbacks.TensorBoard(
     log_dir=log.tensorboard_path,
     histogram_freq=1,
-    write_graph=True,
+    #write_graph=True,
+    write_graph=False,
 )
 
 

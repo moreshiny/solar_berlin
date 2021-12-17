@@ -26,13 +26,13 @@ data_dir = "data/"
 # register_coco_instances("my_dataset_train", {},
 #                         "data/selected_coco_sample/selected_tiles_512_2000_500_42/train/coco.json", "data/selected_coco_sample/selected_tiles_512_2000_500_42/train")
 register_coco_instances("my_dataset_val", {},
-                        "data/selected/selected_tiles_512_100_20_42_binary/train/coco.json", "data/selected/selected_tiles_512_100_20_42_binary/train")
+                        "data/cleaned/bin_clean_8000/train_unet/coco.json", "data/cleaned/bin_clean_8000/train_unet")
 
 cfg = get_cfg()
 cfg.merge_from_file(model_zoo.get_config_file(
     "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 )
-#cfg.DATASETS.TRAIN = ("my_dataset_train",)
+# cfg.DATASETS.TRAIN = ("my_dataset_train",)
 cfg.DATASETS.TEST = ("my_dataset_val",)
 
 # n_samples divided by batch_size so once per epoch
@@ -58,7 +58,7 @@ cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
 
 cfg.INPUT.RANDOM_FLIP = "none"  # do not flip
 tile_size = 512
-cfg.MODEL.ROI_MASK_HEAD.CONV_DIM = 512
+cfg.MODEL.ROI_MASK_HEAD.CONV_DIM = 256
 cfg.INPUT.MIN_SIZE_TRAIN = tile_size  # keep size as tile_size
 cfg.INPUT.MAX_SIZE_TRAIN = tile_size  # keep size as tile_size
 cfg.INPUT.MIN_SIZE_TEST = tile_size  # keep size as tile_size
@@ -72,8 +72,8 @@ cfg.INPUT.CROP.ENABLED = False  # do not crop
 
 cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS = False  # do not skip empty masks
 
-#dict_train = DatasetCatalog.get("my_dataset_train")
-#meta_train = MetadataCatalog.get("my_dataset_train")
+# dict_train = DatasetCatalog.get("my_dataset_train")
+# meta_train = MetadataCatalog.get("my_dataset_train")
 
 # minute = datetime.datetime.now().minute
 # hour = datetime.datetime.now().hour
@@ -82,7 +82,7 @@ cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS = False  # do not skip empty masks
 # year = datetime.datetime.now().year
 
 # cfg.OUTPUT_DIR = f"logs/output-{year}-{month}-{day}-{hour}-{minute}"
-cfg.OUTPUT_DIR = "logs/output-2021-12-15-00-24"
+cfg.OUTPUT_DIR = "data/cleaned/bin_clean_8000/train_unet/transparent"
 
 os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
@@ -121,8 +121,8 @@ os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 # cfg now already contains everything we've set previously. We changed it a little bit for inference:
 # path to the model we just trained
 cfg.MODEL.WEIGHTS = os.path.join(
-    cfg.OUTPUT_DIR, f"model_0019999.pth")
-cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.0   # set a custom testing threshold
+    "logs/output-2021-12-16-15-30/model_final.pth")
+cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.0  # set a custom testing threshold
 
 predictor = DefaultPredictor(cfg)
 
@@ -155,67 +155,48 @@ os.makedirs(bin_mask_dir, exist_ok=True)
 #         f"{predictions_dir}/{image['image_id']}_true.png", out2.get_image())
 
 
-images = glob.glob(
-    "data/selected/selected_tiles_512_4000_1000_42/test/*_map.png")
-masks = glob.glob(
-    "data/selected/selected_tiles_512_4000_1000_42/test/*_msk.png")
+map_fns = glob.glob(
+    "data/cleaned/bin_clean_8000/train_unet/*_map.png")
+msk_fns = glob.glob(
+    "data/cleaned/bin_clean_8000/train_unet/*_msk.png")
 
-output_dir = "data/selected/selected_tiles_512_4000_1000_42_transparent/test/"
-
+output_dir = "data/cleaned/bin_clean_8000/train_unet/transparent"
 os.makedirs(output_dir, exist_ok=True)
 
 
 # copy all masks to the output dir
-for mask in masks:
-    shutil.copy(mask, output_dir)
+for msk_fn in msk_fns:
+    shutil.copy(msk_fn, output_dir)
 
-for img_fn in images:
+for img_fn in map_fns:
 
-    #for idx, image_dict in enumerate(random.sample(dict_val, 100)):
-    #img_fn = image
+    # for idx, image_dict in enumerate(random.sample(dict_val, 100)):
+    # img_fn = image
+    print(img_fn)
     img = cv2.imread(img_fn)
     # print(img_fn)
     # print(img)
     outputs = predictor(img)
     scores = outputs["instances"].scores.tolist()
-    #print(scores)
-    mask = outputs['instances'].get('pred_masks')
-    print(mask.shape)
-    mask = mask.to('cpu')
-    num, h, w = mask.shape
-    #bin_mask = np.zeros((h, w))
 
-    # # convert to numpy and reverse the dimensions
-    # mask = mask.numpy()
-    # mask = np.transpose(mask, (1, 2, 0))
-    # mask = mask.astype(np.uint8)
-    # mask = mask * 255
-    # mask = mask.squeeze()
-    # print(mask.shape)
-    # print(mask)
+    masks = outputs['instances'].pred_masks
 
-    mask = mask.type(torch.float32)
+    masks = masks.type(torch.float32)
 
     for i, score in enumerate(scores):
-        mask[i] = mask[i] * score
+        masks[i] = masks[i] * score
 
-    bin_mask = torch.sum(mask, dim=0)
+    bin_mask = torch.sum(masks, dim=0)
 
-    # reduce value above 1 to one in bin_mask
     bin_mask[bin_mask > 1] = 1
-    print(bin_mask.max())
-    bin_mask = (bin_mask + .5) * 170
-    bin_mask = np.expand_dims(bin_mask, axis=2)
+    bin_mask = (bin_mask + 0.5) * 170.0
+    bin_mask = bin_mask.unsqueeze(2)
+    out_img = np.concatenate([img, bin_mask.cpu().numpy()], axis=2)
 
-    out_img = np.concatenate([img, bin_mask], axis=2)
-
-    #print(out_img.shape)
-
-    # print(bin_mask.shape)
     filename = os.path.join(output_dir, os.path.basename(img_fn))
     cv2.imwrite(filename, out_img)
 
-    # plt.figure(figsize=(200, 200))
+#     # plt.figure(figsize=(200, 200))
     # title = ["Predicted", "Ground Truth"]
     # display_list = [out1, out2]
     # for j in range(len(display_list)):
