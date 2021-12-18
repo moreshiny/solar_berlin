@@ -43,7 +43,7 @@ def cat_accuracy(y_true: np.array, y_pred: np.array) -> float:
     return np.sum(np.equal(y_true, y_pred)) / (512 * 512)
 
 
-PATH_TO_PREDICT = "data/bin_clean_4000/test_pred"
+PATH_TO_PREDICT = "data/bin_clean_4000/test"
 
 <<<<<<< HEAD
 COLOURS_NAME = [0, 63, 127, 191, 255]
@@ -63,10 +63,15 @@ target_paths = [
 predict_paths = [filename for filename in all_paths if "predict" in filename]
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 print("Paths collected")
 
 =======
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
+=======
+print("Paths collected")
+
+>>>>>>> ba7d0c9 (script added to calculate the metrics from a folder containing mask and predictions)
 df_predict_no_loss = pd.DataFrame()
 
 df_predict_no_loss["input_paths"] = input_paths
@@ -93,12 +98,18 @@ for colour in COLOURS_NAME:
         df_predict_no_loss[f"area_target_{colour}"]
         - df_predict_no_loss[f"area_predict_{colour}"]
 <<<<<<< HEAD
+<<<<<<< HEAD
     ) / df_predict_no_loss[f"area_target_{colour}"]
 
 df_predict_no_loss = df_predict_no_loss.replace([-np.inf, np.inf], np.nan)
 =======
     )
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
+=======
+    ) / df_predict_no_loss[f"area_target_{colour}"]
+
+df_predict_no_loss = df_predict_no_loss.replace([-np.inf, np.inf], np.nan)
+>>>>>>> ba7d0c9 (script added to calculate the metrics from a folder containing mask and predictions)
 
 
 def open_image(path):
@@ -109,16 +120,23 @@ def open_image(path):
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 print("sizes calculated")
 
 =======
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
+=======
+print("sizes calculated")
+
+>>>>>>> ba7d0c9 (script added to calculate the metrics from a folder containing mask and predictions)
 df_predict_no_loss["cat_accuracy"] = [
     cat_accuracy(open_image(path_mask), open_image(path_predict))
     for path_mask, path_predict in zip(
         df_predict_no_loss["target_paths"], df_predict_no_loss["predict_paths"]
     )
 ]
+
+print("Cat accuracy calculated")
 
 
 def normalize(array):
@@ -135,6 +153,8 @@ df_predict_no_loss["mean_iou_5"] = [
         df_predict_no_loss["target_paths"], df_predict_no_loss["predict_paths"]
     )
 ]
+
+print("Cat Mean IoU calculated")
 
 
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
@@ -162,12 +182,16 @@ for metric in bin_metrics:
         )
     ]
 <<<<<<< HEAD
+<<<<<<< HEAD
     print(f"roof_{key} calculated")
 
 
 print(f"Binary metrics for roof done")
 =======
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
+=======
+    print(f"roof_{metric.name} calculated")
+>>>>>>> ba7d0c9 (script added to calculate the metrics from a folder containing mask and predictions)
 
 
 def bin_mask(array, colour):
@@ -195,6 +219,7 @@ for colour in COLOURS_NAME:
             )
         ]
 <<<<<<< HEAD
+<<<<<<< HEAD
         print(f"{key}_{colour} calculated")
 
 jaccard = []
@@ -210,7 +235,15 @@ PATH_TO_CSV = PATH_TO_PREDICT + "/df_predictions_no_loss.csv"
 df_predict_no_loss.to_csv(PATH_TO_CSV, index=False, header=True)
 print("Done")
 =======
+=======
+        print(f"{metric.name}_{colour} calculated")
+>>>>>>> ba7d0c9 (script added to calculate the metrics from a folder containing mask and predictions)
 
+print("Dumping the file")
 PATH_TO_CSV = PATH_TO_PREDICT + "/df_predictions_no_loss.csv"
 df_predict_no_loss.to_csv(PATH_TO_CSV, index=False, header=True)
+<<<<<<< HEAD
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
+=======
+print("Done")
+>>>>>>> ba7d0c9 (script added to calculate the metrics from a folder containing mask and predictions)

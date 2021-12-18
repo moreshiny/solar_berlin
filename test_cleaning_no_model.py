@@ -27,6 +27,7 @@ print("Manual sorting Done")
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 list_discarded = cleaning.move_discarded_files(
     output_folder_name="dirty",
     delete_existing_output_path_no_warning=True,
@@ -41,8 +42,14 @@ list_discarded = cleaning.move_discarded_files(
 #    delete_existing_output_path_no_warning=True,
 #)
 >>>>>>> a90ca2b (updated cleaning class: calculation of remaining updated)
+=======
+list_discarded = cleaning.move_discarded_files(
+    output_folder_name="dirty",
+    delete_existing_output_path_no_warning=True,
+ )
+>>>>>>> ba7d0c9 (script added to calculate the metrics from a folder containing mask and predictions)
 
-#print(list_discarded)
+print(list_discarded)
 print("File moved.")
 
 
