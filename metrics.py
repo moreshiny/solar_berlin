@@ -24,7 +24,7 @@ def cat_accuracy(y_true: np.array, y_pred: np.array) -> float:
     return np.sum(np.equal(y_true, y_pred)) / (512 * 512)
 
 
-PATH_TO_PREDICT = "data/bin_clean_4000/test_pred"
+PATH_TO_PREDICT = "data/bin_clean_4000/test"
 
 COLOURS_NAME = [0, 63, 127, 191, 255]
 
@@ -86,6 +86,8 @@ df_predict_no_loss["cat_accuracy"] = [
         df_predict_no_loss["target_paths"], df_predict_no_loss["predict_paths"]
     )
 ]
+
+print("Cat accuracy calculated")
 
 
 def normalize(array):
