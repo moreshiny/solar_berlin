@@ -18,12 +18,12 @@ discard_list = cleaning.manual_sorting()
 print("Manual sorting Done")
 
 
-#list_discarded = cleaning.move_discarded_files(
-#    output_folder_name="dirty",
-#    delete_existing_output_path_no_warning=True,
-#)
+list_discarded = cleaning.move_discarded_files(
+    output_folder_name="dirty",
+    delete_existing_output_path_no_warning=True,
+ )
 
-#print(list_discarded)
+print(list_discarded)
 print("File moved.")
 
 
