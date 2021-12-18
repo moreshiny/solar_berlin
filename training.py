@@ -64,9 +64,6 @@ PATH_TEST = "data/bin_clean_8000/test"
 # path_train = "data/small_large/train"
 # path_test = "data/small_large/test"
 
-# Path to data for Daniel local machine: Half dataset
-PATH_TRAIN = "data/cleaned_4000_extract/train"
-PATH_TEST = "data/cleaned_4000_extract/test"
 
 # calling the model.
 model = Unet(
