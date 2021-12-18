@@ -22,13 +22,13 @@ BATCH_SIZE = 8  # batchsize
 NUM_BATCHES = 10  # number of batches
 
 
-COMMENT = "Full large dataset, with the 30pc highst loss cleaned with the \n\
-    with the latest model, and the 25pc empty frame discarded, multiclassification\n\
-    problem, standard learning rate. "
+COMMENT = "8000 datasets, cleaned automatically with parameter considering 30pc highest loss,\n\
+        25pc empty highest loss, discardig also the 1pc  empty tile of low loss,\n\
+        problem, standard learning rate, best dropout  "
 
-# Path to data 
-PATH_TRAIN = "data/bin_clean_4000/train"
-PATH_TEST = "data/bin_clean_4000/test"
+# Path to data
+PATH_TRAIN = "data/bin_clean_8000/train"
+PATH_TEST = "data/bin_clean_8000/test"
 
 
 # Path to the data large multiclass dataset
@@ -44,13 +44,12 @@ PATH_TEST = "data/bin_clean_4000/test"
 # path_test = "data/small_large/test"
 
 
-
 # calling the model.
 model = Unet(
     output_classes=OUTPUT_CLASSES,
     input_shape=INPUT_SHAPE,
     drop_out=True,
-    drop_out_rate={"512": 0.3, "256": 0.35, "128": 0.4, "64": 0.45},
+    drop_out_rate={"512": 0.3, "256": 0.4, "128": 0.45, "64": 0.5},
     multiclass=bool(OUTPUT_CLASSES - 1),
 )
 
@@ -260,14 +259,37 @@ log.show_predictions(
 
 # # logging examples of prediction on the test data sets.
 # number of batches used to display sample predictions.
+
+
+BATCH_SIZE = 1
+dl_test = DataLoader(
+    PATH_TEST,
+    batch_size=BATCH_SIZE,
+    input_shape=INPUT_SHAPE,
+    legacy_mode=False,
+    multiclass=MULTICLASS,
+)
+
+
+dl_test.load(shuffle=False)
+
+
+test_batches = dl_test.dataset
+
+
 accuracy = tensorflow.keras.metrics.BinaryAccuracy()
 precision = tensorflow.keras.metrics.Precision()
 recall = tensorflow.keras.metrics.Recall()
 
-iterator = iter(dl_test.dataset)
-
+accuracy_l = []
+precision_l = []
+recall_l = []
+iterator = iter(test_batches)
+counter = 0
 for batch_image, batch_target in iterator:
-    y_pred_prob = model.predict(batch_image)
+    counter += 1
+    print(counter)
+ y_pred_prob = model.predict(batch_image)
     y_pred_multi = np.argmax(y_pred_prob, axis=-1)
     y_pred_multi = y_pred_multi.squeeze()
     y_true_multi = batch_target.numpy()
@@ -276,12 +298,23 @@ for batch_image, batch_target in iterator:
     y_true_one = y_true_one.squeeze()
     accuracy.update_state(y_true_one, y_pred_one)
     precision.update_state(y_true_one, y_pred_one)
-    recall.update_state(y_true_one, y_pred_one)
+    recall.update_state(y_true_one, y_pred_one)   
+    accuracy_l.append(accuracy.result().numpy())
+    precision_l.append(precision.result().numpy())
+    recall_l.append(recall.result().numpy())
+    accuracy.reset_state()
+    precision.reset_state()
+    recall.reset_state()
+
+
+print("Accuracies list:", accuracy_l)
+print("Precisions list", precision_l)
+print("recalls list", recall_l)
 
 print("For the binary classifier, induced by the categorical classifier:")
-print("Binary accuracy:", accuracy.result().numpy())
-print("Precision", precision.result().numpy())
-print("Recall", recall.result().numpy())
+print("Average Binary accuracy:", np.mean(accuracy_l))
+print("Average Precision", np.mean(precision_l))
+print("Average Recall", np.mean(recall_l))
 
 
 tensorflow.keras.backend.clear_session()
