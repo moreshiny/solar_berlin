@@ -23,7 +23,7 @@ PATH_CHECKPOINT = "logs/12_14_2021_19_30_44/checkpoint.ckpt"
 model.load_weights(PATH_CHECKPOINT)
 
 # Define the path of the folder containing the images to sort
-PATH_TO_CLEAN = "data/clean _4000_discard_empty/test"
+PATH_TO_CLEAN = "data/bin_clean_8000/test"
 
 
 # call the cleaning class.
