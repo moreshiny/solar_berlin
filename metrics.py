@@ -3,22 +3,21 @@ import glob
 import numpy as np
 import pandas as pd
 from PIL import Image
-import tensorflow
+
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import jaccard_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 
 
-OUTPUT_CLASSES = 5
-meaniou5 = tensorflow.keras.metrics.MeanIoU(OUTPUT_CLASSES)
-meaniou2 = tensorflow.keras.metrics.MeanIoU(2, name="mean_iou2")
-binary_accuracy = tensorflow.keras.metrics.BinaryAccuracy(name="accuracy")
-sparse_categorical_accuracy = tensorflow.keras.metrics.SparseCategoricalAccuracy(
-    name="sparse_categorical_accuracy", dtype=None
-)
-recall = tensorflow.keras.metrics.Recall(name="recall")
-precision = tensorflow.keras.metrics.Precision(name="precision")
-
-cat_metrics = [meaniou5, sparse_categorical_accuracy]
-
-bin_metrics = [binary_accuracy, meaniou2, recall, precision]
+metrics = {
+    "accuracy": accuracy_score,
+    "f1": f1_score,
+    "IoU": jaccard_score,
+    "recall": recall_score,
+    "precision": precision_score,
+}
 
 
 def cat_accuracy(y_true: np.array, y_pred: np.array) -> float:
@@ -27,7 +26,7 @@ def cat_accuracy(y_true: np.array, y_pred: np.array) -> float:
 
 PATH_TO_PREDICT = "data/bin_clean_4000/test"
 
-COLOURS_NAME = [63, 127, 191, 255]
+COLOURS_NAME = [0, 63, 127, 191, 255]
 
 all_paths = glob.glob(os.path.join(PATH_TO_PREDICT, "*.tif"))
 all_paths += glob.glob(os.path.join(PATH_TO_PREDICT, "*.png"))
@@ -88,40 +87,29 @@ df_predict_no_loss["cat_accuracy"] = [
     )
 ]
 
-print("Cat accuracy calculated")
-
 
 def normalize(array):
     return np.ceil(4 / 255 * array)
-
-
-df_predict_no_loss["mean_iou_5"] = [
-    meaniou5(
-        normalize(open_image(path_mask)), normalize(open_image(path_predict))
-    ).numpy()
-    for path_mask, path_predict in zip(
-        df_predict_no_loss["target_paths"], df_predict_no_loss["predict_paths"]
-    )
-]
-
-print("Cat Mean IoU calculated")
 
 
 def bin_mask_roof(array):
     return (array > 0).astype(int)
 
 
-for metric in bin_metrics:
-    df_predict_no_loss[f"roof_{metric.name}"] = [
-        metric(
-            bin_mask_roof(open_image(path_mask)),
-            bin_mask_roof(open_image(path_predict)),
-        ).numpy()
+for key, values in metrics.items():
+    df_predict_no_loss[f"roof_{key}"] = [
+        values(
+            np.ravel(bin_mask_roof(open_image(path_mask))),
+            np.ravel(bin_mask_roof(open_image(path_predict))),
+        )
         for path_mask, path_predict in zip(
             df_predict_no_loss["target_paths"], df_predict_no_loss["predict_paths"]
         )
     ]
-    print(f"roof_{metric.name} calculated")
+    print(f"roof_{key} calculated")
+
+
+print(f"Binary metrics for roof done")
 
 
 def bin_mask(array, colour):
@@ -129,17 +117,25 @@ def bin_mask(array, colour):
 
 
 for colour in COLOURS_NAME:
-    for metric in bin_metrics:
-        df_predict_no_loss[f"{metric.name}_{colour}"] = [
-            metric(
-                bin_mask(open_image(path_mask), colour),
-                bin_mask(open_image(path_predict), colour),
-            ).numpy()
+    for key, values in metrics.items():
+        df_predict_no_loss[f"{key}_{colour}"] = [
+            values(
+                np.ravel(bin_mask(open_image(path_mask), colour)),
+                np.ravel(bin_mask(open_image(path_predict), colour)),
+            )
             for path_mask, path_predict in zip(
                 df_predict_no_loss["target_paths"], df_predict_no_loss["predict_paths"]
             )
         ]
-        print(f"{metric.name}_{colour} calculated")
+        print(f"{key}_{colour} calculated")
+
+jaccard = []
+
+for col in COLOURS_NAME:
+    jaccard.append(f"IoU_{col}")
+
+df_predict_no_loss["mean_IoU"] = np.mean(df_predict_no_loss[jaccard], axis=1)
+
 
 print("Dumping the file")
 PATH_TO_CSV = PATH_TO_PREDICT + "/df_predictions_no_loss.csv"
