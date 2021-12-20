@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import f1_score
@@ -21,22 +22,30 @@ metrics = {
 }
 =======
 import tensorflow
+=======
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
+
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import jaccard_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 
 
-OUTPUT_CLASSES = 5
-meaniou5 = tensorflow.keras.metrics.MeanIoU(OUTPUT_CLASSES)
-meaniou2 = tensorflow.keras.metrics.MeanIoU(2, name="mean_iou2")
-binary_accuracy = tensorflow.keras.metrics.BinaryAccuracy(name="accuracy")
-sparse_categorical_accuracy = tensorflow.keras.metrics.SparseCategoricalAccuracy(
-    name="sparse_categorical_accuracy", dtype=None
-)
-recall = tensorflow.keras.metrics.Recall(name="recall")
-precision = tensorflow.keras.metrics.Precision(name="precision")
-
+<<<<<<< HEAD
 cat_metrics = [meaniou5, sparse_categorical_accuracy]
 
 bin_metrics = [binary_accuracy, meaniou2, recall, precision]
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
+=======
+metrics = {
+    "accuracy": accuracy_score,
+    "f1": f1_score,
+    "IoU": jaccard_score,
+    "recall": recall_score,
+    "precision": precision_score,
+}
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
 
 
 def cat_accuracy(y_true: np.array, y_pred: np.array) -> float:
@@ -46,10 +55,14 @@ def cat_accuracy(y_true: np.array, y_pred: np.array) -> float:
 PATH_TO_PREDICT = "data/bin_clean_4000/test"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 COLOURS_NAME = [0, 63, 127, 191, 255]
 =======
 COLOURS_NAME = [63, 127, 191, 255]
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
+=======
+COLOURS_NAME = [0, 63, 127, 191, 255]
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
 
 all_paths = glob.glob(os.path.join(PATH_TO_PREDICT, "*.tif"))
 all_paths += glob.glob(os.path.join(PATH_TO_PREDICT, "*.png"))
@@ -136,13 +149,12 @@ df_predict_no_loss["cat_accuracy"] = [
     )
 ]
 
-print("Cat accuracy calculated")
-
 
 def normalize(array):
     return np.ceil(4 / 255 * array)
 
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 df_predict_no_loss["mean_iou_5"] = [
@@ -158,17 +170,23 @@ print("Cat Mean IoU calculated")
 
 
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
+=======
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
 def bin_mask_roof(array):
     return (array > 0).astype(int)
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
 for key, values in metrics.items():
     df_predict_no_loss[f"roof_{key}"] = [
         values(
             np.ravel(bin_mask_roof(open_image(path_mask))),
             np.ravel(bin_mask_roof(open_image(path_predict))),
         )
+<<<<<<< HEAD
 =======
 for metric in bin_metrics:
     df_predict_no_loss[f"roof_{metric.name}"] = [
@@ -177,21 +195,29 @@ for metric in bin_metrics:
             bin_mask_roof(open_image(path_predict)),
         ).numpy()
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
+=======
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
         for path_mask, path_predict in zip(
             df_predict_no_loss["target_paths"], df_predict_no_loss["predict_paths"]
         )
     ]
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
     print(f"roof_{key} calculated")
 
 
 print(f"Binary metrics for roof done")
+<<<<<<< HEAD
 =======
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
 =======
     print(f"roof_{metric.name} calculated")
 >>>>>>> ba7d0c9 (script added to calculate the metrics from a folder containing mask and predictions)
+=======
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
 
 
 def bin_mask(array, colour):
@@ -200,12 +226,16 @@ def bin_mask(array, colour):
 
 for colour in COLOURS_NAME:
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
     for key, values in metrics.items():
         df_predict_no_loss[f"{key}_{colour}"] = [
             values(
                 np.ravel(bin_mask(open_image(path_mask), colour)),
                 np.ravel(bin_mask(open_image(path_predict), colour)),
             )
+<<<<<<< HEAD
 =======
     for metric in bin_metrics:
         df_predict_no_loss[f"{metric.name}_{colour}"] = [
@@ -214,12 +244,17 @@ for colour in COLOURS_NAME:
                 bin_mask(open_image(path_predict), colour),
             ).numpy()
 >>>>>>> 4a22009 (script added to calculate and store metrics from a prediction folder)
+=======
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
             for path_mask, path_predict in zip(
                 df_predict_no_loss["target_paths"], df_predict_no_loss["predict_paths"]
             )
         ]
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
         print(f"{key}_{colour} calculated")
 
 jaccard = []
@@ -229,6 +264,7 @@ for col in COLOURS_NAME:
 
 df_predict_no_loss["mean_IoU"] = np.mean(df_predict_no_loss[jaccard], axis=1)
 
+<<<<<<< HEAD
 
 print("Dumping the file")
 PATH_TO_CSV = PATH_TO_PREDICT + "/df_predictions_no_loss.csv"
@@ -238,6 +274,8 @@ print("Done")
 =======
         print(f"{metric.name}_{colour} calculated")
 >>>>>>> ba7d0c9 (script added to calculate the metrics from a folder containing mask and predictions)
+=======
+>>>>>>> 1ec7183 (updated metrics file to scikit learn metrics)
 
 print("Dumping the file")
 PATH_TO_CSV = PATH_TO_PREDICT + "/df_predictions_no_loss.csv"
