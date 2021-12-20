@@ -87,8 +87,6 @@ df_predict_no_loss["cat_accuracy"] = [
     )
 ]
 
-print("Cat accuracy calculated")
-
 
 def normalize(array):
     return np.ceil(4 / 255 * array)
