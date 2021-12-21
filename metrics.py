@@ -52,7 +52,7 @@ def cat_accuracy(y_true: np.array, y_pred: np.array) -> float:
     return np.sum(np.equal(y_true, y_pred)) / (512 * 512)
 
 
-PATH_TO_PREDICT = "data/bin_clean_4000/test"
+PATH_TO_PREDICT = "data/bin_clean_4000/test_pred"
 
 <<<<<<< HEAD
 <<<<<<< HEAD
