@@ -1,6 +1,7 @@
-# This class can be used to the automation of the data cleaning using
-#  a efficient image segmentation model.
-#
+"""This class can be used to the automation of the data cleaning using
+  a efficient image segmentation model. The cleaning is based on estimating the
+  highest loss of a given keas model, which is passed to the class.
+"""
 import os
 import glob
 import shutil
@@ -14,13 +15,18 @@ from roof.errors import OutputPathExistsError
 
 
 class DataCleaning:
+    """This class can be used to the automation of the data cleaning using
+    a efficient image segmentation model. The cleaning is based on estimating the
+    highest loss of a given keas model, which is passed to the class.
+    """
+
     def __init__(
         self,
         path_to_clean: str,
         input_shape: tuple = (512, 512, 3),
         model: tensorflow.keras.models = None,
     ) -> None:
-        """ Class instantiation (right word?).
+        """ Class initialisation.
         Args:
             path: a string, path to the folder which will be screened.
             input_shape: Input shape of the images to consider, default to (512, 512, 3).
