@@ -1,11 +1,12 @@
-# Define the Unet Model with a pretrained Resnet101v2 in the bottom in the for of a keras class.
+"""Define the Unet Model with a pretrained Resnet101v2
+in the bottom in the for of a keras class."""
+from typing import Tuple, List
 import tensorflow
-from typing import List, Tuple
 
 
 class Unet(tensorflow.keras.Model):
     """Define the unet model with a pretrained Resnet in the bottom.\
-         The Resnet is trained on imagenet, the top layer is removed by default."""
+        The Resnet is trained on imagenet, the top layer is removed by default."""
 
     def __init__(
         self,
@@ -20,13 +21,16 @@ class Unet(tensorflow.keras.Model):
         """Class initialisation:
         Args:
             output_classes: number of categorical classes. Default to one.
-            input_shape: Define the size of the input and output of the model. Defaut to (512,512, 3).
-            resizing_shape: Size of the output resizing layer. 
-            drop_out: boolean, wether the dropout in the upstack of the model is activated; Default to False.
-            drop_out_rate: If drop_out, defines the dropout rate in the up stacks. Defaults to {"512": 0, "256": 0, "128": 0, "64": 0}
-            fine_tune_at: if non zero, freeze the upstacks, and unfreeze the corresponding number of layers\
-                 in bottom of the pretrained network. Default to 0. 
-            upstack_trainable: Boolean, if True, the upstack is trainable. Default to True. 
+            input_shape: Define the size of the input and output of the model.
+            Defaut to (512,512, 3).
+            resizing_shape: Size of the output resizing layer.
+            drop_out: boolean, wether the dropout in the upstack of the model is activated;
+            Default to False.
+            drop_out_rate: If drop_out, defines the dropout rate in the up stacks.
+            Defaults to {"512": 0, "256": 0, "128": 0, "64": 0}
+            fine_tune_at: if non zero, freeze the upstacks, and unfreeze the corresponding
+            number of layers in bottom of the pretrained network. Default to 0.
+            upstack_trainable: Boolean, if True, the upstack is trainable. Default to True.
             multiclass: boolean, if True, modify the activation of the last convolution to softmax,\
                  else sigmoid. Default to False.
         """
@@ -116,7 +120,51 @@ class Unet(tensorflow.keras.Model):
         # Last convolution
         layer = self._last_conv(layer)
 
+        layer = tensorflow.math.argmax(layer, axis=-1)
+
         return layer
+
+    def morph_open(self, image, filter_size):
+        """apply morphological opening op
+        Args:
+            image: 4D image
+                shape: batch, H, W, C
+            filter_size: size of kernel filter
+        """
+        filter_ = tensorflow.ones([filter_size, filter_size, 1], dtype=image.dtype)
+        strides = [1] * 4
+        dilations = [1, 1, 1, 1]
+
+        eroded = tensorflow.nn.erosion2d(
+            image, filter_, strides, "SAME", "NHWC", dilations
+        )
+
+        filter_ = tensorflow.ones([filter_size, filter_size, 1], dtype=image.dtype)
+        strides = [1, 1, 1, 1]
+        dilations = [1, 3, 3, 1]
+        dilated_1 = tensorflow.nn.dilation2d(
+            eroded, filter_, strides, "SAME", "NHWC", dilations
+        )
+
+        filter_ = tensorflow.ones(
+            [filter_size + 2, filter_size + 2, 1], dtype=image.dtype
+        )
+        strides = [1] * 4
+        dilations = [1, 3, 3, 1]
+
+        eroded_2 = tensorflow.nn.erosion2d(
+            dilated_1, filter_, strides, "SAME", "NHWC", dilations
+        )
+
+        filter_ = tensorflow.ones(
+            [filter_size + 2, filter_size + 2, 1], dtype=image.dtype
+        )
+        strides = [1, 1, 1, 1]
+        dilations = [1, 3, 3, 1]
+        dilated_2 = tensorflow.nn.dilation2d(
+            eroded_2, filter_, strides, "SAME", "NHWC", dilations
+        )
+        return dilated_2
 
     def get_config(self):
         """Overwrite the get_config() methods to save and load the model.
@@ -207,6 +255,11 @@ class Upsample(tensorflow.keras.Model):
 
     @classmethod
     def from_config(cls, config):
+        """Class function which can be used to define a model from a configuration dictionary.
+        Args:
+            config: a configuration dictionary in the format of the get_config function.
+
+        """
         return cls(**config)
 
 
@@ -220,10 +273,9 @@ class Downsample(tensorflow.keras.Model):
     ) -> None:
         """Class initialisation:
         Args:
-            layer_names: list of strings containing the layer names which defines the skip connections.\
-                 Default to [].
-            trainable_layer: number of frozen layer at teh head of the pretrained network. 
-            
+            layer_names: list of strings containing the layer names
+            which defines the skip connections. Default to [].
+            trainable_layer: number of frozen layer at teh head of the pretrained network.
         """
         super(Downsample, self).__init__()
         # Saving the layer names.
@@ -241,9 +293,9 @@ class Downsample(tensorflow.keras.Model):
         # setting which layers of the downstack are trainable.
         if fine_tune_at > 0:
             self._base_model.trainable = True
-            for i, layer in enumerate(self._base_model.layers[0 : -2 * fine_tune_at]):
+            for _, layer in enumerate(self._base_model.layers[0 : -2 * fine_tune_at]):
                 layer.trainable = False
-            for i, layer in enumerate(self._base_model.layers[-2 * fine_tune_at :]):
+            for _, layer in enumerate(self._base_model.layers[-2 * fine_tune_at :]):
                 layer.trainable = True
         else:
             self._base_model.trainable = False
@@ -273,4 +325,9 @@ class Downsample(tensorflow.keras.Model):
 
     @classmethod
     def from_config(cls, config):
+        """Class function which can be used to define a model from a configuration dictionary.
+        Args:
+            config: a configuration dictionary in the format of the get_config function.
+
+        """
         return cls(**config)
