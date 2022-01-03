@@ -1,9 +1,13 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e3c44a6 (model class moved to the model folder, further doctrings added, further cleaning of the folder)
 """This class can be used to the automation of the data cleaning using
   a efficient image segmentation model. The cleaning is based on estimating the
   highest loss of a given keas model, which is passed to the class.
 """
+<<<<<<< HEAD
 import os
 import glob
 import shutil
@@ -32,6 +36,8 @@ class DataCleaning:
 =======
 #
 >>>>>>> 62c2250 (updated cleaning, and test cleaning class updated: the cleaning can now be started again at all time)
+=======
+>>>>>>> e3c44a6 (model class moved to the model folder, further doctrings added, further cleaning of the folder)
 import os
 import glob
 import shutil
@@ -45,13 +51,22 @@ from roof.errors import OutputPathExistsError
 
 
 class DataCleaning:
+<<<<<<< HEAD
 >>>>>>> 55ca74c (data cleaning added, minor change to the training, and dataloader.)
+=======
+    """This class can be used to the automation of the data cleaning using
+    a efficient image segmentation model. The cleaning is based on estimating the
+    highest loss of a given keas model, which is passed to the class.
+    """
+
+>>>>>>> e3c44a6 (model class moved to the model folder, further doctrings added, further cleaning of the folder)
     def __init__(
         self,
         path_to_clean: str,
         input_shape: tuple = (512, 512, 3),
         model: tensorflow.keras.models = None,
     ) -> None:
+<<<<<<< HEAD
 <<<<<<< HEAD
         """ Class initialisation.
         Args:
@@ -60,6 +75,9 @@ class DataCleaning:
             model: a Keras model used for instance segmentation of the roof. Default to None.
 =======
         """ Class instantiation (right word?).
+=======
+        """ Class initialisation.
+>>>>>>> e3c44a6 (model class moved to the model folder, further doctrings added, further cleaning of the folder)
         Args:
             path: a string, path to the folder which will be screened.
             input_shape: Input shape of the images to consider, default to (512, 512, 3).
