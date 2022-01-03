@@ -120,7 +120,51 @@ class Unet(tensorflow.keras.Model):
         # Last convolution
         layer = self._last_conv(layer)
 
+        layer = tensorflow.math.argmax(layer, axis=-1)
+
         return layer
+
+    def morph_open(self, image, filter_size):
+        """apply morphological opening op
+        Args:
+            image: 4D image
+                shape: batch, H, W, C
+            filter_size: size of kernel filter
+        """
+        filter_ = tensorflow.ones([filter_size, filter_size, 1], dtype=image.dtype)
+        strides = [1] * 4
+        dilations = [1, 1, 1, 1]
+
+        eroded = tensorflow.nn.erosion2d(
+            image, filter_, strides, "SAME", "NHWC", dilations
+        )
+
+        filter_ = tensorflow.ones([filter_size, filter_size, 1], dtype=image.dtype)
+        strides = [1, 1, 1, 1]
+        dilations = [1, 3, 3, 1]
+        dilated_1 = tensorflow.nn.dilation2d(
+            eroded, filter_, strides, "SAME", "NHWC", dilations
+        )
+
+        filter_ = tensorflow.ones(
+            [filter_size + 2, filter_size + 2, 1], dtype=image.dtype
+        )
+        strides = [1] * 4
+        dilations = [1, 3, 3, 1]
+
+        eroded_2 = tensorflow.nn.erosion2d(
+            dilated_1, filter_, strides, "SAME", "NHWC", dilations
+        )
+
+        filter_ = tensorflow.ones(
+            [filter_size + 2, filter_size + 2, 1], dtype=image.dtype
+        )
+        strides = [1, 1, 1, 1]
+        dilations = [1, 3, 3, 1]
+        dilated_2 = tensorflow.nn.dilation2d(
+            eroded_2, filter_, strides, "SAME", "NHWC", dilations
+        )
+        return dilated_2
 
     def get_config(self):
         """Overwrite the get_config() methods to save and load the model.
