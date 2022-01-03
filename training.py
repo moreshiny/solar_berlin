@@ -19,8 +19,6 @@ the dataloader format.
 import tensorflow
 
 from roof.dataloader import DataLoader
-from unet.unet_resnet101v2 import Unet
-from roof.logging import Logs
 
 # Importing the model class
 from unet.unet_resnet101v2 import Unet
@@ -34,7 +32,7 @@ from roof.logging import Logs
 tensorflow.keras.backend.clear_session()
 
 # parameters of the model.
-OUTPUT_CLASSES = 5  # number of categorical classes. for 2 classes = 1.
+OUTPUT_CLASSES = 5  # number of categorical classes. For 2 classes = 1.
 INPUT_SHAPE = (512, 512, 3)  # input size
 EPOCHS = 35
 
@@ -43,26 +41,14 @@ BATCH_SIZE = 8  # batchsize
 NUM_BATCHES = 10  # number of batches
 
 
-COMMENT = "8000 datasets, cleaned automatically with parameter considering 30pc highest loss,\n\
-        25pc empty highest loss, discardig also the 1pc  empty tile of low loss,\n\
-        problem, standard learning rate, best dropout  "
+COMMENT = "Tested on the clean 8000, first run with erosion/dilation,\n\
+    standard learning rate, best dropout.\n\
+    Testing as a multiclassifier. First test of,\n\
+    erosion and dilation.   "
 
 # Path to data
 PATH_TRAIN = "data/bin_clean_8000/train"
 PATH_TEST = "data/bin_clean_8000/test"
-
-
-# Path to the data large multiclass dataset
-# path_train = "data/selected_tiles_512_4000_1000_42_partial/train"
-# path_test = "data/selected_tiles_512_4000_1000_42_partial/test"
-
-# Path to the data small multiclass dataset
-# path_train = "data/selected_512_multiclass/selected_tiles_512_100_20_42/train"
-# path_test = "data/selected_512_multiclass/selected_tiles_512_100_20_42/test"
-
-# path to the small mono class large dataset
-# path_train = "data/small_large/train"
-# path_test = "data/small_large/test"
 
 
 # calling the model.
@@ -99,6 +85,11 @@ sparse_categorical_accuracy = tensorflow.keras.metrics.SparseCategoricalAccuracy
 mae = tensorflow.keras.losses.MeanSquaredError(name="mae")
 recall = tensorflow.keras.metrics.Recall(name="recall")
 precision = tensorflow.keras.metrics.Precision(name="precision")
+
+tp = tensorflow.keras.metrics.TruePositives()
+fn = tensorflow.keras.metrics.FalseNegatives()
+fp = tensorflow.keras.metrics.FalsePositives()
+
 
 if OUTPUT_CLASSES > 1:
     MULTICLASS = True
@@ -234,115 +225,6 @@ log.show_predictions(
     num_batches=NUM_BATCHES,
     multiclass=MULTICLASS,
 )
-
-# print("first fitting round")
-# tensorflow.keras.backend.clear_session()
-# print("Starting fine tuning")
-
-# model_dict = model.get_config()
-
-# model_dict["fine_tune_at"] = 4
-# model_dict["upstack_trainable"] = True
-
-#  Second you create the model from the configuration dictionary. This creates a new models with the same layer configuration
-# best_model = Unet.from_config(model_dict)
-# # Finally, you load the weights in the new models.
-# # best_model.load_weights(log.checkpoint_filepath)
-
-# opt = tensorflow.keras.optimizers.Adam(learning_rate=learning_rate / 10)
-
-# best_model._down_stack.compile(
-#     optimizer=opt,
-#     loss=tensorflow.keras.losses.BinaryCrossentropy(from_logits=False),
-#     metrics=[
-#         "accuracy",
-#         tensorflow.keras.metrics.Recall(name="recall"),
-#         tensorflow.keras.metrics.Precision(name="precision"),
-#     ],
-# )
-
-
-# history = best_model._down_stack.fit(
-#     train_batches,
-#     epochs=epochs,
-#     steps_per_epoch=steps_per_epoch,
-#     validation_steps=validation_steps,
-#     validation_data=test_batches,
-#     callbacks=[
-#         model_checkpoint_callback,
-#         tensorboard_callback,
-#         early_stopping,
-#     ],
-# )
-
-# # I am explaining how to load the model's weight for a custom model.
-# # First you get the overwritten configuration of the custim model.
-# model_dict = best_model.get_config()
-
-# # Second you create the model from the configuration dictionary. This creates a new models with the same layer configuration
-# best_best_model = Unet.from_config(model_dict)
-# # Finally, you load the weights in the new models.
-# best_best_model.load_weights(log.checkpoint_filepath)
-
-
-# # logging examples of prediction on the test data sets.
-# number of batches used to display sample predictions.
-
-
-BATCH_SIZE = 1
-dl_test = DataLoader(
-    PATH_TEST,
-    batch_size=BATCH_SIZE,
-    input_shape=INPUT_SHAPE,
-    legacy_mode=False,
-    multiclass=MULTICLASS,
-)
-
-
-dl_test.load(shuffle=False)
-
-
-test_batches = dl_test.dataset
-
-
-accuracy = tensorflow.keras.metrics.BinaryAccuracy()
-precision = tensorflow.keras.metrics.Precision()
-recall = tensorflow.keras.metrics.Recall()
-
-accuracy_l = []
-precision_l = []
-recall_l = []
-iterator = iter(test_batches)
-counter = 0
-for batch_image, batch_target in iterator:
-    counter += 1
-    print(counter)
- y_pred_prob = model.predict(batch_image)
-    y_pred_multi = np.argmax(y_pred_prob, axis=-1)
-    y_pred_multi = y_pred_multi.squeeze()
-    y_true_multi = batch_target.numpy()
-    y_pred_one = (y_pred_multi > 0).astype(int)
-    y_true_one = (y_true_multi > 0).astype(int)
-    y_true_one = y_true_one.squeeze()
-    accuracy.update_state(y_true_one, y_pred_one)
-    precision.update_state(y_true_one, y_pred_one)
-    recall.update_state(y_true_one, y_pred_one)   
-    accuracy_l.append(accuracy.result().numpy())
-    precision_l.append(precision.result().numpy())
-    recall_l.append(recall.result().numpy())
-    accuracy.reset_state()
-    precision.reset_state()
-    recall.reset_state()
-
-
-print("Accuracies list:", accuracy_l)
-print("Precisions list", precision_l)
-print("recalls list", recall_l)
-
-print("For the binary classifier, induced by the categorical classifier:")
-print("Average Binary accuracy:", np.mean(accuracy_l))
-print("Average Precision", np.mean(precision_l))
-print("Average Recall", np.mean(recall_l))
 
 
 tensorflow.keras.backend.clear_session()
