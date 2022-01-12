@@ -120,6 +120,7 @@ class Unet(tensorflow.keras.Model):
         # Last convolution
         layer = self._last_conv(layer)
 
+<<<<<<< HEAD:unet/class_unet_resnet101v2.py
 <<<<<<< HEAD
         return layer
 
@@ -171,6 +172,10 @@ class Unet(tensorflow.keras.Model):
         return dilated_2
 
 >>>>>>> e3c44a6 (model class moved to the model folder, further doctrings added, further cleaning of the folder)
+=======
+        return layer
+
+>>>>>>> 0766ef3 (remove morphological transformations):models/class_unet_resnet101v2.py
     def get_config(self):
         """Overwrite the get_config() methods to save and load the model.
         see the documentation:
