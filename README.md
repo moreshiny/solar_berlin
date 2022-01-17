@@ -16,6 +16,8 @@ This repository is forked on https://github.com/jjx3455/solar_berlin and https:/
 - (Alternatively, skip downloading the tiles and use the pre-processed GeoTIFFs available as "converted.zip" https://drive.google.com/drive/folders/1zJGu6x-S13IBi_N0VGynjAypKGTq6JSC)
 - (Alternatively 2, skip the extraction too and use the sample data available as "selected_512.zip" from https://drive.google.com/drive/folders/1zJGu6x-S13IBi_N0VGynjAypKGTq6JSC)
 
+- In order to run the Mask R CNN model, additionally install Detectron2: https://detectron2.readthedocs.io/en/latest/tutorials/install.html
+
 ## Getting the original data
 
 To download and convert the original data:
@@ -42,12 +44,24 @@ To extract the data into usable map/mask tiles and select a sample for the model
 The current model uses a pre-trained MobileNetV2 model for semantic segementation
 of rooftops (pixel-by-pixel prediction of roof/no-roof).
 
-To run the model:
+To run the model (MobileNetV2):
 
 - If not using the pre-extracted sample tiles:
     - modify the parameters in ```run_model.py``` to point at a different data selection folder
     - Run ```python run_model.py```
     - Inspect results in logs
+
+There is also a Detectron2 Mask R-CNN model for instance segmentation of roofs
+along with their PV category.
+
+To run the model (Mask R-CNN):
+- If not using the pre-extracted sample tiles:
+    - modify the parameters in ```run_mask_r_cnn.py``` to point at a different data selection folder
+    - Run ```python run_mask_r_cnn.py```
+    - Inspect results in logs
+- Generate predictions:
+    - modify the parameters in ```predict_from_mask_r_cnn.py```
+    - Run ```python predict_from_mask_r_cnn.py```
 
 ## Running Tests
 
