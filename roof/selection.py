@@ -144,9 +144,13 @@ class DataExtractor(DataHandler):
             self._verify_output_path(self.tile_path)
         except OutputPathExistsError:
             output_map_tile_fns = glob.glob(
-                os.path.join(self.tile_path, "**", "*_map.png"), recursive=True)
+                os.path.join(self.tile_path, "**", "*_map.png"),
+                recursive=True,
+            )
             output_msk_tile_fns = glob.glob(
-                os.path.join(self.tile_path, "**", "*_msk.png"), recursive=True)
+                os.path.join(self.tile_path, "**", "*_msk.png"),
+                recursive=True,
+            )
 
             expected_tile_nos = len(self._input_raster_fns) * \
                 (self.raster_tile_size**2 // self.tile_size**2)
@@ -165,7 +169,10 @@ class DataExtractor(DataHandler):
                     print("Coco jsons incomplete. Recreating.")
                     self.total_tiles = 0
                     self._extract_data(
-                        self.tile_size, self.tile_path, coco_only=True)
+                        self.tile_size,
+                        self.tile_path,
+                        coco_only=True,
+                    )
                 else:
                     print("Coco json present. Extraction complete")
                     self.total_tiles = len(output_map_tile_fns)
@@ -203,7 +210,12 @@ class DataExtractor(DataHandler):
                     if found_tile_nos == expected_tiles:
                         print(
                             f"{subfolder_fn} already extracted. Checking coco...")
-                        if os.path.exists(os.path.join(tile_path, subfolder_fn, subfolder_fn + ".json")):
+                        json_path = os.path.join(
+                            tile_path,
+                            subfolder_fn,
+                            subfolder_fn + ".json",
+                        )
+                        if os.path.exists(json_path):
                             print(f"{subfolder_fn} coco present. Skipping...")
                             self.total_tiles += expected_tiles
                             continue
@@ -214,8 +226,13 @@ class DataExtractor(DataHandler):
                     else:
                         # check whether a vector file exists for this raster
                         # if not, skip this raster
-                        if not os.path.exists(os.path.join(
-                                self._input_path, "vector", subfolder_fn, subfolder_fn + ".shp")):
+                        shp_path = os.path.join(
+                            self._input_path,
+                            "vector",
+                            subfolder_fn,
+                            subfolder_fn + ".shp",
+                        )
+                        if not os.path.exists(shp_path):
                             print(
                                 f"No vector file for {subfolder_fn}. Skipping...")
                             continue
@@ -336,12 +353,8 @@ class DataExtractor(DataHandler):
                 # 0 is now "no roof", 63, 127, 191, 255 are the pv categories
                 tmp_msk_raster_clip_array = tmp_msk_raster_clip_array / 4 * 255
 
-            tmp_xmin, _, _, tmp_ymax =\
-                raster_map_file.GetGeoTransform()[0], raster_map_file.GetGeoTransform()[0]\
-                + raster_map_file.RasterXSize * raster_map_file.GetGeoTransform()[1], raster_map_file.GetGeoTransform()[3]\
-                + raster_map_file.RasterYSize * \
-                raster_map_file.GetGeoTransform(
-                )[5], raster_map_file.GetGeoTransform()[3]
+            tmp_xmin = raster_map_file.GetGeoTransform()[0]
+            tmp_ymax = raster_map_file.GetGeoTransform()[3]
 
             # create a coco json file for this tile
             coco_json = {
@@ -435,11 +448,11 @@ class DataExtractor(DataHandler):
                         polygon = row
 
                         # get the extens of the current tile
-                        x_min_extent = tmp_xmin + x_coord * pixel_size
-                        x_max_extent = x_min_extent + tile_size * pixel_size
+                        x_min_ext = tmp_xmin + x_coord * pixel_size
+                        x_max_ext = x_min_ext + tile_size * pixel_size
 
-                        y_min_extent = tmp_ymax - y_coord * pixel_size
-                        y_max_extent = y_min_extent - tile_size * pixel_size
+                        y_min_ext = tmp_ymax - y_coord * pixel_size
+                        y_max_ext = y_min_ext - tile_size * pixel_size
 
                         # get the category for this polygon
                         category = int(polygon["eig_kl_pv"])
@@ -451,7 +464,7 @@ class DataExtractor(DataHandler):
                             y = sub_vector_ymax - y
 
                         full_extent_poly = box(
-                            x_min_extent, y_min_extent, x_max_extent, y_max_extent
+                            x_min_ext, y_min_ext, x_max_ext, y_max_ext
                         )
 
                         segmentation_clipped = Polygon(segmentation_geo)\
@@ -472,7 +485,8 @@ class DataExtractor(DataHandler):
                         # convert the segmentation to coco format
                         segmentations = []
                         area = 0
-                        if segmentation_clipped.geom_type == "Point" or segmentation_clipped.geom_type == "LineString":
+                        if segmentation_clipped.geom_type == "Point"\
+                                or segmentation_clipped.geom_type == "LineString":
                             continue
 
                         if segmentation_clipped.geom_type == "MultiPolygon":
@@ -521,7 +535,12 @@ class DataExtractor(DataHandler):
                     self.total_tiles += 1
 
                     # save the coco json file
-                    with open(os.path.join(tile_path, subfolder_fn, f"{map_tile_name}.json"), "w") as f:
+                    tile_json_path = os.path.join(
+                        tile_path,
+                        subfolder_fn,
+                        f"{map_tile_name}.json",
+                    )
+                    with open(tile_json_path, "w") as f:
                         json.dump(coco_json, f)
 
             print(f"{map_tile_name} tiles created.")
@@ -599,7 +618,6 @@ class DataSelector(DataHandler):
 
         self._copy_image_files(
             file_lists,
-            input_path=self.extractor.tile_path,
             output_path=self.output_path,
         )
 
@@ -685,7 +703,6 @@ class DataSelector(DataHandler):
             with open(os.path.join(output_path, subfolder, "coco.json"), "w") as f:
                 json.dump(coco_json, f)
 
-
     def _verify_request_size(self) -> None:
         """Verify that the requested number of tiles can be met.
 
@@ -765,13 +782,12 @@ class DataSelector(DataHandler):
         return [files_train, files_test]
 
     @staticmethod
-    def _copy_image_files(image_files: list, input_path: str,
-                          output_path: str, delete_existing_output_path_no_warning=False):
+    def _copy_image_files(image_files: list, output_path: str,
+                          delete_existing_output_path_no_warning=False):
         """Copy image files from the input path to the output path.
 
         Args:
-            image_files (list): Filenames as returned by select_random_map_images
-            input_path (str): original file location
+            image_files (list): File paths as returned by select_random_map_images
             output_path (str): file location to copy to
             delete_existing_output_path_no_warning (bool, optional): Delete output
             path first if it exists, without warning. Defaults to False.
@@ -786,8 +802,10 @@ class DataSelector(DataHandler):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         else:
-            raise OutputPathExistsError("At least one of the output directory already exists."
-                                        "\nSet delete_existing=True to remove it.")
+            raise OutputPathExistsError(
+                "At least one of the output directory already exists."
+                "\nSet delete_existing=True to remove it."
+            )
 
         # get file names into a dict for easier processing
         files = {}
