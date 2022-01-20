@@ -20,13 +20,13 @@ import tensorflow
 from roof.dataloader import DataLoader
 
 # Importing the model class
-from unet.class_unet_resnet101v2 import Unet
+from unet.unet_resnet101v2 import Unet
 
 # Importing the loggind class. The parameters of the training will be saved in a main log,,
 # During the training the model is saved in a log subfolder, ath the end of the training,
 # snapshots from the test predictions are producted, and the graphs of the metrics of the
 # training are dropped in the corresponding local log folder.
-from logging_class import Logs
+from roof.logging import Logs
 
 tensorflow.keras.backend.clear_session()
 
