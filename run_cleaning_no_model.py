@@ -1,6 +1,6 @@
 # Data cleaning in the absence of
 
-from class_automated_data_cleaning import DataCleaning
+from roof.automated_data_cleaning import DataCleaning
 
 
 PATH_TO_CLEAN = "data/j_to_clean"
