@@ -240,8 +240,9 @@ class DataLoader:
         self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
 
         # fetch batches in background during model training
-        self.dataset = self.dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-
+        self.dataset = self.dataset.prefetch(
+            buffer_size=tf.data.experimental.AUTOTUNE
+        )
     def get_config(self) -> dict:
         """Return the key characteristics of the loaded data"""
         return {
