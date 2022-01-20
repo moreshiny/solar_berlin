@@ -13,19 +13,14 @@ from roof.errors import (
 
 
 class TestDataLoader(unittest.TestCase):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data_paths = [
-            os.path.join(
-                "data", "testing", "selected_test", "selected_tiles_224", "train"
-            ),
-            os.path.join(
-                "data",
-                "testing",
-                "selected_test",
-                "selected_tiles_500_10_5_42",
-                "train",
-            ),
+            os.path.join("data", "testing", "selected_test",
+                         "selected_tiles_224", "train"),
+            os.path.join("data", "testing", "selected_test",
+                         "selected_tiles_500_10_5_42", "train"),
         ]
 
     def _tile_size_from_path(self, data_path):
@@ -40,11 +35,6 @@ class TestDataLoader(unittest.TestCase):
     def test_dataloader_returns_tfdataset_of_correct_shape(self):
         for data_path in self.data_paths:
             tile_size = self._tile_size_from_path(data_path)
-            if tile_size == 224:
-                legacy_mode = True
-            else:
-                legacy_mode = False
-
             if tile_size == 224:
                 legacy_mode = True
             else:
@@ -67,7 +57,10 @@ class TestDataLoader(unittest.TestCase):
         data_path = self.data_paths[0]
         tile_size = self._tile_size_from_path(data_path)
         true_samples = 10
-        dataloader = DataLoader(data_path, input_shape=(tile_size, tile_size, 3))
+        dataloader = DataLoader(
+            data_path,
+            input_shape=(tile_size, tile_size, 3),
+        )
         dataloader.load()
         self.assertEqual(dataloader.n_samples, true_samples)
 
@@ -92,9 +85,11 @@ class TestDataLoader(unittest.TestCase):
             for map_path, mask_path in zip(map_paths, mask_paths):
                 map_name = map_path.numpy().decode("utf-8").split("map")[0]
                 if "mask" in mask_path.numpy().decode("utf-8"):
-                    mask_name = mask_path.numpy().decode("utf-8").split("mask")[0]
+                    mask_name =\
+                        mask_path.numpy().decode("utf-8").split("mask")[0]
                 else:
-                    mask_name = mask_path.numpy().decode("utf-8").split("msk")[0]
+                    mask_name =\
+                        mask_path.numpy().decode("utf-8").split("msk")[0]
 
                 self.assertEqual(map_name, mask_name)
 
@@ -157,7 +152,10 @@ class TestDataLoader(unittest.TestCase):
         tile_size = 600  # non-matching tile size
         for data_path in self.data_paths:
             with self.assertRaises(InsuffientDataError):
-                DataLoader(data_path, input_shape=(tile_size, tile_size, 3))
+                DataLoader(
+                    data_path,
+                    input_shape=(tile_size, tile_size, 3),
+                )
 
     def test_dataloader_raises_error_legacy_mode_new_data(self):
         tile_size = 500
@@ -250,4 +248,7 @@ class TestDataLoader(unittest.TestCase):
                 pv2 = (msk.numpy() == 2).sum()
                 pv3 = (msk.numpy() == 3).sum()
                 pv4 = (msk.numpy() == 4).sum()
-                self.assertListEqual([no_roof, pv1, pv2, pv3, pv4], true_values)
+                self.assertListEqual(
+                    [no_roof, pv1, pv2, pv3, pv4],
+                    true_values,
+                )
