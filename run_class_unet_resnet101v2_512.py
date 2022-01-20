@@ -20,7 +20,7 @@ import tensorflow
 from roof.dataloader import DataLoader
 
 # Importing the model class
-from models.class_unet_resnet101v2 import Unet
+from unet.class_unet_resnet101v2 import Unet
 
 # Importing the loggind class. The parameters of the training will be saved in a main log,,
 # During the training the model is saved in a log subfolder, ath the end of the training,
