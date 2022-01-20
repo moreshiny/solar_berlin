@@ -1,6 +1,6 @@
 """run file for the automated cleaning class."""
-from class_automated_data_cleaning import DataCleaning
-from class_unet_resnet101v2 import Unet
+from roof.automated_data_cleaning import DataCleaning
+from unet.unet_resnet101v2 import Unet
 
 # Define the parameters of the model to be used.
 OUTPUT_CLASSES = 5  # number of categorical classes.
