@@ -4,7 +4,15 @@ import tensorflow as tf
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
+=======
+from roof.errors import (
+    InvalidPathError,
+    LegacyModeError,
+    InsuffientDataError
+)
+>>>>>>> 0b6e282 (Minor cleanup in dataloader)
 
 
 class LegacyModeError(Exception):
@@ -188,7 +196,10 @@ class DataLoader:
         useable_paths.sort()
 
         # split input and target
-        input_paths = [filename for filename in useable_paths if "map" in filename]
+        input_paths = [
+            filename for filename in useable_paths
+            if "map" in filename
+        ]
         # TODO "mask" is needed only for legacy mode, remove when no longer needed
 <<<<<<< HEAD:roof/dataloader.py
 <<<<<<< HEAD:roof/dataloader.py
@@ -202,8 +213,7 @@ class DataLoader:
 >>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
 =======
         target_paths = [
-            filename
-            for filename in useable_paths
+            filename for filename in useable_paths
             if "mask" in filename or "msk" in filename
         ]
 >>>>>>> 28bd397 (minor formatting dataloader):dataloader.py
@@ -259,12 +269,16 @@ class DataLoader:
             return img
 
         if channels == "RGB" or channels == "A":
-            [image,] = tf.py_function(
-                _decode_tensor_load_image, [tensor, "rgba"], [tf.float32]
+            [image, ] = tf.py_function(
+                _decode_tensor_load_image,
+                [tensor, "rgba"],
+                [tf.float32],
             )
         elif channels == "L":
-            [image,] = tf.py_function(
-                _decode_tensor_load_image, [tensor, "grayscale"], [tf.float32]
+            [image, ] = tf.py_function(
+                _decode_tensor_load_image,
+                [tensor, "grayscale"],
+                [tf.float32],
             )
 
         # normalize and keep queried channels
@@ -332,6 +346,7 @@ class DataLoader:
 
         # store in attribute
         self.dataset = tf.data.Dataset.zip((inputs, targets))
+<<<<<<< HEAD
 
         # caching
 <<<<<<< HEAD
@@ -363,6 +378,8 @@ class DataLoader:
 =======
         # self.dataset = self.dataset.cache()
 
+=======
+>>>>>>> 0b6e282 (Minor cleanup in dataloader)
         # shuffle and create batches
         if shuffle:
             self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
@@ -371,9 +388,15 @@ class DataLoader:
         self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
 
         # fetch batches in background during model training
+<<<<<<< HEAD
         self.dataset = self.dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 >>>>>>> 93c4af9 (dataloader updated for shuffling option)
 
+=======
+        self.dataset = self.dataset.prefetch(
+            buffer_size=tf.data.experimental.AUTOTUNE
+        )
+>>>>>>> 0b6e282 (Minor cleanup in dataloader)
     def get_config(self) -> dict:
         """Return the key characteristics of the loaded data"""
         return {
