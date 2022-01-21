@@ -2,52 +2,8 @@ import glob
 import os
 import tensorflow as tf
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
-=======
-from roof.errors import (
-    InvalidPathError,
-    LegacyModeError,
-    InsuffientDataError
-)
->>>>>>> 0b6e282 (Minor cleanup in dataloader)
-
-
-class LegacyModeError(Exception):
-    """ Raised when legacy modes is used on incompatible data """
-    pass
-
-
-class InvalidPathError(Exception):
-    """ Raised when an invalid path is given """
-    pass
-
-
-class InsuffientDataError(Exception):
-    """ Raised when a path does not contain sufficient images of the right size """
-    pass
-=======
-<<<<<<<< HEAD:roof/dataloader.py
-from roof.errors import (
-========
-<<<<<<< HEAD
 from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
 
-=======
-from common.errors import (
->>>>>>>> bdb2ba5 (Combine classes into a single roof module):loading/dataloader.py
-    InvalidPathError,
-    LegacyModeError,
-    InsuffientDataError
-)
->>>>>>> 3ab6826 (Move dataloader errors to common errors)
-=======
-from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
->>>>>>> 93c4af9 (dataloader updated for shuffling option)
-
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
 class DataLoader:
     """Class for creating tensorflow dataset."""
@@ -71,14 +27,6 @@ class DataLoader:
                 coded as 63 (worst), 127, 191, and 255 (best).
             batch_size (int, optional): Batch size for model training.
                 Defaults to 32.
-<<<<<<< HEAD:roof/dataloader.py
-<<<<<<< HEAD:roof/dataloader.py
-=======
-            n_samples(int, optional): Number of input-target pairs to load.
-                Returns all available pairs if set to None. Defaults to None.
->>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
-=======
->>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
             input_shape (tuple, optional): Shape of input images.
                 Defaults to (224, 224, 3).
             multiclass (bool, optional): Whether to use multiclass or binary
@@ -88,15 +36,7 @@ class DataLoader:
         """
         # initialize attributes
         if not os.path.exists(path):
-<<<<<<< HEAD:roof/dataloader.py
-<<<<<<< HEAD:roof/dataloader.py
             raise InvalidPathError(f"Path {path} does not exist.")
-=======
-            raise FileNotFoundError(f"Path {path} does not exist.")
->>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
-=======
-            raise InvalidPathError(f"Path {path} does not exist.")
->>>>>>> b0c8908 (Use custom exception names):dataloader.py
         self.path = path
         self.batch_size = batch_size
         self._dataset_input = None
@@ -107,19 +47,9 @@ class DataLoader:
 
         # TODO remove legacy mode when no longer needed
         if legacy_mode:
-<<<<<<< HEAD
-<<<<<<< HEAD:roof/dataloader.py
             assert (
                 multiclass == False
             ), "Legacy mode is not compatible with multiclass mode."
-=======
-            assert multiclass == False, "Legacy mode is not compatible with multiclass mode."
->>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
-=======
-            assert (
-                multiclass == False
-            ), "Legacy mode is not compatible with multiclass mode."
->>>>>>> 93c4af9 (dataloader updated for shuffling option)
         self._legacy_mode = legacy_mode
         self._multiclass = multiclass
 
@@ -136,15 +66,7 @@ class DataLoader:
         if self._legacy_mode:
             for target_path in target_paths:
                 if "msk" in target_path:
-<<<<<<< HEAD:roof/dataloader.py
-<<<<<<< HEAD:roof/dataloader.py
                     raise LegacyModeError(
-=======
-                    raise ValueError(
->>>>>>> a887e5d (Add legacy mode sanity check (by filename)):dataloader.py
-=======
-                    raise LegacyModeError(
->>>>>>> b0c8908 (Use custom exception names):dataloader.py
                         "Filnames indicate new type data but legacy mode is enabled."
                     )
 
@@ -170,53 +92,20 @@ class DataLoader:
         useable_paths = self._discard_wrong_img_paths(all_paths)
 
         if len(useable_paths) == 0:
-<<<<<<< HEAD:roof/dataloader.py
-<<<<<<< HEAD:roof/dataloader.py
             raise InsuffientDataError(
                 f"No images found in {self.path} with the correct size."
             )
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
-=======
-            raise FileNotFoundError(
-=======
-            raise InsuffientDataError(
->>>>>>> b0c8908 (Use custom exception names):dataloader.py
-                f"No images found in {self.path} with the correct size."
-                )
->>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 3ab6826 (Move dataloader errors to common errors)
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
         useable_paths.sort()
 
         # split input and target
-        input_paths = [
-            filename for filename in useable_paths
-            if "map" in filename
-        ]
+        input_paths = [filename for filename in useable_paths if "map" in filename]
         # TODO "mask" is needed only for legacy mode, remove when no longer needed
-<<<<<<< HEAD:roof/dataloader.py
-<<<<<<< HEAD:roof/dataloader.py
         target_paths = [
             filename
             for filename in useable_paths
             if "mask" in filename or "msk" in filename
         ]
-=======
-        target_paths = [filename for filename in useable_paths if "mask" in filename or "msk" in filename]
->>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
-=======
-        target_paths = [
-            filename for filename in useable_paths
-            if "mask" in filename or "msk" in filename
-        ]
->>>>>>> 28bd397 (minor formatting dataloader):dataloader.py
 
         assert len(input_paths) == len(
             target_paths
@@ -245,15 +134,7 @@ class DataLoader:
             channels (str): The color channels of the image that is desired.
                 Either "RGB", "A" (alpha), or "L" (greyscale). All channels are
                 normalized such that 255 -> 1.0 (in "RGB" and "A") or 255 ->
-<<<<<<< HEAD:roof/dataloader.py
-<<<<<<< HEAD:roof/dataloader.py
                 4.0 (in "L").
-=======
-                4.0 (in "L"). 
->>>>>>> 8557ec8 (Update dataloader docs):dataloader.py
-=======
-                4.0 (in "L").
->>>>>>> c8ec9a0 (Remove n_samples from dataloader and add some error handling):dataloader.py
 
         Returns:
             tf.image: An image tensor of type float32. In "RGB" and "A"
@@ -269,13 +150,13 @@ class DataLoader:
             return img
 
         if channels == "RGB" or channels == "A":
-            [image, ] = tf.py_function(
+            [image,] = tf.py_function(
                 _decode_tensor_load_image,
                 [tensor, "rgba"],
                 [tf.float32],
             )
         elif channels == "L":
-            [image, ] = tf.py_function(
+            [image,] = tf.py_function(
                 _decode_tensor_load_image,
                 [tensor, "grayscale"],
                 [tf.float32],
@@ -346,40 +227,6 @@ class DataLoader:
 
         # store in attribute
         self.dataset = tf.data.Dataset.zip((inputs, targets))
-<<<<<<< HEAD
-
-        # caching
-<<<<<<< HEAD
-<<<<<<< HEAD
-        # self.dataset = self.dataset.cache()
-
-        # shuffle and create batches
-        if shuffle:
-            self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
-
-        self.dataset = self.dataset.repeat()
-=======
-        #self.dataset = self.dataset.cache()
-
-        # shuffle and create batches
-        self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
-        #self.dataset = self.dataset.repeat()
->>>>>>> 720c0fd (remove caching from dataloader)
-        self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
-
-        # fetch batches in background during model training
-<<<<<<< HEAD
-        self.dataset = self.dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-=======
-        self.dataset = self.dataset.prefetch(
-            buffer_size=tf.data.experimental.AUTOTUNE
-        )
->>>>>>> 68eacb2 (updated version of the dataloader fro devd_dataselection)
-=======
-        # self.dataset = self.dataset.cache()
-
-=======
->>>>>>> 0b6e282 (Minor cleanup in dataloader)
         # shuffle and create batches
         if shuffle:
             self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
@@ -388,15 +235,8 @@ class DataLoader:
         self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
 
         # fetch batches in background during model training
-<<<<<<< HEAD
         self.dataset = self.dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
->>>>>>> 93c4af9 (dataloader updated for shuffling option)
 
-=======
-        self.dataset = self.dataset.prefetch(
-            buffer_size=tf.data.experimental.AUTOTUNE
-        )
->>>>>>> 0b6e282 (Minor cleanup in dataloader)
     def get_config(self) -> dict:
         """Return the key characteristics of the loaded data"""
         return {
