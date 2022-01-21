@@ -1,5 +1,5 @@
 import tensorflow as tf
-from models.unet_mobilenetv2_pt import Model
+from unet.unet_mobilenetv2_pt import Model
 
 PATH_TRAIN = "data/test_data_224/train"
 PATH_VAL = "data/test_data_224/test"

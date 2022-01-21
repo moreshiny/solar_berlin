@@ -2,7 +2,7 @@
 """
 
 import tensorflow
-from models.unet_resnet101v2_pt import Model
+from unet.unet_resnet101v2_pt import Model
 
 PATH_TRAIN = "data/selected_512/train"
 PATH_VAL = "data/selected_512/test"
