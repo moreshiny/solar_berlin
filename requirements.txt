@@ -1,7 +1,6 @@
 pillow
 tensorflow>=2.6
 numpy
-pandas
 matplotlib
 gdal
 geopandas
