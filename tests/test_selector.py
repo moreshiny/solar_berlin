@@ -25,14 +25,18 @@ RANDOM_SEED = 42
 class TestDataExtractor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.input_path = os.path.join("data", "testing", "converted_test")
+        cls.input_path = os.path.join(
+            "data", "testing", "converted_test"
+        )
         cls.input_path_invalid_vector = os.path.join(
             "data", "testing", "converted_invalid_test"
         )
         cls.input_path_incomplete_extraction = os.path.join(
             "data", "testing", "converted_coco_missing_test"
         )
-        cls.output_path = os.path.join("data", "testing", "extracted")
+        cls.output_path = os.path.join(
+            "data", "testing", "extracted"
+        )
         cls.output_path_invalid_vector = os.path.join(
             "data", "testing", "extracted_invalid"
         )
@@ -73,7 +77,9 @@ class TestDataExtractor(unittest.TestCase):
     def test_data_extractor_creates_output_paths(self):
         for tile_size in self.tile_sizes:
             tile_subdir = self._tile_subdir(tile_size)
-            self.assertTrue(os.path.exists(os.path.join(self.output_path, tile_subdir)))
+            self.assertTrue(
+                os.path.exists(os.path.join(self.output_path, tile_subdir))
+            )
 
     def test_data_extractor_refuses_to_overwrite_existing_directory(self):
         existing_path = os.path.join(self.output_path, "existing_path")
@@ -98,7 +104,9 @@ class TestDataExtractor(unittest.TestCase):
     def test_data_extractor_produces_expected_filenames(self):
         for tile_size in self.tile_sizes:
             tile_subdir = self._tile_subdir(tile_size)
-            tile_fns = glob.glob(os.path.join(self.output_path, tile_subdir, "*.png"))
+            tile_fns = glob.glob(
+                os.path.join(self.output_path, tile_subdir, "*.png")
+            )
             for image_fn in tile_fns:
                 pattern_msk = "^.*-dop20[0-9_]*_msk.png$"
                 pattern_map = "^.*-dop20[0-9_]*_map.png$"
@@ -111,7 +119,9 @@ class TestDataExtractor(unittest.TestCase):
     def test_data_extractor_produces_expected_map_msk_split(self):
         for tile_size in self.tile_sizes:
             tile_subdir = self._tile_subdir(tile_size)
-            tile_fns = glob.glob(os.path.join(self.output_path, tile_subdir, "*.png"))
+            tile_fns = glob.glob(
+                os.path.join(self.output_path, tile_subdir, "*.png")
+            )
             map_count = 0
             msk_count = 0
             for image_fn in tile_fns:
@@ -124,7 +134,9 @@ class TestDataExtractor(unittest.TestCase):
     def test_data_extractor_produces_expected_image_sizes(self):
         for tile_size in self.tile_sizes:
             tile_subdir = self._tile_subdir(tile_size)
-            tile_fns = glob.glob(os.path.join(self.output_path, tile_subdir, "*.png"))
+            tile_fns = glob.glob(
+                os.path.join(self.output_path, tile_subdir, "*.png")
+            )
             for image_fn in tile_fns:
                 image = np.array(Image.open(image_fn))
                 if "map" in image_fn:
@@ -199,11 +211,9 @@ class TestDataExtractor(unittest.TestCase):
     def test_data_extractor_produces_masks_with_expected_categories(self):
         all_msk_files = []
         for tile_size in self.tile_sizes:
-            all_msk_files += glob.glob(
-                os.path.join(
-                    self.output_path, self._tile_subdir(tile_size), "**", "*_msk.png"
-                )
-            )
+            all_msk_files += glob.glob(os.path.join(
+                self.output_path, self._tile_subdir(tile_size), "**", "*_msk.png"
+            ))
         msk_set = set()
         for msk_file in all_msk_files:
             msk_array = np.array(Image.open(msk_file))
@@ -217,17 +227,12 @@ class TestDataExtractor(unittest.TestCase):
         all_files_known = []
         for tile_size in self.tile_sizes:
             all_files_new += glob.glob(
-                os.path.join(
-                    self.output_path, self._tile_subdir(tile_size), "**", "*.png"
-                )
+                os.path.join(self.output_path,
+                             self._tile_subdir(tile_size), "**", "*.png")
             )
             all_files_known += glob.glob(
-                os.path.join(
-                    self.output_path + "_test",
-                    self._tile_subdir(tile_size),
-                    "**",
-                    "*.png",
-                )
+                os.path.join(self.output_path + "_test",
+                             self._tile_subdir(tile_size), "**", "*.png")
             )
         all_files_new.sort()
         all_files_known.sort()
@@ -253,30 +258,20 @@ class TestDataExtractor(unittest.TestCase):
             for raster_name in raster_names:
                 raster_basename = os.path.basename(raster_name)
                 raster_basename_wo_ext = os.path.splitext(raster_basename)[0]
-                self.assertTrue(
-                    os.path.exists(
-                        os.path.join(
-                            self.output_path, tile_subdir, raster_basename_wo_ext
-                        )
-                    )
-                )
+                self.assertTrue(os.path.exists(os.path.join(
+                    self.output_path, tile_subdir, raster_basename_wo_ext)))
 
     def test_data_extractor_creates_expected_coco_json(self):
         coco_new_fns = []
         coco_known_fns = []
         for tile_size in self.tile_sizes:
             coco_new_fns += glob.glob(
-                os.path.join(
-                    self.output_path, self._tile_subdir(tile_size), "**", "*.json"
-                )
+                os.path.join(self.output_path,
+                             self._tile_subdir(tile_size), "**", "*.json")
             )
             coco_known_fns += glob.glob(
-                os.path.join(
-                    self.output_path + "_test",
-                    self._tile_subdir(tile_size),
-                    "**",
-                    "*.json",
-                )
+                os.path.join(self.output_path + "_test",
+                             self._tile_subdir(tile_size), "**", "*.json")
             )
         coco_new_fns.sort()
         coco_known_fns.sort()
@@ -288,18 +283,14 @@ class TestDataExtractor(unittest.TestCase):
 
     def test_data_extractor_creates_missing_coco_json_existing_tiles(self):
 
-        coco_to_clean = glob.glob(
-            os.path.join(self.output_path_incomplete_extraction, "**", "*.json"),
-            recursive=True,
-        )
+        coco_to_clean = glob.glob(os.path.join(
+            self.output_path_incomplete_extraction, "**", "*.json"), recursive=True)
 
         for coco_fn in coco_to_clean:
             os.remove(coco_fn)
 
-        temp_folders = glob.glob(
-            os.path.join(self.output_path_incomplete_extraction, "**", "temp"),
-            recursive=True,
-        )
+        temp_folders = glob.glob(os.path.join(
+            self.output_path_incomplete_extraction, "**", "temp"), recursive=True)
 
         for temp_folder in temp_folders:
             shutil.rmtree(temp_folder)
@@ -312,18 +303,13 @@ class TestDataExtractor(unittest.TestCase):
             lossy=True,
         )
         coco_new_fns = glob.glob(
-            os.path.join(
-                self.output_path_incomplete_extraction,
-                self._tile_subdir(250),
-                "**",
-                "*.json",
-            )
+            os.path.join(self.output_path_incomplete_extraction,
+                         self._tile_subdir(250), "**", "*.json")
         )
 
         coco_known_fns = glob.glob(
-            os.path.join(
-                self.output_path + "_test", self._tile_subdir(250), "**", "*.json"
-            )
+            os.path.join(self.output_path + "_test",
+                         self._tile_subdir(250), "**", "*.json")
         )
         coco_new_fns.sort()
         coco_known_fns.sort()
@@ -332,17 +318,25 @@ class TestDataExtractor(unittest.TestCase):
         for i in range(len(coco_new_fns)):
             self.assertTrue(filecmp.cmp(coco_new_fns[i], coco_known_fns[i]))
 
-
 class TestDataSelector(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         # remove output from last run
         cls.tile_sizes = TILE_SIZES
 
-        cls.extractor_input_path = os.path.join("data", "testing", "converted_test")
-        cls.input_path = os.path.join("data", "testing", "extracted_test")
-        cls.output_path = os.path.join("data", "testing", "selected")
-        cls.verfication_path = os.path.join("data", "testing", "selected_test")
+        cls.extractor_input_path = os.path.join(
+            "data", "testing", "converted_test"
+        )
+        cls.input_path = os.path.join(
+            "data", "testing", "extracted_test"
+        )
+        cls.output_path = os.path.join(
+            "data", "testing", "selected"
+        )
+        cls.verfication_path = os.path.join(
+            "data", "testing", "selected_test"
+        )
 
         # clean up here so we can leave output in place at the end
         cls._clean_up()
@@ -372,27 +366,24 @@ class TestDataSelector(unittest.TestCase):
                     test_n=selection_size[1],
                     random_seed=RANDOM_SEED,
                 )
-                cls.selected_paths.append(
-                    os.path.join(
-                        cls.output_path,
-                        cls._selected_subdir(
-                            tile_size,
-                            selection_size[0],
-                            selection_size[1],
-                            RANDOM_SEED,
-                        ),
-                    )
-                )
+                cls.selected_paths.append(os.path.join(
+                    cls.output_path,
+                    cls._selected_subdir(
+                        tile_size,
+                        selection_size[0],
+                        selection_size[1],
+                        RANDOM_SEED,
+                    ),
+                ))
 
     @classmethod
     def _selected_subdir(cls, tile_size, train_n, test_n, random_seed):
-        return (
-            f"selected_tiles"
-            + f"_{tile_size}"
-            + f"_{train_n}"
-            + f"_{test_n}"
-            + f"_{random_seed}"
-        )
+        return f"selected_tiles"\
+            + f"_{tile_size}"\
+            + f"_{train_n}"\
+            + f"_{test_n}"\
+            + f"_{random_seed}"\
+
 
     @classmethod
     def _clean_up(cls):
@@ -409,8 +400,10 @@ class TestDataSelector(unittest.TestCase):
 
     def test_data_selector_creates_output_paths(self):
         for selected_path in self.selected_paths:
-            self.assertTrue(os.path.exists(os.path.join(selected_path, "train")))
-            self.assertTrue(os.path.exists(os.path.join(selected_path, "test")))
+            self.assertTrue(os.path.exists(
+                os.path.join(selected_path, "train")))
+            self.assertTrue(os.path.exists(
+                os.path.join(selected_path, "test")))
 
     def test_data_selector_selects_requested_number_of_images(self):
         for selected_path in self.selected_paths:
@@ -424,7 +417,10 @@ class TestDataSelector(unittest.TestCase):
                 self.assertEqual(test_files_no, selection_size[1])
 
     def test_data_selector_refuses_to_overwrite_existing_directory(self):
-        existing_path = os.path.join(self.output_path, "existing_path")
+        existing_path = os.path.join(
+            self.output_path,
+            "existing_path"
+        )
         with self.assertRaises(OutputPathExistsError):
             DataSelector(
                 extractor=self.extractors[0],
@@ -517,9 +513,8 @@ class TestDataSelector(unittest.TestCase):
     def test_data_selector_produces_masks_with_expected_categories(self):
         all_msk_files = []
         for selected_path in self.selected_paths:
-            all_msk_files += glob.glob(
-                os.path.join(selected_path, "**", "*_msk.png"), recursive=True
-            )
+            all_msk_files += glob.glob(os.path.join(
+                selected_path, "**", "*_msk.png"), recursive=True)
         msk_set = set()
         for msk_file in all_msk_files:
             msk_array = np.array(Image.open(msk_file))
@@ -530,21 +525,17 @@ class TestDataSelector(unittest.TestCase):
 
     def test_data_selector_produces_expected_images(self):
         for selected_path in self.selected_paths:
-            all_files_new = sorted(
-                glob.glob(
-                    os.path.join(selected_path, "**", "*.png"),
-                    recursive=True,
-                )
-            )
+            all_files_new = sorted(glob.glob(
+                os.path.join(selected_path, "**", "*.png"),
+                recursive=True,
+            ))
             true_files_path = os.path.join(
                 self.verfication_path, os.path.basename(selected_path)
             )
-            all_files_known = sorted(
-                glob.glob(
-                    os.path.join(true_files_path, "**", "*.png"),
-                    recursive=True,
-                )
-            )
+            all_files_known = sorted(glob.glob(
+                os.path.join(true_files_path, "**", "*.png"),
+                recursive=True,
+            ))
         # check that all files are identical
         self.assertEqual(len(all_files_new), len(all_files_known))
         for i in range(len(all_files_new)):
@@ -560,7 +551,7 @@ class TestDataSelector(unittest.TestCase):
         for random_seed in random_seeds:
             selected_path = os.path.join(
                 self.output_path,
-                f"selected_tiles_{tile_size}_{train_n}_{test_n}_{random_seed}",
+                f"selected_tiles_{tile_size}_{train_n}_{test_n}_{random_seed}"
             )
 
             if os.path.exists(selected_path):
@@ -575,12 +566,10 @@ class TestDataSelector(unittest.TestCase):
                 random_seed=random_seed,
             )
 
-            selected_images.append(
-                glob.glob(
-                    os.path.join(selected_path, "**", "*.png"),
-                    recursive=True,
-                )
-            )
+            selected_images.append(glob.glob(
+                os.path.join(selected_path, "**", "*.png"),
+                recursive=True,
+            ))
 
         duplicates = set(selected_images[0]).intersection(selected_images[1])
         self.assertEqual(len(duplicates), 0)
@@ -597,7 +586,6 @@ class TestDataSelector(unittest.TestCase):
                 self.assertNotIn(test_file, train_fns)
 
     # TODO add test for file specified as output path
-
 
 if __name__ == "__main__":
     unittest.main()
