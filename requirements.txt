@@ -1,11 +1,7 @@
 pillow
 tensorflow>=2.6
 numpy
-pandas
 matplotlib
 gdal
-<<<<<<< HEAD
 geopandas
 opencv-python
-=======
->>>>>>> 9bd6c4f (Add gdal to requirements for data selector)

@@ -10,15 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
-<<<<<<< HEAD:unet/unet_resnet101v2_pt.py
-<<<<<<< HEAD:unet/unet_resnet101v2_pt.py
 from roof.dataloader import DataLoader
-=======
-from loading.dataloader import DataLoader
->>>>>>> b8e175c (Rename subfolders):models/unet_resnet101v2_pt.py
-=======
-from roof.dataloader import DataLoader
->>>>>>> bdb2ba5 (Combine classes into a single roof module):models/unet_resnet101v2_pt.py
 
 
 class Model:
