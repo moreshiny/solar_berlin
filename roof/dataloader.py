@@ -156,21 +156,13 @@ class DataLoader:
             return img
 
         if channels == "RGB" or channels == "A":
-<<<<<<< HEAD
-            [image,] = tf.py_function(
-=======
             [image, ] = tf.py_function(
->>>>>>> f91df60ead05acec3d4c5c239ba3d68087b650e0
                 _decode_tensor_load_image,
                 [tensor, "rgba"],
                 [tf.float32],
             )
         elif channels == "L":
-<<<<<<< HEAD
-            [image,] = tf.py_function(
-=======
             [image, ] = tf.py_function(
->>>>>>> f91df60ead05acec3d4c5c239ba3d68087b650e0
                 _decode_tensor_load_image,
                 [tensor, "grayscale"],
                 [tf.float32],

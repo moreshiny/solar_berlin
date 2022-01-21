@@ -120,62 +120,8 @@ class Unet(tensorflow.keras.Model):
         # Last convolution
         layer = self._last_conv(layer)
 
-<<<<<<< HEAD:unet/class_unet_resnet101v2.py
-<<<<<<< HEAD
         return layer
 
-=======
-        layer = tensorflow.math.argmax(layer, axis=-1)
-
-        return layer
-
-    def morph_open(self, image, filter_size):
-        """apply morphological opening op
-        Args:
-            image: 4D image
-                shape: batch, H, W, C
-            filter_size: size of kernel filter
-        """
-        filter_ = tensorflow.ones([filter_size, filter_size, 1], dtype=image.dtype)
-        strides = [1] * 4
-        dilations = [1, 1, 1, 1]
-
-        eroded = tensorflow.nn.erosion2d(
-            image, filter_, strides, "SAME", "NHWC", dilations
-        )
-
-        filter_ = tensorflow.ones([filter_size, filter_size, 1], dtype=image.dtype)
-        strides = [1, 1, 1, 1]
-        dilations = [1, 3, 3, 1]
-        dilated_1 = tensorflow.nn.dilation2d(
-            eroded, filter_, strides, "SAME", "NHWC", dilations
-        )
-
-        filter_ = tensorflow.ones(
-            [filter_size + 2, filter_size + 2, 1], dtype=image.dtype
-        )
-        strides = [1] * 4
-        dilations = [1, 3, 3, 1]
-
-        eroded_2 = tensorflow.nn.erosion2d(
-            dilated_1, filter_, strides, "SAME", "NHWC", dilations
-        )
-
-        filter_ = tensorflow.ones(
-            [filter_size + 2, filter_size + 2, 1], dtype=image.dtype
-        )
-        strides = [1, 1, 1, 1]
-        dilations = [1, 3, 3, 1]
-        dilated_2 = tensorflow.nn.dilation2d(
-            eroded_2, filter_, strides, "SAME", "NHWC", dilations
-        )
-        return dilated_2
-
->>>>>>> e3c44a6 (model class moved to the model folder, further doctrings added, further cleaning of the folder)
-=======
-        return layer
-
->>>>>>> 0766ef3 (remove morphological transformations):models/class_unet_resnet101v2.py
     def get_config(self):
         """Overwrite the get_config() methods to save and load the model.
         see the documentation:
@@ -285,7 +231,7 @@ class Downsample(tensorflow.keras.Model):
         Args:
             layer_names: list of strings containing the layer names
             which defines the skip connections. Default to [].
-            trainable_layer: number of frozen layer at teh head of the pretrained network.
+            trainable_layer: number of frozen layer at the head of the pretrained network.
         """
         super(Downsample, self).__init__()
         # Saving the layer names.
