@@ -6,12 +6,9 @@ from PIL import Image
 from osgeo import gdal
 from osgeo import ogr
 from abc import ABC
-<<<<<<< HEAD
 import json
 import geopandas as gpd
 from shapely.geometry import Polygon, box
-=======
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
 from roof.errors import (
     AbsolutePathError,
@@ -110,7 +107,6 @@ class DataExtractor(DataHandler):
         """
         self._testing = testing
         self.tile_size = tile_size
-<<<<<<< HEAD
         self.total_tiles = 0
 
         self._verify_input_path(input_path)
@@ -118,18 +114,6 @@ class DataExtractor(DataHandler):
         self._input_raster_fns = sorted(glob.glob(
             os.path.join(self._input_path, "raster", "*.tif")
         ))
-=======
-
-        self._verify_input_path(input_path)
-        self._input_path = input_path
-        self._input_raster_fns = sorted(glob.glob(
-            os.path.join(self._input_path, "raster", "*.tif")
-<<<<<<< HEAD
-        )
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
-=======
-        ))
->>>>>>> 7f4e30d (Change extractor to create subfolders for tiles)
 
         if not type(self.tile_size) is int or self.tile_size < 1:
             raise InvalidTileSizeError(
@@ -160,8 +144,6 @@ class DataExtractor(DataHandler):
             self._verify_output_path(self.tile_path)
         except OutputPathExistsError:
             output_map_tile_fns = glob.glob(
-<<<<<<< HEAD
-<<<<<<< HEAD
                 os.path.join(self.tile_path, "**", "*_map.png"),
                 recursive=True,
             )
@@ -169,24 +151,12 @@ class DataExtractor(DataHandler):
                 os.path.join(self.tile_path, "**", "*_msk.png"),
                 recursive=True,
             )
-=======
-                os.path.join(self.tile_path, "*_map.png"))
-            output_msk_tile_fns = glob.glob(
-                os.path.join(self.tile_path, "*_msk.png"))
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
-=======
-                os.path.join(self.tile_path, "**", "*_map.png"), recursive=True)
-            output_msk_tile_fns = glob.glob(
-                os.path.join(self.tile_path, "**", "*_msk.png"), recursive=True)
->>>>>>> 7f4e30d (Change extractor to create subfolders for tiles)
 
             expected_tile_nos = len(self._input_raster_fns) * \
                 (self.raster_tile_size**2 // self.tile_size**2)
 
             if len(output_map_tile_fns) != expected_tile_nos\
                     or len(output_msk_tile_fns) != expected_tile_nos:
-<<<<<<< HEAD
-<<<<<<< HEAD
                 self.total_tiles = 0
                 self._extract_data(self.tile_size, self.tile_path)
             else:
@@ -206,28 +176,11 @@ class DataExtractor(DataHandler):
                 else:
                     print("Coco json present. Extraction complete")
                     self.total_tiles = len(output_map_tile_fns)
-=======
-                raise OutputPathExistsError(
-                    f"""Output path {self.tile_path} exists and does not contain
-                        the expected number of tiles"""
-                )
-=======
-                self.total_tiles = 0
-                self._extract_data(self.tile_size, self.tile_path)
->>>>>>> 7f4e30d (Change extractor to create subfolders for tiles)
-            else:
-                print("Tiles already extracted. All done.")
-                self.total_tiles = len(output_map_tile_fns)
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
         else:
             self.total_tiles = 0
             self._extract_data(self.tile_size, self.tile_path)
 
-<<<<<<< HEAD
     def _extract_data(self, tile_size: int, tile_path: str, coco_only: bool = False):
-=======
-    def _extract_data(self, tile_size: int, tile_path: str):
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
         """ Main method for extracting data. For each raster tile encountered,
             the corresponding vector file is rasterised, clipped to the size of
             the raster and converted to a mask image. Creates a temporary
@@ -236,24 +189,16 @@ class DataExtractor(DataHandler):
         Args:
             tile_size (int): Size of the tiles to be extracted.
             tile_path (str): The subdirectory in which to save the tiles.
-<<<<<<< HEAD
             coco_only (bool, optional): Whether to only extract coco jsons (if)
                 tiles have already been extracted. Defaults to False.
-=======
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
         """
         if not os.path.exists(tile_path):
             os.makedirs(tile_path)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 7f4e30d (Change extractor to create subfolders for tiles)
         for count, raster_map_fn in enumerate(self._input_raster_fns):
             print(
                 f"Processing #{count+1} of {len(self._input_raster_fns)}: {raster_map_fn}..."
             )
-<<<<<<< HEAD
             tile_coco_only = coco_only
 
             subfolder_fn = os.path.basename(raster_map_fn).split(".")[0]
@@ -299,40 +244,6 @@ class DataExtractor(DataHandler):
 
             # create a temporary working directory
             temp_path = os.path.join(tile_path, subfolder_fn, "temp")
-=======
-        for raster_map_fn in self._input_raster_fns:
-            print(f"Processing {raster_map_fn}...")
-            # create a temporary working directory
-            temp_path = os.path.join(tile_path, "temp")
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
-=======
-
-            subfolder_fn = os.path.basename(raster_map_fn).split(".")[0]
-            if os.path.exists(os.path.join(tile_path, subfolder_fn)):
-                found_tile_nos = len(glob.glob(
-                    os.path.join(tile_path, subfolder_fn, "*_map.png")))
-                expected_tiles = (self.raster_tile_size**2 // tile_size**2)
-                if found_tile_nos == expected_tiles:
-                    print(f"{subfolder_fn} already extracted. Skipping...")
-                    self.total_tiles += expected_tiles
-                    continue
-                else:
-                    # check whether a vector file exists for this raster
-                    # if not, skip this raster
-                    if not os.path.exists(os.path.join(
-                            self._input_path, "vector", subfolder_fn, subfolder_fn + ".shp")):
-                        print(
-                            f"No vector file for {subfolder_fn}. Skipping...")
-                        continue
-                    else:
-                        raise OutputPathExistsError(
-                            f"""Output path {tile_path}/{subfolder_fn} exists and does not contain
-                            the expected number of tiles"""
-                        )
-
-            # create a temporary working directory
-            temp_path = os.path.join(tile_path, subfolder_fn, "temp")
->>>>>>> 7f4e30d (Change extractor to create subfolders for tiles)
             self._verify_output_path(temp_path)
             if not os.path.exists(temp_path):
                 os.makedirs(temp_path)
@@ -360,7 +271,6 @@ class DataExtractor(DataHandler):
 
             x_min, x_max, y_min, y_max = vector_layer.GetExtent()
 
-<<<<<<< HEAD
             shapefile = gpd.read_file(vector_fn)
             # set pixel_size to match the map raster
             pixel_size = .2
@@ -406,49 +316,6 @@ class DataExtractor(DataHandler):
                 )
                 # ensure the raster is closed so that changes are written to disk
                 del tmp_msk_raster
-=======
-            # define a temporary rastr for the mask
-            tmp_msk_raster_fn = os.path.join(
-                temp_path,
-                map_tile_name + "_msk.tif"
-            )
-            # set pixel_size to match the map raster
-            pixel_size = .2
-            # resolution based on the extent we got from the vector
-            x_res = int((x_max - x_min) / pixel_size)
-            y_res = int((y_max - y_min) / pixel_size)
-            gtiff_driver = gdal.GetDriverByName("GTiff")
-            tmp_msk_raster = gtiff_driver.Create(
-                tmp_msk_raster_fn,
-                x_res,
-                y_res,
-                1,  # one band
-                gdal.GDT_Int16
-            )
-            # GT(0) x-coordinate of the upper-left corner of the upper-left pixel.
-            # GT(1) w-e pixel resolution / pixel width.
-            # GT(2) row rotation (typically zero).
-            # GT(3) y-coordinate of the upper-left corner of the upper-left pixel.
-            # GT(4) column rotation (typically zero).
-            # GT(5) n-s pixel resolution / pixel height (negative value for a north-up image).
-            tmp_msk_raster.SetGeoTransform(
-                (x_min, pixel_size, 0, y_max, 0, -pixel_size)
-            )
-
-            # set the first (and only) band default value to -1
-            tmp_msk_raster.GetRasterBand(1).SetNoDataValue(-1)
-
-            # overwrite the band with each polygon's 'eig_kl_pv' (0, 1, 2 or 3)
-            # any area not covered by a vector object remains at -1 ("no roof")
-            gdal.RasterizeLayer(
-                tmp_msk_raster,
-                [1],  # band one (the only band)
-                vector_layer,
-                options=["ATTRIBUTE=eig_kl_pv"]
-            )
-            # ensure the raster is closed so that changes are written to disk
-            del tmp_msk_raster
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
             # open the map raster to get the extent
             raster_map_file = gdal.Open(raster_map_fn)
@@ -459,7 +326,6 @@ class DataExtractor(DataHandler):
             x_min_p = int((x_min_s - x_min) / pixel_size)
             y_min_p = int((y_max - y_max_s) / pixel_size)
 
-<<<<<<< HEAD
             if not tile_coco_only:
                 # create a temporary raster for the clipped mask
                 tmp_msk_raster_clip_fn = os.path.join(
@@ -526,37 +392,10 @@ class DataExtractor(DataHandler):
                     },
                 ],
             }
-=======
-            # create a temporary raster for the clipped mask
-            tmp_msk_raster_clip_fn = os.path.join(
-                temp_path, map_tile_name + "_msk_clip.tif"
-            )
-            # crop mask rater to the extent of the map raster
-            # this cuts any objects overlapping the edges at the edge of the map
-            gdal.Translate(tmp_msk_raster_clip_fn, tmp_msk_raster_fn, srcWin=[
-                x_min_p,
-                y_min_p,
-                self.raster_tile_size,
-                self.raster_tile_size,
-            ])
-
-            # load the map and tempoary mask as numpy arrays for processing
-            raster_map_array = gdal.Open(raster_map_fn).ReadAsArray()
-            tmp_msk_raster_clip_array = gdal.Open(
-                tmp_msk_raster_clip_fn).ReadAsArray()
-
-            # shift categories by 1 to make 0 the lowest category
-            # 0 is now "no roof", 1, 2, 3, 4 are the pv categories
-            tmp_msk_raster_clip_array = tmp_msk_raster_clip_array + 1
-            # shift categories into visible range, 4 is the max possible value
-            # 0 is now "no roof", 63, 127, 191, 255 are the pv categories
-            tmp_msk_raster_clip_array = tmp_msk_raster_clip_array / 4 * 255
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
             # shift a window of tile_size over the rasters and save the tiles
             # as png images - if self.raster_tile_size is smaller than the
             # raster extent, a part of the map is omited
-<<<<<<< HEAD
             for y_coord in range(0, self.raster_tile_size, tile_size):
                 for x_coord in range(0, self.raster_tile_size, tile_size):
 
@@ -704,35 +543,6 @@ class DataExtractor(DataHandler):
                     with open(tile_json_path, "w") as f:
                         json.dump(coco_json, f)
 
-=======
-            for x_coord in range(0, self.raster_tile_size, tile_size):
-                for y_coord in range(0, self.raster_tile_size, tile_size):
-                    sub_array_msk = tmp_msk_raster_clip_array[
-                        x_coord: (x_coord + tile_size),
-                        y_coord: (y_coord + tile_size),
-                    ]
-                    # same msk tiles as greyscale
-                    im = Image.fromarray(sub_array_msk).convert("L")
-                    im.save(os.path.join(
-                        tile_path, subfolder_fn, f"{map_tile_name}_{x_coord}_{y_coord}_msk.png"
-                    ))
-
-                    sub_array_map = raster_map_array[
-                        :,
-                        x_coord:x_coord + tile_size,
-                        y_coord:y_coord + tile_size,
-                    ]
-                    # save map tiles as channel-last RGB
-                    sub_array_map = sub_array_map.transpose(1, 2, 0)
-                    im = Image.fromarray(sub_array_map).convert("RGB")
-                    im.save(os.path.join(
-                        tile_path, subfolder_fn, f"{map_tile_name}_{x_coord}_{y_coord}_map.png"
-                    ))
-
-                    # keep track of the number of tiles created
-                    self.total_tiles += 1
-
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
             print(f"{map_tile_name} tiles created.")
             # when testing, keep temporary files and stop after the first map tile
             if not self._testing:
@@ -742,7 +552,6 @@ class DataExtractor(DataHandler):
                 break
 
 
-<<<<<<< HEAD
 class DummyExtractor(DataExtractor):
     """ A trusting dummy extractor that simply records what data it finds. """
 
@@ -756,8 +565,6 @@ class DummyExtractor(DataExtractor):
         self.tile_path = input_path
 
 
-=======
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
 class DataSelector(DataHandler):
     """
     DataSelector handles the selection of data from a folder containing map
@@ -769,13 +576,9 @@ class DataSelector(DataHandler):
         """Initialize the DataSelector.
 
         Args:
-<<<<<<< HEAD
             extractor (DataExtractor or str): An extractor pointing to the input data.
                 Alternatively pass a string pointing to extracted tiles. This will
                 use the data pointed to (with a DummyExtractor).
-=======
-            extractor (DataExtractor): An extractor pointing to the input data.
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
             output_path (str): A path-like in which to store the selected tiles.
                 A subdirectory is created within this folder.
             train_n (int): Number of train tiles to select.
@@ -783,7 +586,6 @@ class DataSelector(DataHandler):
             random_seed (int, optional): Seed for shuffling the data. Defaults to 0.
 
         """
-<<<<<<< HEAD
 
         if type(extractor) is str:
             print("Path was passed so using dummy extractor.")
@@ -791,9 +593,6 @@ class DataSelector(DataHandler):
             self.extractor = DummyExtractor(extractor)
         else:
             self.extractor = extractor
-=======
-        self.extractor = extractor
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
         self.train_n = train_n
         self.test_n = test_n
@@ -801,11 +600,7 @@ class DataSelector(DataHandler):
 
         self._verify_superdirectory_path(output_path)
         output_subdir = self._subdir_name(
-<<<<<<< HEAD
             self.extractor.tile_size,
-=======
-            extractor.tile_size,
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
             train_n,
             test_n,
             random_seed
@@ -823,19 +618,15 @@ class DataSelector(DataHandler):
 
         self._copy_image_files(
             file_lists,
-<<<<<<< HEAD
             output_path=self.output_path,
         )
 
         self._copy_coco_info(
             file_lists,
-=======
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
             input_path=self.extractor.tile_path,
             output_path=self.output_path,
         )
 
-<<<<<<< HEAD
     def _copy_coco_info(self, file_lists, input_path, output_path):
 
         # get file names into a dict for easier processing
@@ -912,8 +703,6 @@ class DataSelector(DataHandler):
             with open(os.path.join(output_path, subfolder, "coco.json"), "w") as f:
                 json.dump(coco_json, f)
 
-=======
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
     def _verify_request_size(self) -> None:
         """Verify that the requested number of tiles can be met.
 
@@ -966,31 +755,13 @@ class DataSelector(DataHandler):
         Returns:
             list: List of lists of tuples pairs of map and mask images
         """
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 7f4e30d (Change extractor to create subfolders for tiles)
         # get all files in input directory and subdirectories
         files = glob.glob(
             os.path.join(input_path, "**", "*.png"), recursive=True
         )
-<<<<<<< HEAD
         files_map = [file for file in files if "map" in file]
         # TODO "mask" is only needed for legacy mode, remove when no longer needed
         files_mask = [file for file in files if "msk" in file or "mask" in file]
-=======
-        # get all files in input directory
-        files = os.listdir(input_path)
-        files_map = [file for file in files if "map" in file]
-        # TODO "mask" is only needed for legacy mode, remove when no longer needed
-        files_mask = [
-            file for file in files if "msk" in file or "mask" in file]
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
-=======
-        files_map = [file for file in files if "map" in file]
-        # TODO "mask" is only needed for legacy mode, remove when no longer needed
-        files_mask = [file for file in files if "msk" in file or "mask" in file]
->>>>>>> 7f4e30d (Change extractor to create subfolders for tiles)
 
         # sort files by name
         files_map.sort()
@@ -1011,22 +782,12 @@ class DataSelector(DataHandler):
         return [files_train, files_test]
 
     @staticmethod
-<<<<<<< HEAD
     def _copy_image_files(image_files: list, output_path: str,
                           delete_existing_output_path_no_warning=False):
         """Copy image files from the input path to the output path.
 
         Args:
             image_files (list): File paths as returned by select_random_map_images
-=======
-    def _copy_image_files(image_files: list, input_path: str,
-                          output_path: str, delete_existing_output_path_no_warning=False):
-        """Copy image files from the input path to the output path.
-
-        Args:
-            image_files (list): Filenames as returned by select_random_map_images
-            input_path (str): original file location
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
             output_path (str): file location to copy to
             delete_existing_output_path_no_warning (bool, optional): Delete output
             path first if it exists, without warning. Defaults to False.
@@ -1041,15 +802,10 @@ class DataSelector(DataHandler):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         else:
-<<<<<<< HEAD
             raise OutputPathExistsError(
                 "At least one of the output directory already exists."
                 "\nSet delete_existing=True to remove it."
             )
-=======
-            raise OutputPathExistsError("At least one of the output directory already exists."
-                                        "\nSet delete_existing=True to remove it.")
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
 
         # get file names into a dict for easier processing
         files = {}
@@ -1065,22 +821,8 @@ class DataSelector(DataHandler):
 
             # copy files to output folder
             for file_tuple in files[subfolder]:
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 7f4e30d (Change extractor to create subfolders for tiles)
                 for file_path_in in file_tuple:
                     file_path_out = os.path.join(
                         output_path_subfolder, os.path.basename(file_path_in)
                     )
                     shutil.copy(file_path_in, file_path_out)
-<<<<<<< HEAD
-=======
-                for file_path in file_tuple:
-                    full_path_in = os.path.join(input_path, file_path)
-                    full_path_out = os.path.join(
-                        output_path_subfolder, file_path)
-                    shutil.copy(full_path_in, full_path_out)
->>>>>>> bdb2ba5 (Combine classes into a single roof module)
-=======
->>>>>>> 7f4e30d (Change extractor to create subfolders for tiles)

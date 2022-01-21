@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from models.unet_basic_nt import Model
+from unet.unet_basic_nt import Model
 
 PATH_TRAIN = "data/test_data_224/train"
 PATH_VAL = "data/test_data_224/test"
