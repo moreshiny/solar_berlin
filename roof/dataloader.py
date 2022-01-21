@@ -51,7 +51,9 @@ class DataLoader:
 
         # TODO remove legacy mode when no longer needed
         if legacy_mode:
-            assert multiclass == False, "Legacy mode is not compatible with multiclass mode."
+            assert (
+                multiclass == False
+            ), "Legacy mode is not compatible with multiclass mode."
         self._legacy_mode = legacy_mode
         self._multiclass = multiclass
 
@@ -154,13 +156,15 @@ class DataLoader:
             return img
         if channels == "RGB" or channels == "A":
             [image, ] = tf.py_function(
-                _decode_tensor_load_image, [
-                    tensor, "rgba"], [tf.float32]
+                _decode_tensor_load_image,
+                [tensor, "rgba"],
+                [tf.float32],
             )
         elif channels == "L":
             [image, ] = tf.py_function(
-                _decode_tensor_load_image, [
-                    tensor, "grayscale"], [tf.float32]
+                _decode_tensor_load_image,
+                [tensor, "grayscale"],
+                [tf.float32],
             )
 
         # normalize and keep queried channels
@@ -228,10 +232,6 @@ class DataLoader:
 
         # store in attribute
         self.dataset = tf.data.Dataset.zip((inputs, targets))
-
-        # caching
-        # self.dataset = self.dataset.cache()
-
         # shuffle and create batches
         if shuffle:
             self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
