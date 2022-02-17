@@ -4,6 +4,8 @@ The following people contributed equally to this repository (in alphabetical ord
 * [JJX](https://github.com/jjx3455)
 * [Corstiaen Versteegh](https://github.com/cverst)
 
+A presentation of the project is available [here](https://moreshiny.github.io/solar_berlin/presentation_solar_berlin.pdf).
+
 This repository is forked on https://github.com/jjx3455/solar_berlin and https://github.com/cverst/solar_berlin to reflect the work of all contributors.
 
 # Estimating the potential photovoltaic production of Berlin rooftops
