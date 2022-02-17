@@ -7,11 +7,13 @@ from unet.unet_basic_nt import Model
 class TestModel(unittest.TestCase):
 
     def test_model_simple_run_does_not_result_in_error(self):
+        test_data_path = os.path.join("tests", "test_data")
+
         train_path = os.path.join(
-            "data", "testing", "selected_test", "selected_tiles_224", "train"
+            test_data_path, "selected_test", "selected_tiles_224", "train"
         )
         test_path = os.path.join(
-            "data", "testing", "selected_test", "selected_tiles_224", "test"
+            test_data_path, "selected_test", "selected_tiles_224", "test"
         )
 
         layer_names = [

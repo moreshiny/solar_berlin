@@ -1,6 +1,8 @@
 # Project specific
 data
 logs
+tests/test_data
+tests/test_output
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
