@@ -25,24 +25,33 @@ RANDOM_SEED = 42
 class TestDataExtractor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        test_data_path = os.path.join("tests", "test_data")
+        test_output_path = os.path.join("tests", "test_output")
+
         cls.input_path = os.path.join(
-            "data", "testing", "converted_test"
+            test_data_path, "converted_test"
         )
         cls.input_path_invalid_vector = os.path.join(
-            "data", "testing", "converted_invalid_test"
+            test_data_path, "converted_invalid_test"
         )
         cls.input_path_incomplete_extraction = os.path.join(
-            "data", "testing", "converted_coco_missing_test"
+            test_data_path, "converted_coco_missing_test"
         )
+        cls.known_output_path = os.path.join(
+            test_data_path, "extracted_test"
+        )
+
         cls.output_path = os.path.join(
-            "data", "testing", "extracted"
+            test_output_path, "extracted"
         )
         cls.output_path_invalid_vector = os.path.join(
-            "data", "testing", "extracted_invalid"
+            test_output_path, "extracted_invalid"
         )
         cls.output_path_incomplete_extraction = os.path.join(
-            "data", "testing", "extracted_coco_missing_test"
+            test_output_path, "extracted_coco_missing_test"
         )
+        cls.existing_path = os.path.join(test_output_path, "existing_path")
+
         cls.tile_sizes = TILE_SIZES
 
         # clean up here so we can leave results in place to inspect at the end
@@ -60,6 +69,7 @@ class TestDataExtractor(unittest.TestCase):
                     lossy=True,
                 )
             )
+        os.makedirs(cls.existing_path)
 
     @classmethod
     def _clean_up(cls):
@@ -69,6 +79,8 @@ class TestDataExtractor(unittest.TestCase):
                 tile_path = os.path.join(base_path, tile_subdir)
                 if os.path.exists(tile_path):
                     shutil.rmtree(tile_path)
+        if os.path.exists(cls.existing_path):
+            shutil.rmtree(cls.existing_path)
 
     @staticmethod
     def _tile_subdir(tile_size):
@@ -82,11 +94,10 @@ class TestDataExtractor(unittest.TestCase):
             )
 
     def test_data_extractor_refuses_to_overwrite_existing_directory(self):
-        existing_path = os.path.join(self.output_path, "existing_path")
         with self.assertRaises(OutputPathExistsError):
             DataExtractor(
                 input_path=self.input_path,
-                output_path=existing_path,
+                output_path=self.existing_path,
                 tile_size=250,  # corresponding directory exists
                 testing=True,  # limit input to 16 tiles for faster testing
             )
@@ -231,7 +242,7 @@ class TestDataExtractor(unittest.TestCase):
                              self._tile_subdir(tile_size), "**", "*.png")
             )
             all_files_known += glob.glob(
-                os.path.join(self.output_path + "_test",
+                os.path.join(self.known_output_path,
                              self._tile_subdir(tile_size), "**", "*.png")
             )
         all_files_new.sort()
@@ -270,7 +281,7 @@ class TestDataExtractor(unittest.TestCase):
                              self._tile_subdir(tile_size), "**", "*.json")
             )
             coco_known_fns += glob.glob(
-                os.path.join(self.output_path + "_test",
+                os.path.join(self.known_output_path,
                              self._tile_subdir(tile_size), "**", "*.json")
             )
         coco_new_fns.sort()
@@ -308,7 +319,7 @@ class TestDataExtractor(unittest.TestCase):
         )
 
         coco_known_fns = glob.glob(
-            os.path.join(self.output_path + "_test",
+            os.path.join(self.known_output_path,
                          self._tile_subdir(250), "**", "*.json")
         )
         coco_new_fns.sort()
@@ -325,17 +336,22 @@ class TestDataSelector(unittest.TestCase):
         # remove output from last run
         cls.tile_sizes = TILE_SIZES
 
+        test_data_path = os.path.join("tests", "test_data")
+        test_output_path = os.path.join("tests", "test_output")
+
         cls.extractor_input_path = os.path.join(
-            "data", "testing", "converted_test"
+            test_data_path, "converted_test"
         )
         cls.input_path = os.path.join(
-            "data", "testing", "extracted_test"
-        )
-        cls.output_path = os.path.join(
-            "data", "testing", "selected"
+            test_data_path, "extracted_test"
         )
         cls.verfication_path = os.path.join(
-            "data", "testing", "selected_test"
+            test_data_path, "selected_test"
+        )
+        cls.existing_path = os.path.join(test_data_path, "existing_path")
+
+        cls.output_path = os.path.join(
+            test_output_path, "selected"
         )
 
         # clean up here so we can leave output in place at the end
@@ -375,6 +391,7 @@ class TestDataSelector(unittest.TestCase):
                         RANDOM_SEED,
                     ),
                 ))
+        os.makedirs(cls.existing_path)
 
     @classmethod
     def _selected_subdir(cls, tile_size, train_n, test_n, random_seed):
@@ -397,6 +414,8 @@ class TestDataSelector(unittest.TestCase):
                 )
                 if os.path.exists(os.path.join(cls.output_path, subdir)):
                     shutil.rmtree(os.path.join(cls.output_path, subdir))
+        if os.path.exists(cls.existing_path):
+            shutil.rmtree(cls.existing_path)
 
     def test_data_selector_creates_output_paths(self):
         for selected_path in self.selected_paths:
@@ -417,14 +436,10 @@ class TestDataSelector(unittest.TestCase):
                 self.assertEqual(test_files_no, selection_size[1])
 
     def test_data_selector_refuses_to_overwrite_existing_directory(self):
-        existing_path = os.path.join(
-            self.output_path,
-            "existing_path"
-        )
         with self.assertRaises(OutputPathExistsError):
             DataSelector(
                 extractor=self.extractors[0],
-                output_path=existing_path,
+                output_path=self.existing_path,
                 train_n=10,
                 test_n=5,
                 random_seed=RANDOM_SEED,
@@ -481,7 +496,7 @@ class TestDataSelector(unittest.TestCase):
             )
 
             # determine the tile_size from the folder name
-            tile_size = int(selected_path.split("_")[2])
+            tile_size = int(os.path.basename(selected_path).split("_")[2])
 
             for image_fn in all_files:
                 image = np.array(Image.open(image_fn))

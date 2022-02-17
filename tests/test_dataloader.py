@@ -16,11 +16,44 @@ class TestDataLoader(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        test_data_path = os.path.join("tests", "test_data")
         self.data_paths = [
-            os.path.join("data", "testing", "selected_test",
-                         "selected_tiles_224", "train"),
-            os.path.join("data", "testing", "selected_test",
-                         "selected_tiles_500_10_5_42", "train"),
+            os.path.join(test_data_path,
+                         "selected_test",
+                         "selected_tiles_224",
+                         "train"
+                         ),
+            os.path.join(test_data_path,
+                         "selected_test",
+                         "selected_tiles_500_10_5_42",
+                         "train"
+                         ),
+        ]
+        self.more_roof_path = os.path.join(
+            test_data_path,
+            "selected_test",
+            "selected_tiles_250_10_5_42",
+            "more_roof"
+        )
+        self.less_roof_path = os.path.join(
+            test_data_path,
+            "selected_test",
+            "selected_tiles_250_10_5_42",
+            "less_roof"
+        )
+        self.multiroof_paths = [
+            os.path.join(
+                test_data_path,
+                "selected_test",
+                "selected_tiles_250_10_5_42",
+                "pv3"
+            ),
+            os.path.join(
+                test_data_path,
+                "selected_test",
+                "selected_tiles_250_10_5_42",
+                "pv4"
+            ),
         ]
 
     def _tile_size_from_path(self, data_path):
@@ -167,7 +200,7 @@ class TestDataLoader(unittest.TestCase):
             )
 
     def test_dataloader_returns_expected_values_for_binary_mode_more(self):
-        image_dir = "data/testing/selected_test/selected_tiles_250_10_5_42/more_roof/"
+        image_dir = self.more_roof_path
         dataloader = DataLoader(
             image_dir,
             input_shape=(250, 250, 3),
@@ -191,9 +224,8 @@ class TestDataLoader(unittest.TestCase):
             self.assertEqual(np.sum(roof), true_roof)
 
     def test_dataloader_returns_expected_values_for_binary_mode_less(self):
-        image_dir = "data/testing/selected_test/selected_tiles_250_10_5_42/less_roof/"
         dataloader = DataLoader(
-            image_dir,
+            self.less_roof_path,
             input_shape=(250, 250, 3),
             legacy_mode=False,
             multiclass=False,
@@ -201,9 +233,9 @@ class TestDataLoader(unittest.TestCase):
         )
         dataloader.load()
 
-        for image_fn in os.listdir(image_dir):
+        for image_fn in os.listdir(self.less_roof_path):
             if "msk" in image_fn:
-                msk_fn = os.path.join(image_dir, image_fn)
+                msk_fn = os.path.join(self.less_roof_path, image_fn)
                 msk = np.array(Image.open(msk_fn))
                 true_roof = (msk > 0).sum()
 
@@ -215,12 +247,8 @@ class TestDataLoader(unittest.TestCase):
             self.assertEqual(np.sum(roof), true_roof)
 
     def test_dataloader_returns_expected_values_for_multiclass_mode(self):
-        image_dirs = [
-            "data/testing/selected_test/selected_tiles_250_10_5_42/pv3/",
-            "data/testing/selected_test/selected_tiles_250_10_5_42/pv4/",
-        ]
 
-        for image_dir in image_dirs:
+        for image_dir in self.multiroof_paths:
             dataloader = DataLoader(
                 image_dir,
                 input_shape=(250, 250, 3),
