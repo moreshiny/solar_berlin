@@ -14,7 +14,8 @@ This repository is forked on https://github.com/jjx3455/solar_berlin and https:/
 
 - Install Python 3.7 (other versions may work) and the packages listed in requirements.txt
 - To run the unet model effectively, gpu-accelertion in tensorflow is advisable - https://www.tensorflow.org/install/gpu
-- To run the Mask R-CNN model additionally install the packages listed in maskr/requirements.txt - gpu-acceleration for pytorch is advisable
+- To run the Mask R-CNN model additionally install the packages listed in maskr/requirements.txt and maskr/requirements-detectron.txt - gpu-acceleration for pytorch is advisable
+- It may be necessary to install gdal into your operating system and pin gdal in the requirements.txt to the same version as your system (see https://pypi.org/project/GDAL/)
 - In order to convert the original raster tiles from ecw to GeoTIFF GDAL must be built with ecw support (see https://trac.osgeo.org/gdal/wiki/ECW)
 - (Alternatively, skip downloading the tiles and use the pre-processed GeoTIFFs available as "converted.zip" https://drive.google.com/drive/folders/1zJGu6x-S13IBi_N0VGynjAypKGTq6JSC)
 - (Alternatively 2, skip the extraction too and use the sample data available as "selected_512.zip" from https://drive.google.com/drive/folders/1zJGu6x-S13IBi_N0VGynjAypKGTq6JSC)
