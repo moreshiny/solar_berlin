@@ -348,7 +348,7 @@ class TestDataSelector(unittest.TestCase):
         cls.verfication_path = os.path.join(
             test_data_path, "selected_test"
         )
-        cls.existing_path = os.path.join(test_data_path, "existing_path")
+        cls.existing_path = os.path.join(test_output_path, "existing_path")
 
         cls.output_path = os.path.join(
             test_output_path, "selected"
