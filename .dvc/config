@@ -1,0 +1,5 @@
+[core]
+    autostage = true
+    remote = test_store
+['remote "test_store"']
+    url = s3://moreshiny-berlin-solar/dvc_test_store
