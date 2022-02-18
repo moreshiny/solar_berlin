@@ -81,7 +81,9 @@ class DataExtractor(DataHandler):
     usable map-mask pairs for furhter processing.
     """
 
-    def __init__(self, input_path: str, output_path: str, tile_size: int, lossy=False, testing=False):
+    def __init__(self, input_path: str, output_path: str, tile_size: int,
+                 lossy: bool = False, complete_existing: bool = False,
+                 testing: bool = False):
         """ Initialize DataExtractor.
 
         Args:
@@ -96,14 +98,16 @@ class DataExtractor(DataHandler):
             lossy (bool, optional): Whether to permit tile_size values that
                 result in data loss at the edge of a raster. When False, only
                 factors of 10k are permitted as tile_size. Defaults to False.
+            complete_existing (bool, optional): Whether to complete an existing
+                output directory (may over-write data). Defaults to False.
             testing (bool, optional): When true, only a small sub-portion of
                 the first raster encountered will be extracted. Defaults to False.
 
         Raises:
             InvalidTileSizeError: If tile_size is not a valid integer (or a
                 factor of 10k when Lossy is False).
-            OutputPathExistsError: If the output path already exists and does
-                not already contain matching extracted tiles.
+            OutputPathExistsError: If the output path already exists (and
+                complete_existing was set to False).
         """
         self._testing = testing
         self.tile_size = tile_size
@@ -143,39 +147,42 @@ class DataExtractor(DataHandler):
         try:
             self._verify_output_path(self.tile_path)
         except OutputPathExistsError:
-            output_map_tile_fns = glob.glob(
-                os.path.join(self.tile_path, "**", "*_map.png"),
-                recursive=True,
-            )
-            output_msk_tile_fns = glob.glob(
-                os.path.join(self.tile_path, "**", "*_msk.png"),
-                recursive=True,
-            )
-
-            expected_tile_nos = len(self._input_raster_fns) * \
-                (self.raster_tile_size**2 // self.tile_size**2)
-
-            if len(output_map_tile_fns) != expected_tile_nos\
-                    or len(output_msk_tile_fns) != expected_tile_nos:
-                self.total_tiles = 0
-                self._extract_data(self.tile_size, self.tile_path)
+            if not complete_existing:
+                raise
             else:
-                print("Tiles already extracted. Checking coco.")
-                coco_fns = glob.glob(
-                    os.path.join(self.tile_path, "**", "*.json")
+                output_map_tile_fns = glob.glob(
+                    os.path.join(self.tile_path, "**", "*_map.png"),
+                    recursive=True,
                 )
-                expected_coco_nos = len(self._input_raster_fns)
-                if not len(coco_fns) == expected_coco_nos:
-                    print("Coco jsons incomplete. Recreating.")
+                output_msk_tile_fns = glob.glob(
+                    os.path.join(self.tile_path, "**", "*_msk.png"),
+                    recursive=True,
+                )
+
+                expected_tile_nos = len(self._input_raster_fns) * \
+                    (self.raster_tile_size**2 // self.tile_size**2)
+
+                if len(output_map_tile_fns) != expected_tile_nos\
+                        or len(output_msk_tile_fns) != expected_tile_nos:
                     self.total_tiles = 0
-                    self._extract_data(
-                        self.tile_size,
-                        self.tile_path,
-                        coco_only=True,
-                    )
+                    self._extract_data(self.tile_size, self.tile_path)
                 else:
-                    print("Coco json present. Extraction complete")
-                    self.total_tiles = len(output_map_tile_fns)
+                    print("Tiles already extracted. Checking coco.")
+                    coco_fns = glob.glob(
+                        os.path.join(self.tile_path, "**", "*.json")
+                    )
+                    expected_coco_nos = len(self._input_raster_fns)
+                    if not len(coco_fns) == expected_coco_nos:
+                        print("Coco jsons incomplete. Recreating.")
+                        self.total_tiles = 0
+                        self._extract_data(
+                            self.tile_size,
+                            self.tile_path,
+                            coco_only=True,
+                        )
+                    else:
+                        print("Coco json present. Extraction complete")
+                        self.total_tiles = len(output_map_tile_fns)
         else:
             self.total_tiles = 0
             self._extract_data(self.tile_size, self.tile_path)

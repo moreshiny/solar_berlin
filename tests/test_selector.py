@@ -69,7 +69,9 @@ class TestDataExtractor(unittest.TestCase):
                     lossy=True,
                 )
             )
-        os.makedirs(cls.existing_path)
+        for tile_size in cls.tile_sizes:
+            os.makedirs(os.path.join(cls.existing_path,
+                        f"tiles_{tile_size}"))
 
     @classmethod
     def _clean_up(cls):
@@ -93,13 +95,14 @@ class TestDataExtractor(unittest.TestCase):
                 os.path.exists(os.path.join(self.output_path, tile_subdir))
             )
 
-    def test_data_extractor_refuses_to_overwrite_existing_directory(self):
+    def test_data_extractor_refuses_to_overwrite_existing_directory_unless_instructed(self):
         with self.assertRaises(OutputPathExistsError):
             DataExtractor(
                 input_path=self.input_path,
                 output_path=self.existing_path,
                 tile_size=250,  # corresponding directory exists
                 testing=True,  # limit input to 16 tiles for faster testing
+                complete_existing=False,
             )
 
     def test_data_extractor_verifies_existing_input_directory(self):
@@ -108,6 +111,7 @@ class TestDataExtractor(unittest.TestCase):
             output_path=self.output_path,
             tile_size=self.tile_sizes[0],
             testing=True,  # limit input to 16 tiles for faster testing
+            complete_existing=True,
         )
         total_tiles = existing_extractor.total_tiles
         self.assertEqual(total_tiles, 16)
@@ -312,6 +316,7 @@ class TestDataExtractor(unittest.TestCase):
             tile_size=250,
             testing=True,  # limit input to 16 tiles for faster testing
             lossy=True,
+            complete_existing=True,
         )
         coco_new_fns = glob.glob(
             os.path.join(self.output_path_incomplete_extraction,
@@ -367,6 +372,7 @@ class TestDataSelector(unittest.TestCase):
                     tile_size=tile_size,
                     testing=True,  # limit input to 16 tiles for faster testing
                     lossy=True,
+                    complete_existing=True,
                 )
             )
 
@@ -391,7 +397,9 @@ class TestDataSelector(unittest.TestCase):
                         RANDOM_SEED,
                     ),
                 ))
-        os.makedirs(cls.existing_path)
+        for tile_size in cls.tile_sizes:
+            os.makedirs(os.path.join(cls.existing_path, cls._selected_subdir(
+                tile_size, selection_size[0], selection_size[1], RANDOM_SEED)))
 
     @classmethod
     def _selected_subdir(cls, tile_size, train_n, test_n, random_seed):
