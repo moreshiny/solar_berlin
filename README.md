@@ -67,6 +67,7 @@ To run the model (Mask R-CNN):
 
 ## Running Tests
 
+Data for testing is managed with DVC (https://dvc.org/).
 To run the tests:
-- Additionally download "testing.zip" from https://drive.google.com/drive/folders/1zJGu6x-S13IBi_N0VGynjAypKGTq6JSC and unzip it in the tests/test_data folder
+- Download the test data ```dvc pull```
 - Run ```python run_tests.py```
