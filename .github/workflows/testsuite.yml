@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    environment: testsuite
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3.8
@@ -27,6 +27,8 @@ jobs:
           pip install -r requirements.txt
       - name: Download Test Data
         run: |
+          dvc remote modify --local test_store access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          dvc remote modify --local test_store secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           dvc pull
       - name: Test with unittest
         run: |
