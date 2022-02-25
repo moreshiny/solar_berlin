@@ -2,11 +2,11 @@ name: Unittest Testsuite
 
 on:
   pull_request:
-    branches: [main devd]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
-  build:
+  testsuite:
     runs-on: ubuntu-latest
     environment: testsuite
     steps:
@@ -20,10 +20,12 @@ jobs:
           sudo apt-get install -y libgdal-dev python3-gdal
       - name: Adjust requirements.txt for GDAL
         run: |
+          # GDAL version to be installed by pip must match system-wide version
           sed -i "s/^gdal$/gdal==$(gdal-config --version)/" requirements.txt
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          # GDAL needs numpy to be installed first for _gdal_array
           pip install numpy
           pip install -r requirements.txt
       - name: Download Test Data
@@ -33,4 +35,5 @@ jobs:
           dvc pull
       - name: Test with unittest
         run: |
+          # GDAL fails without LD_PRELOAD of libstdc++.so.6
           LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 python -m unittest discover -s tests -p 'test_*.py'
