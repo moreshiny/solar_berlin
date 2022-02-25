@@ -1,10 +1,8 @@
 name: Unittest Testsuite
 
 on:
-  push:
-    branches: [devd devd_testing]
   pull_request:
-    branches: [devd devd_testing]
+    branches: [main devd]
 
 jobs:
   build:
