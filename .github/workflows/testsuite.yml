@@ -3,6 +3,7 @@ name: Unittest Testsuite
 on:
   pull_request:
     branches: [main devd]
+  workflow_dispatch:
 
 jobs:
   build:
