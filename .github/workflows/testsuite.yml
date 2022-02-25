@@ -32,4 +32,4 @@ jobs:
           dvc pull
       - name: Test with unittest
         run: |
-          python -m unittest discover -s tests -p 'test_*.py'
+          LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 python -m unittest discover -s tests -p 'test_*.py'
