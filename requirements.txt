@@ -5,3 +5,4 @@ matplotlib
 gdal
 geopandas
 opencv-python
+tqdm

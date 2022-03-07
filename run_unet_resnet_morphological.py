@@ -31,9 +31,9 @@ from roof.logging import Logs
 tensorflow.keras.backend.clear_session()
 
 # parameters of the model.
-OUTPUT_CLASSES = 1  # number of categorical classes. For 2 classes = 1.
+OUTPUT_CLASSES = 5  # number of categorical classes. For 2 classes = 1.
 INPUT_SHAPE = (512, 512, 3)  # input size
-EPOCHS = 1
+EPOCHS = 50
 PATIENCE = 7
 
 BATCH_SIZE = 8  # batchsize
@@ -48,8 +48,8 @@ COMMENT = "Tested on the clean 8000, first run with erosion/dilation,\n\
 
 # Path to data
 
-PATH_TRAIN = "data/test_data_512/train"
-PATH_TEST = "data/test_data_512/test"
+PATH_TRAIN = "data/bin_clean_8000/train"
+PATH_TEST = "data/bin_clean_8000/test"
 
 
 # calling the model.
@@ -59,6 +59,7 @@ model = Unet(
     drop_out=True,
     drop_out_rate={"512": 0.3, "256": 0.4, "128": 0.45, "64": 0.5},
     multiclass=bool(OUTPUT_CLASSES - 1),
+    filter_size=7,
 )
 
 # Starting the logs

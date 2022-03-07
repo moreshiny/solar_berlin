@@ -17,6 +17,7 @@ class Unet(tensorflow.keras.Model):
         fine_tune_at: int = 0,
         upstack_trainable: bool = True,
         multiclass: bool = False,
+        filter_size: int = 5,
     ):
         """Class initialisation:
         Args:
@@ -33,6 +34,7 @@ class Unet(tensorflow.keras.Model):
             upstack_trainable: Boolean, if True, the upstack is trainable. Default to True.
             multiclass: boolean, if True, modify the activation of the last convolution to softmax,\
                  else sigmoid. Default to False.
+            filter_size: the size of the filter of the open morphological transformation. 
         """
         super(Unet, self).__init__()
 
@@ -43,6 +45,7 @@ class Unet(tensorflow.keras.Model):
         self._drop_out_rate = drop_out_rate
         self._fine_tune_at = fine_tune_at
         self._upstack_trainable = upstack_trainable
+        self.filter_size = filter_size
 
         # Input layer
 
@@ -121,7 +124,7 @@ class Unet(tensorflow.keras.Model):
         layer = self._last_conv(layer)
 
         # Performing the morphological transformation.
-        filter_size = 5
+        filter_size = self.filter_size
         last = self._morph_open(layer, filter_size, n_classes=self._output_classes)
 
         return last
