@@ -17,7 +17,7 @@ PATH_TRAIN, string: path to the test folder containing the input pictures compat
 the dataloader format.
 """
 import tensorflow
-from roof.dataloader import DataLoader
+from roof.dataloader_with_weight import DataLoader
 
 # Importing the model class
 from unet.unet_resnet_morphological import Unet
@@ -48,8 +48,9 @@ COMMENT = "Tested on the clean 8000, first run with erosion/dilation,\n\
 
 # Path to data
 
-PATH_TRAIN = "data/bin_clean_8000/train"
-PATH_TEST = "data/bin_clean_8000/test"
+PATH_TRAIN = "data/test_data_512/train"
+PATH_TEST = "data/test_data_512/test"
+WEIGHT_DICT = {0: 0.0, 1: 100.0, 2: 100.0, 3: 100.0, 4: 50.0}
 
 
 # calling the model.
@@ -94,7 +95,7 @@ if OUTPUT_CLASSES > 1:
     MULTICLASS = True
     loss = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     metrics = [sparse_categorical_accuracy]
-    #metrics = [mae]
+    # metrics = [mae]
     metric_list = [metric.name for metric in metrics]
     model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
         filepath=log.checkpoint_filepath,
@@ -104,7 +105,7 @@ if OUTPUT_CLASSES > 1:
         save_best_only=True,
         verbose=1,
     )
-    class_weight ={0: 1, 1: 10, 2: 10, 3: 10, 4: 5}
+    class_weight = {0: 1, 1: 10, 2: 10, 3: 10, 4: 5}
 
 else:
     MULTICLASS = False
@@ -119,7 +120,7 @@ else:
         save_best_only=True,
         verbose=1,
     )
-    class_weight = None# This might not work in the multiclass situation!.
+    class_weight = None  # This might not work in the multiclass situation!.
 
 dl_train = DataLoader(
     PATH_TRAIN,
@@ -127,6 +128,7 @@ dl_train = DataLoader(
     input_shape=INPUT_SHAPE,
     legacy_mode=False,
     multiclass=MULTICLASS,
+    weight_dict=WEIGHT_DICT,
 )
 
 dl_test = DataLoader(
@@ -135,6 +137,7 @@ dl_test = DataLoader(
     input_shape=INPUT_SHAPE,
     legacy_mode=False,
     multiclass=MULTICLASS,
+    weight_dict=WEIGHT_DICT,
 )
 
 
@@ -195,7 +198,6 @@ history = model.fit(
         tensorboard_callback,
         early_stopping,
     ],
-    #class_weight = class_weight,
 )
 
 accuracies = {}

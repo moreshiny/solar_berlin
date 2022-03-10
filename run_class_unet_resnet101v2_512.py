@@ -33,7 +33,7 @@ tensorflow.keras.backend.clear_session()
 # parameters of the model.
 OUTPUT_CLASSES = 5  # number of categorical classes. For 2 classes = 1.
 INPUT_SHAPE = (512, 512, 3)  # input size
-EPOCHS = 35
+EPOCHS = 1
 PATIENCE = 7
 
 BATCH_SIZE = 8  # batchsize
@@ -47,8 +47,8 @@ COMMENT = "Tested on the clean 8000, first run with erosion/dilation,\n\
     erosion and dilation.   "
 
 # Path to data
-PATH_TRAIN = "data/bin_clean_8000/train"
-PATH_TEST = "data/bin_clean_8000/test"
+PATH_TRAIN = "data/cleaned_bin_4000/train"
+PATH_TEST = "data/cleaned_bin_4000/test"
 
 
 # calling the model.
