@@ -228,7 +228,7 @@ class DataLoader:
         self._dataset_input = self._dataset_input.map(
             lambda t: self._load_image(tensor=t, channels="RGB"),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
-        )
+        ).batch(self.batch_size)
 
         if self._legacy_mode:
             self._dataset_target = self._dataset_target.map(
@@ -245,7 +245,7 @@ class DataLoader:
             self._dataset_target = self._dataset_target.map(
                 lambda t: self._load_image(tensor=t, channels="L"),
                 num_parallel_calls=tf.data.experimental.AUTOTUNE,
-            )
+            ).batch(self.batch_size)
 
             # auxiliary function for mapping the wieht
             def a_function(x):
@@ -261,11 +261,15 @@ class DataLoader:
             for target in self._dataset_target:
                 weight = a_function(target)
                 if counter == 0:
-                    weights = tf.data.Dataset.from_tensor_slices(weight)
+                    weights = tf.data.Dataset.from_tensor_slices(weight).batch(
+                        self.batch_size
+                    )
                     counter = 1
                 else:
 
-                    weight = tf.data.Dataset.from_tensor_slices(weight)
+                    weight = tf.data.Dataset.from_tensor_slices(weight).batch(
+                        self.batch_size
+                    )
                     weights = weights.concatenate(weight)
             print("weights created")
 
@@ -285,8 +289,8 @@ class DataLoader:
         if shuffle:
             self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
         print("dataset created")
-        self.dataset = self.dataset.repeat()
-        self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
+        # self.dataset = self.dataset.repeat()
+        # self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
         print("dataset repeated and batched")
 
         # fetch batches in background during model training
