@@ -257,13 +257,15 @@ class DataLoader:
                 return x
 
             print("creating weights")
-            weights = []
+            counter = 0
             for target in self._dataset_target:
                 weight = a_function(target)
-                weights.append(weight)
+                if counter == 0:
+                    weights = tf.data.Dataset.from_tensor_slices(weight)
+                else:
+                    weight = tf.data.Dataset.from_tensor_slices(weight)
+                    weights = weights.concatenate(weight)
             print("weights created")
-
-            weights = tf.data.Dataset.from_tensor_slices(weights)
 
             print("weihgts passed to a datset")
 
