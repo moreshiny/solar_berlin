@@ -262,7 +262,9 @@ class DataLoader:
                 weight = a_function(target)
                 if counter == 0:
                     weights = tf.data.Dataset.from_tensor_slices(weight)
+                    counter = 1
                 else:
+
                     weight = tf.data.Dataset.from_tensor_slices(weight)
                     weights = weights.concatenate(weight)
             print("weights created")
