@@ -1,6 +1,7 @@
 import glob
 import os
 import numpy as np
+from tqdm import tqdm
 import tensorflow as tf
 
 from roof.errors import InvalidPathError, LegacyModeError, InsuffientDataError
@@ -258,7 +259,7 @@ class DataLoader:
 
             print("creating weights")
             counter = 0
-            for target in self._dataset_target:
+            for target in tqdm(self._dataset_target):
                 weight = a_function(target)
                 if counter == 0:
                     weights = tf.data.Dataset.from_tensor_slices(weight).batch(
