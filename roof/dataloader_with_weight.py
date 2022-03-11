@@ -256,12 +256,16 @@ class DataLoader:
                 x = tf.constant(x)
                 return x
 
+            print("creating weights")
             weights = []
             for target in self._dataset_target:
                 weight = a_function(target)
                 weights.append(weight)
+            print("weights created")
 
             weights = tf.data.Dataset.from_tensor_slices(weights)
+
+            print("weihgts passed to a datset")
 
             # weights = self._dataset_target.map(a_function)
             # store in attribute
@@ -272,15 +276,18 @@ class DataLoader:
                     weights,
                 )
             )
+            print("All zipped")
         # shuffle and create batches
         if shuffle:
             self.dataset = self.dataset.shuffle(buffer_size=buffer_size)
-
+        print("dataset created")
         self.dataset = self.dataset.repeat()
         self.dataset = self.dataset.batch(self.batch_size, drop_remainder=True)
+        print("dataset repeated and batched")
 
         # fetch batches in background during model training
         self.dataset = self.dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+        print("dataset spitted")
 
     def get_config(self) -> dict:
         """Return the key characteristics of the loaded data"""
