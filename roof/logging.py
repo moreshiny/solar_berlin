@@ -130,6 +130,7 @@ class Logs:
         model: tensorflow.keras.Model = None,
         num_batches: int = 1,
         multiclass: bool = False,
+        weights: bool = False,
     ) -> None:
         """Display side by side an earial photography, its true mask, and the
             predicted mask.
@@ -142,12 +143,33 @@ class Logs:
                  prediction for multiclass problems.
 
         """
-        for image_batch, mask_batch in dataset.take(num_batches):
-            pred_mask_batch = model.predict(image_batch)
-            for image, mask, pred_mask in zip(image_batch, mask_batch, pred_mask_batch):
-                self._display(
-                    [image, mask, self._create_mask(pred_mask, multiclass=multiclass)]
-                )
+        if weights:
+
+            for image_batch, mask_batch, _ in dataset.take(num_batches):
+                pred_mask_batch = model.predict(image_batch)
+                for image, mask, pred_mask in zip(
+                    image_batch, mask_batch, pred_mask_batch
+                ):
+                    self._display(
+                        [
+                            image,
+                            mask,
+                            self._create_mask(pred_mask, multiclass=multiclass),
+                        ]
+                    )
+        else:
+            for image_batch, mask_batch, _ in dataset.take(num_batches):
+                pred_mask_batch = model.predict(image_batch)
+                for image, mask, pred_mask in zip(
+                    image_batch, mask_batch, pred_mask_batch
+                ):
+                    self._display(
+                        [
+                            image,
+                            mask,
+                            self._create_mask(pred_mask, multiclass=multiclass),
+                        ]
+                    )
 
     def _create_mask(self, pred_mask, multiclass: bool = False):
         """Create a mask from the predicted array.

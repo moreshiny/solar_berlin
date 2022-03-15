@@ -48,9 +48,9 @@ COMMENT = "Tested on the clean 8000, first run with erosion/dilation,\n\
 
 # Path to data
 
-PATH_TRAIN = "data/test_data_512/train"
-PATH_TEST = "data/test_data_512/test"
-WEIGHT_DICT = {0: 0.0, 1: 100.0, 2: 100.0, 3: 100.0, 4: 50.0}
+PATH_TRAIN = "data/bin_clean_8000/train"
+PATH_TEST = "data/bin_clean_8000/test"
+WEIGHT_DICT = {0: 20.0, 1: 50.0, 2: 50.0, 3: 100.0, 4: 30.0}
 
 
 # calling the model.
@@ -177,7 +177,7 @@ LEARNING_RATE = 0.001
 opt = tensorflow.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
 
 
-model.compile(optimizer=opt, loss=loss, metrics=metrics)
+model.compile(optimizer=opt, loss=loss, metrics=metrics, sample_weight_mode="temporal")
 
 
 print("compiling done")
@@ -221,6 +221,7 @@ log.show_predictions(
     model=model,
     num_batches=NUM_BATCHES,
     multiclass=MULTICLASS,
+    weight=True,
 )
 
 
