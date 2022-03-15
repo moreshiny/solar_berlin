@@ -101,7 +101,7 @@ if OUTPUT_CLASSES > 1:
         filepath=log.checkpoint_filepath,
         save_weights_only=False,
         monitor="val_loss",
-        mode="max",
+        mode="auto",
         save_best_only=True,
         verbose=1,
     )
