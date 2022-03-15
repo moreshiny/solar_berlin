@@ -34,9 +34,9 @@ tensorflow.keras.backend.clear_session()
 OUTPUT_CLASSES = 5  # number of categorical classes. For 2 classes = 1.
 INPUT_SHAPE = (512, 512, 3)  # input size
 EPOCHS = 50
-PATIENCE = 7
+PATIENCE = 10
 
-BATCH_SIZE = 8  # batchsize
+BATCH_SIZE = 32  # batchsize
 
 NUM_BATCHES = 10  # number of batches
 
@@ -48,8 +48,8 @@ COMMENT = "Tested on the clean 8000, first run with erosion/dilation,\n\
 
 # Path to data
 
-PATH_TRAIN = "data/bin_clean_8000/train"
-PATH_TEST = "data/bin_clean_8000/test"
+PATH_TRAIN = "data/train"
+PATH_TEST = "data/test"
 WEIGHT_DICT = {0: 20.0, 1: 50.0, 2: 50.0, 3: 100.0, 4: 30.0}
 
 
@@ -100,7 +100,7 @@ if OUTPUT_CLASSES > 1:
     model_checkpoint_callback = tensorflow.keras.callbacks.ModelCheckpoint(
         filepath=log.checkpoint_filepath,
         save_weights_only=False,
-        monitor="val_sparse_categorical_accuracy",
+        monitor="val_loss",
         mode="max",
         save_best_only=True,
         verbose=1,
