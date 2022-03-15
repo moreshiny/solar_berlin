@@ -249,29 +249,20 @@ class DataLoader:
             ).batch(self.batch_size)
 
             # auxiliary function for mapping the wieht
-            def a_function(x):
-                x = np.array(x)
-                a_function = lambda x: self.weight_dict[x]
-                va_function = np.vectorize(a_function)
-                x = va_function(x)
-                x = tf.constant(x)
-                return x
+            def a_function(a_tensor):  # build a lookup table
+                a_tensor = tf.cast(a_tensor, dtype=tf.int32)
+                table = tf.lookup.StaticHashTable(
+                    initializer=tf.lookup.KeyValueTensorInitializer(
+                        keys=tf.constant(list(self.weight_dict.keys()), dtype=tf.int32),
+                        values=tf.constant(list(self.weight_dict.values())),
+                    ),
+                    default_value=tf.constant(0, dtype=tf.float32),
+                )
+                output = table.lookup(a_tensor)
+                return output
 
             print("creating weights")
-            counter = 0
-            for target in tqdm(self._dataset_target):
-                weight = a_function(target)
-                if counter == 0:
-                    weights = tf.data.Dataset.from_tensor_slices(weight).batch(
-                        self.batch_size
-                    )
-                    counter = 1
-                else:
-
-                    weight = tf.data.Dataset.from_tensor_slices(weight).batch(
-                        self.batch_size
-                    )
-                    weights = weights.concatenate(weight)
+            weights = self._dataset_target.map(a_function)
             print("weights created")
 
             print("weihgts passed to a datset")
