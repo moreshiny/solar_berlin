@@ -48,8 +48,8 @@ COMMENT = "Tested on the clean 8000, first run with erosion/dilation,\n\
 
 # Path to data
 
-PATH_TRAIN = "data/train"
-PATH_TEST = "data/test"
+PATH_TRAIN = "/data/train"
+PATH_TEST = "/data/test"
 WEIGHT_DICT = {0: 20.0, 1: 50.0, 2: 50.0, 3: 100.0, 4: 30.0}
 
 
